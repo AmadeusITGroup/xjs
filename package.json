@@ -1,0 +1,34 @@
+{
+    "name": "vscode-xjs",
+    "displayName": "XJS",
+    "description": "XJS syntax highlighter for vscode",
+    "keywords": [
+        "xjs",
+        "vscode",
+        "extension",
+        "highlighting"
+    ],
+    "version": "0.0.1",
+    "author": "Bertrand Laporte",
+    "license": "Apache-2.0",
+    "engines": {
+        "vscode": "^1.22.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "grammars": [
+            {
+                "scopeName": "template.xjs",
+                "path": "./syntaxes/xjs.tmLanguage.json",
+                "injectTo": [
+                    "source.ts",
+                    "source.js"
+                ]
+            }
+        ]
+    },
+    "scripts": {},
+    "devDependencies": {}
+}
