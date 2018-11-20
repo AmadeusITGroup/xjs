@@ -30,18 +30,18 @@ let someTemplate2 = `@template (arg: string, alert) => {
     </:b.alert>
 
     // sub-component call with data nodes
-    <:tabbar>
-       <$tab id="a"> // $tab is a value node
-           <$title> <b> # Some fancy title # </b> </$title>
+    <$tabbar>
+       <:tab id="a"> // $tab is a value node
+           <:title> <b> # Some fancy title # </b> </:title>
            # Tab A content here rewew #
-           <$footer> % footer text % </> // % is not valid
-       </$tab>
+           <:footer> % footer text % </> // % is not valid
+       </:tab>
        if (someCondition) {
            <$tab id="b" title={getTitle()} >
                # Tab B content here #
            </>
        }
-    </:tabbar>
+    </$tabbar>
 
     // single elt
     <single-elt/>
