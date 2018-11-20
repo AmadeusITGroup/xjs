@@ -19,7 +19,7 @@
 			"patterns": [
 				{
 					"name": "xjs.template.ts",
-					"begin": "\\s*(`)(\\w+\\.)?(template)",
+					"begin": "\\s*(`)(\\w+\\.)?(\\@template)",
 					"beginCaptures": {
 						"1": {
 							"name": "punctuation.definition.string.template.begin.ts"
@@ -47,7 +47,7 @@
 		},
 		"xjs-template-expression": {
 			"name": "xjs.template.expression.ts",
-			"begin": "\\s*(template)\\s*",
+			"begin": "\\s*(\\@template)\\s*",
 			"beginCaptures": {
 				"1": {
 					"name": "storage.type.function.xjs.template.ts"
@@ -66,7 +66,7 @@
 			]
 		},
 		"xjs-tag-open": {
-			"begin": "\\s*(<(?!/))\\s*(\\@?\\$?[\\w]*\\:)?([\\w\\-]*)",
+			"begin": "\\s*(<(?!/))\\s*(\\@?[\\w]*\\:)?(\\$?[\\w\\-\\.]*)",
 			"beginCaptures": {
 				"1": {
 					"name": "punctuation.definition.tag.begin"
@@ -102,6 +102,9 @@
 					"include": "#xjs-tag-attribute-ref-no-expr"
 				},
 				{
+					"include": "#xjs-tag-property"
+				},
+				{
 					"include": "#xjs-tag-attribute"
 				},
 				{
@@ -110,7 +113,7 @@
 			]
 		},
 		"xjs-tag-close": {
-			"begin": "\\s*(</)(\\@?\\$?[\\w]*\\:)?([\\w\\-]*)",
+			"begin": "\\s*(</)(\\@?\\$?[\\w]*\\:)?(\\$?[\\w\\-\\.]*)",
 			"beginCaptures": {
 				"1": {
 					"name": "punctuation.definition.tag.begin"
@@ -129,6 +132,51 @@
 				}
 			},
 			"name": "tag.close"
+		},
+		"xjs-tag-property": {
+			"name": "tag.attribute.assignment",
+			"begin": "\\s*(\\[)(\\@?\\$?\\w*\\:?\\w+)(\\.\\w+)*(\\])\\s*(=)\\s*",
+			"beginCaptures": {
+				"1": {
+					"name": "variable.parameter.xjs.property.start.ts"
+				},
+				"2": {
+					"name": "variable.parameter.xjs.attribute.name.ts"
+				},
+				"3": {
+					"name": "variable.parameter.xjs.attribute.name.ts"
+				},
+				"4": {
+					"name": "variable.parameter.xjs.property.end.ts"
+				},
+				"5": {
+					"name": "keyword.operator.assignment"
+				}
+			},
+			"end": " |(?=>)|(?=/)|(?=\\))",
+			"patterns": [
+				{
+					"include": "#numeric-literal"
+				},
+				{
+					"include": "#boolean-literal"
+				},
+				{
+					"include": "#string"
+				},
+				{
+					"include": "#xjs-template-expression"
+				},
+				{
+					"include": "#xjs-tag-attribute-function-block"
+				},
+				{
+					"include": "#xjs-tag-attribute-arrow-function-block"
+				},
+				{
+					"include": "#xjs-attribute-expression-block"
+				}
+			]
 		},
 		"xjs-tag-attribute": {
 			"name": "tag.attribute.assignment",

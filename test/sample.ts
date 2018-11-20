@@ -4,7 +4,7 @@ let normalTemplateString2 = `
     <div> by the xts highlighter </div>
 `;
 
-let someTemplate2 = `template (arg:string, alert) {
+let someTemplate2 = `@template (arg: string, alert) => {
     if (true) {
         <div foo="bar" bar=123 paw={ expr()+123+ 2%4 } @b:important >
             if (true) {
@@ -12,11 +12,8 @@ let someTemplate2 = `template (arg:string, alert) {
                 
                     world
                 #
-                <:title>
-                    
-                </>
             }
-            <$:alert p:className="" class="the class" > </$:alert>
+            <:alert p:className="" class="the class" > </:alert>
         </div>
     }
 
@@ -24,13 +21,27 @@ let someTemplate2 = `template (arg:string, alert) {
         <></>
     }
     
-    <b:alert>
+    <:b.alert>
         if (arg === 123) {
             # Hello \% Brave \` \`
             New <div/>
             World #
         }
-    </b:alert>
+    </:b.alert>
+
+    // sub-component call with data nodes
+    <:tabbar>
+       <$tab id="a"> // $tab is a value node
+           <$title> <b> # Some fancy title # </b> </$title>
+           # Tab A content here rewew #
+           <$footer> % footer text % </> // % is not valid
+       </$tab>
+       if (someCondition) {
+           <$tab id="b" title={getTitle()} >
+               # Tab B content here #
+           </>
+       }
+    </:tabbar>
 
     // single elt
     <single-elt/>
@@ -57,22 +68,9 @@ let someTemplate2 = `template (arg:string, alert) {
     <div p:style.backgroundColor={getColor()} a.b.c></div>
 
     // sub-template call on local scope
-    <$:localTemplate> </$:localTemplate> // localTemplate is a variable accessible in the local JS scope
-    <$:foo a="abc"/>
+    <:localTemplate> </:localTemplate> // localTemplate is a variable accessible in the local JS scope
+    <:foo a="abc"/>
 
-    // sub-component call with data nodes
-    <b:tab-bar>
-       <:tab id="a">
-           <:title> <b> # Some fancy title # </b> </:title>
-           # Tab A content here rewew #
-           <:footer> % footer text % </single-elt>
-       </single-elt>
-       if (someCondition) {
-           <:tab id="b" title={getTitle()} >
-               # Tab B content here #
-           </>
-       }
-    </b:tab-bar>
 
     // simple text node
     # Hello #
@@ -94,11 +92,11 @@ let someTemplate2 = `template (arg:string, alert) {
         b="abc" /* another comment */ hello="world"/>
 
     // attribute decorators with multiple arguments
-    <div @b:tooltip(
+    <div @b.tooltip(
             title={getTooltipTitle()} 
             position="top" 
             important
-        ) p:className={e()}/>
+        ) [className]={e()}/> // className is a property (default = attribute)
 
     // attribute decorator with value argument
     for (let i=0;10>i;i++) {
@@ -186,7 +184,7 @@ let x2 = function () {
 
 }
 
-let bar2 = `template () {
+let bar2 = `@template () => {
     <div></div>
 }`
 
@@ -194,14 +192,26 @@ class Foo2 {
     x = "re";
     superNiceProp = 42;
 
-    render = `template (foo) {
+    render = `@template (foo) => {
         <div @host a={this.x}> 
             # {this.superNiceProp} #
         </div>
     }`;
 }
 
+
+
 // xx could be a different template engine...
-let baz2 = `xx.template () {
-    <div></div>
+let baz2 = `@template (name:string) => {
+    let foo=123;
+    for (let i=0;10:i;i++) {
+        <li #myList[i] @tooltip(title="abcd" position=1) a:blah={2+4}>
+            <@tooltip />
+            # bar {1+2} #
+            let bar = 123;
+        </li>
+    }
+    <div>
 }`
+
+
