@@ -21,7 +21,7 @@
         "grammars": [
             {
                 "scopeName": "template.xjs",
-                "path": "./syntaxes/xjs.tmLanguage.json",
+                "path": "./syntaxes/xjs.tmLanguage.v2.json",
                 "injectTo": [
                     "source.ts",
                     "source.js"
