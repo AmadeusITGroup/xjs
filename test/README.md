@@ -7,11 +7,13 @@ Testing this extension requires 2 steps:
 
 To deploy this extension locally, the project needs to be copied to the following folder:
 - On Windows: %USERPROFILE%\.vscode\extensions
-- On MacOS/Linux: $HOME/.vscode/extensions (or simply run `bash deploy-locally.bash` in the project root folder)
+- On MacOS/Linux: $HOME/.vscode/extensions (or simply run `bash generate-and-deploy.bash` in the project root folder)
 
 To refresh VS Code, simply reload the window through the **Reload Window** option in the Command palette (or install the shortcut below)
 
 To view the text mate scope, use **Developer: Inspect TM Scopes** in the command palette
+
+The XJS grammar is generated from the TypeScript grammar through the *generator/ts-grammar* script. To update the grammar, simply modify *ts-grammar.ts* and run `bash generate-and-deploy.bash` (or `yarn generate`)
 
 ## Shortcuts
 
@@ -38,9 +40,10 @@ It quickly comes handy to edit your visual studio keybindings.json file to add 2
 Text mate grammar introduction: 
 - vscode extension [documentation](https://code.visualstudio.com/docs/extensions/themes-snippets-colorizers)
 - official textmate [documentation](https://macromates.com/manual/en/language_grammars) 
-- original [typescript grammar](https://github.com/Microsoft/vscode/blob/master/extensions/javascript/syntaxes/JavaScript.tmLanguage.json) used as a basis for the XJS grammar
 - [Hello World](https://code.visualstudio.com/docs/extensions/example-hello-world) vscode extension
 
+<!--
 Note about grammar injection:
 The L: part means left injection, i.e., the grammar rules are injected to the left of the existing rules for the scope being highlighted. When doing syntax highlighting, the left-most rule has higher precedence than the rules to it's right. So the L: ensures that this syntax highlighting will override the default ones.
 (cf. [here](https://github.com/Microsoft/vscode-textmate/issues/41))
+-->

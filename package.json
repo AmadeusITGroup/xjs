@@ -8,7 +8,7 @@
         "extension",
         "highlighting"
     ],
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "Bertrand Laporte",
     "license": "Apache-2.0",
     "engines": {
@@ -21,14 +21,20 @@
         "grammars": [
             {
                 "scopeName": "template.xjs",
-                "path": "./syntaxes/xjs.tmLanguage.v2.json",
+                "path": "./syntaxes/xjs.tmLanguage.json",
                 "injectTo": [
-                    "source.ts",
-                    "source.js"
+                    "source.ts"
                 ]
             }
         ]
     },
-    "scripts": {},
-    "devDependencies": {}
+    "scripts": {
+        "build": "rm -rf dist/ && tsc",
+        "generate": "yarn run build && node --no-warnings dist/ts-grammar"
+    },
+    "devDependencies": {
+        "typescript": "^3.2.2",
+        "@types/node": "^10.12.18",
+        "tslib": "^1.9.3"
+    }
 }

@@ -1,56 +1,77 @@
 
-function template(strings) {
+/**
+ * XJS benefits
+ * - JS mental model: templates as JS functions (like JSX) -> simple learning curve, no hack
+ * - generates statements instead of expression -> all JS features can be used (loops, comments, variables...)
+ * - support of decorators (aka. directives in angular) 
+ * - clear attribute / property distinction (e.g. "class" is an attribute while "[className]" is a property)
+ * - dynamic attributes: 
+ *     - some attributes can be created dynamically based on some application logic (e.g. in a conditional block)
+ *     - logical sub-nodes (e.g. "tab" in a "tabList" component) can be considered as attributes and not separate nodes
+ * - explicit text nodes: full control over white spaces, possibility to have text node decorators (cf. i18n)
+ * - performance:
+ *     - one-time binding (i.e. expression only calculated once)
+ *     - deferred component content (i.e. content is calculated if component needs it -> performance)
+ * - 2-way binding expression support (optional)
+ * - limited to template functions -> no leak in all application code
+ * - template functions are valid JS and will not be transformed by library providers
+ *     -> syntax can evolve more easily than JSX as transformation will be performed by the end application at compilation time
+ * - local reference support (cf. #xx[] attributes)
+ * - i18n enablers (node and text node decorators)
+ */
 
+// xx template engine interface: XJS should not be bound to a template engine (like JSX)
+let xx = {
+    template: function (s: string) { }
 }
 
-let normalTemplateString2 = template` (param1:string, param2:number) => {
-    // element with static attribute (title) and property (className)
-    <div title="some div" [className]="important"/>
+let normaTemplateString = `hello world`;
+
+let foo = xx.template(`(state: MyStateType) => {
+    // tag names
     <div/>
-    <div [someProp]=123.45 [anotherProp]=false /* inner comment */ disabled/>
+    <div> </div>
+    <section /* comment */ />
+    <a-b
+        // comment
+    > </a-b>
+    <$foo> </>
+    <$foo.bar> </$foo.bar>
+    <.item> </.item>
+    <.@abc.def> </>
+    <!></!> // fragment
+    <!></>
 
-    // element with dynamic attribute and property
-    <div title={someStrExpr()+" "} [className]={someStrExpr()}/>
-
-    // sample function properties
-    <div click(e:Event)={doSomething(e);return expr(x);}/>
-
-    // text node
-    * some text node 
+    // text nodes
+    * Hello World *
+    * some text  
       on 2 lines *
-    * some text node with a \*! *
+    * some text with a \*! *
+    * &lt; &nbsp; &#160; * // requires run-time processing to decode each html entity -> not handled at xjs level
+    * Hello {getName()} {1+2+3} *
 
-    // localized text nodes and strings
-    * !msg some text node *
-    * #ref !msg some text node {param1} {param2} * // order may vary according to localization
-    <div title="!theDivTitle some div" />
-
-    // attribute decorators with multiple arguments
-    <div @b.tooltip(
-        title={getTooltipTitle()} 
-        position="top" 
-        important
-    ) [className]={e()}/> // className is a property (default = attribute)
-
-    // node decorators
-    if (someExpr()) {
-        <div>
-            <@b.tooltip important position="top">
-                <.title> * Some title content here * </.title>
-                if (param1 = "a") {
-                    * Some content *
-                }
-            </@b.tooltip>
-        </div>
-    }
-
-    // sub component with content
-    <$alert type="warning">
-        * !alertMsg Some important message <div/> *
-    </>
-
-    // sub-component with data nodes
-    <$tabBar>
+    // attributes
+    <div class = "the_good_life"/>
+    <span foo=123 bar=true baz="xyz" 
+        // comment
+        foo2 = 123.42 bar2 = false 
+    />
+    <span foo={a*2+123} bar="abc" />
+    <section title={::getTitle()} /> // one-time binding expression
+    <foo click(e)={doSomething(e); doSomethingElse(); return false} />
+    <! foo=123> </>
+    // no values attributes
+    <div important disabled foo=123 />
+    // properties
+    <div [foo]=123 [baz]={expr()} [disabled] />
+    // ref attributes
+    <div #foo[{expr()}] #bar2[{123}] #baz3 #blah[]/>
+    // decorators
+    <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>
+    <div @class(foo={isTrue()} bar={!isTrue()} @disabled={123} [a] abc) disabled />
+    
+    // sub-component with property nodes
+    <$b.tabBar>
        <.tab id="a"> // $tab is a value node
            <.title> <b> * Some fancy title * </b> </.title>
            * Tab A content here *
@@ -61,82 +82,77 @@ let normalTemplateString2 = template` (param1:string, param2:number) => {
                * Tab B content here *
            </>
        }
-    </$tabBar>
+    </$b.tabBar>
 
-    // inline XJS functions as content
+    * (#myNode @i18n(ref=123 gender={getGender()})) Some string that depends 
+     on gender (@foo -> invalid here: must at the beginning of the string) *
+    
+    // Dynamic attributes 
+    <div>
+        if (test()) {
+            <.title @value="Some title"/>
+            <.{someName()} @value={someValue()}/>
+            // note: properties cannot be created/deleted dynamically as they are not part of the DOM
+        }
+    </div>
+
+    // Dynamic nodes
+    <{getName()} class="foo"> * Content * </>
+    <div @content={getContent()}/> // Dynamic content as VDOM or HTML string (will be parsed)
+    <div @innerHTML={getHTML()}/>  // Dynamic content as string (will be parsed)
+    <div @innerText={getText()}/>  // Dynamic content as text
+    <! @content={getContent()}/>   // Dynamic content into a fragment
+
+    // Fragments
+    <!> * Simple fragment * </>
+    <! #foo @detached> * Detached fragment (not immediately inserted) * </>
+
+    // attribute decorators with multiple arguments
+    <div @b.tooltip(
+        title={getTooltipTitle()} 
+        position="top" 
+        important
+    ) [className]={e()}/>
+
     <$list>
-        <.item key=1> *Item 1*</>
-        <.item key=2> *Item 2* </>
+        <.item key=1> *Item 1*</div>
+        <.item key=2> *Item 2* </a-b>
         <.separator/>
-        <.item key=3> *Item 3* </>
-        <.itemTemplate a=123 another="attribute" @template(a, b:string, d:number = 3)={
-            if (key===2) {
-                <div class="item special"> *Special item: {content}* </div>
-            } else {
-                <div class="item"> *{content}* </div>
-            }
-        }/>
+        <.item key=3> *Item 3* </section>
+        <.itemTemplate @value={anotherTemplateRef} />
     </$list>
 
-    // local refs #foo #foo[] #foo[{expr()}]
-    <div #foo title="123"/>
-    <div #foo[] @host/>
-    <div #foo[{expr(123)}] important bar=234/>
-    * #bar some text *
+    // invalid case validation
+    <div \important \bar=123 \[foo] \@decorator a.b \#foo />
+}`);
 
-    // fragment
-    <! @someAnnotation> * this text node is in a fragment *  </>
-    <! @detached #foo> /* This is a detached fragment: it is not directly inserted in the DOM */ </>
-
-    // detached fragment insertion
-    <! @innerHTML={foo}/>
-}`;
-
-let expressions = template`() => {
-    // 2-way binding
-    <input type="text" @model={=this.someProp}/>
-
-    // one-time binding expression
-    <div title={::expr()}/>
-
-    // spread operator
-    <div {...{att1: a, att2:b}} {...expr(123)} {...myVar}/>
-    <div {::...expr()} /> // one-time spread on attributes
-    * Hello {...expr()} {...expr()} * // note: this should be rejected by the compiler but is valid for TM
-    {{someExpr()}} // fully dynamic text node with only one expression
-
-    // spread operator on properties
-    <span [{...expr()}]/>
-    <div [{::...expr()}] /> // one-time spread on properties
-}`;
-
-let sectionSample = template`() => {
+let sectionSample = xx.template(`() => {
     * Here is a section sample *
     <$section open=true>
         <.title> <b> * The great section * </b> </.title>
         * Some content here *
     </>
-}`
+}`);
 
-export let section = template`(open:boolean, $content, $) => {
+export let section = xx.template(`(open:boolean, content, $) => { // content = reserved name
     let title = dataNode($, ".title");
     <div @host class="section">
         if (title) {
             <h1 class="title"> <! @innerHTML={title} /> </h1> // fragment with dynamic content
         }
         if (open) {
-            <div class="content" @innerHTML={$content}/>
+            <div class="content" @innerHTML={content}/>
         }
     </div>
-}`;
+}`);
 
-class Foo2 {
+class SomeClass {
     x = "re";
     superNiceProp = 42;
 
-    render = template` (foo) => {
+    render = xx.template(`(foo) => {
         <div @host a={this.x}> 
             * {this.superNiceProp} *
         </div>
-    }`;
+    }`);
 }
