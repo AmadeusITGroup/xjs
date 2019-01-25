@@ -58,7 +58,7 @@ let foo = xx.template(`(state: MyStateType) => {
     />
     <span foo={a*2+123} bar="abc" />
     <section title={::getTitle()} /> // one-time binding expression
-    <foo click(e)={doSomething(e); doSomethingElse(); return false} />
+    <foo click(e)={doSomething(e); doSomethingElse(); return false} mouseMove={myFunc} mouseOver={() => {}} />
     <! foo=123> </>
     // no values attributes
     <div important disabled foo=123 />
@@ -71,14 +71,17 @@ let foo = xx.template(`(state: MyStateType) => {
     <div @class(foo={isTrue()} bar={!isTrue()} @disabled={123} [a] abc) disabled />
     
     // sub-component with property nodes
-    <$b.tabBar>
-       <.tab id="a"> // $tab is a value node
-           <.title> <b> * Some fancy title * </b> </.title>
-           * Tab A content here *
+    let className = "main";
+    <$b.tabBar @host(class={className})>
+       <.tab id="a">
+           <.title @tooltip(position="top" text={getMainTooltip()})> 
+               <div class="main_tab"> * Main tab (A) * </div> 
+            </.title>
+           * (@i18n(id="contentA" gender={getGender()})) Hello {getTitle()} {getName()} *
            <.footer> * footer text * </> 
        </.tab>
        if (someCondition) {
-           <.tab id="b" title={getTitle()} >
+           <.tab id="b">
                * Tab B content here *
            </>
        }
@@ -99,9 +102,10 @@ let foo = xx.template(`(state: MyStateType) => {
     // Dynamic nodes
     <{getName()} class="foo"> * Content * </>
     <div @content={getContent()}/> // Dynamic content as VDOM or HTML string (will be parsed)
-    <div @innerHTML={getHTML()}/>  // Dynamic content as string (will be parsed)
-    <div @innerText={getText()}/>  // Dynamic content as text
+    <div [innerHTML]={getHTML()}/>  // Dynamic content as string (will be parsed)
+    <div [textContent]={getText()}/>  // Dynamic content as text
     <! @content={getContent()}/>   // Dynamic content into a fragment
+    <div @class(foo={expr()} bar={expr2()}) />
 
     // Fragments
     <!> * Simple fragment * </>
@@ -115,10 +119,11 @@ let foo = xx.template(`(state: MyStateType) => {
     ) [className]={e()}/>
 
     <$list>
-        <.item key=1> *Item 1*</div>
-        <.item key=2> *Item 2* </a-b>
+        <.@tooltip position="top"> * Tooltip content as HTML {expr(1+2)} * </> // node decorator
+        <.item key=1> *Item 1* </.item>
+        <.item key=2> *Item 2* </>
         <.separator/>
-        <.item key=3> *Item 3* </section>
+        <.item key=3> *Item 3* </>
         <.itemTemplate @value={anotherTemplateRef} />
     </$list>
 

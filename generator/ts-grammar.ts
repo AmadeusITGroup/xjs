@@ -168,10 +168,9 @@ function includeTextNode(g: any) {
 function includeExpressionBlock(g: any) {
     g.repository["xjs-expression-block"] = {
         "name": "meta.block.ts",
-        "begin": "(?!\\\\)\\{((\\:\\:)|(\\=))?",
+        "begin": "(?!\\\\)(\\{)((\\:\\:)|(\\=))?",
         "beginCaptures": {
-            "1": { "name": "punctuation.xjs.definition.modifier.ts" },
-            "2": { "name": "punctuation.section.embedded.begin.js.xjs" }
+            "1": { "name": "punctuation.section.embedded.begin.js.xjs" }
         },
         "end": "\\}",
         "endCaptures": {
@@ -295,8 +294,7 @@ function includeDecoratorAttributes(g: any) {
         "begin": "\\s*(" + attributeSeparator() + "\\@" + attributeName(true) + ")\\s*(\\()\\s*",
         "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.decorator.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.decorator.js.xjs" },
-            "3": { "name": "punctuation.definition.decorator.begin.js.xjs" }
+            "2": { "name": "punctuation.definition.decorator.begin.js.xjs" }
         },
         "end": "(\\))",
         "endCaptures": {
