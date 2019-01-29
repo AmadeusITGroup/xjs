@@ -135,25 +135,26 @@ function includeTextNode(g: any) {
     // text node declaration - e.g. * Hello World *
     addStatement(g, "xjs-text-node", {
         "name": "string.xjs.text.node.ts",
-        "begin": "\\s*(\\*)",
+        "begin": "\\s*(\\#)",
         "beginCaptures": {
             "1": { "name": "punctuation.definition.string.begin.js.xjs" }
         },
-        "end": "(\\*)",
+        "end": "((?<!&)\\#)", // negative look behind to support html entities - e.g. &#160;
         "endCaptures": {
             "1": { "name": "punctuation.definition.string.end.js.xjs" }
         },
         "patterns": [
             { "include": "#xjs-text-node-attributes" },
             { "include": "#string-character-escape" },
+            { "include": "#xjs-text-html-entity" },
             { "include": "#xjs-expression-block" }
         ]
     });
 
-    // text nodes with attributes - e.g. * (#myNode @i18n(ref=123 gender={getGender()})) Blah blah *
+    // text nodes with attributes - e.g. # (#myNode @i18n(ref=123 gender={getGender()})) Blah blah #
     g.repository["xjs-text-node-attributes"] = {
         "name": "meta.block.ts",
-        "begin": "(?<=\\*)\\s*(\\()",
+        "begin": "(?<=\\#)\\s*(\\()",
         "beginCaptures": {
             "0": { "name": "punctuation.section.embedded.begin.js.xjs" }
         },
@@ -162,6 +163,12 @@ function includeTextNode(g: any) {
             "0": { "name": "punctuation.section.embedded.end.js.xjs" }
         },
         "patterns": []
+    }
+
+    // html entities - e.g. &lt; &nbsp; &#160;
+    g.repository["xjs-text-html-entity"] = {
+        "name": "constant.character.entity.js.xjs",
+        "match": "(\\&[a-z]+\\;)|(\\&\\#[0-9]+\\;)"
     }
 }
 
@@ -243,8 +250,8 @@ function includeNormalAttributes(g: any) {
 
     // no values attribute - e.g. <div disabled/>
     addXjsTagAttributeType(g, "xjs-tag-attribute-no-values", {
-        "match": "\\s*(" + attributeSeparator() + attributeName() + ")(?=(\\s|/|>|\\)))", // no need to support . notation
-        "name": "entity.other.attribute-name.js.xjs"
+        "name": "entity.other.attribute-name.js.xjs",
+        "match": "\\s*(" + attributeSeparator() + attributeName() + ")(?=(\\s|/|>|\\)))" // no need to support . notation
     });
 }
 

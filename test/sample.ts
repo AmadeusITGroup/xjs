@@ -28,6 +28,7 @@ let xx = {
 let normaTemplateString = `hello world`;
 
 let foo = xx.template(`(state: MyStateType) => {
+    
     // tag names
     <div/>
     <div> </div>
@@ -43,12 +44,12 @@ let foo = xx.template(`(state: MyStateType) => {
     <!></>
 
     // text nodes
-    * Hello World *
-    * some text  
-      on 2 lines *
-    * some text with a \*! *
-    * &lt; &nbsp; &#160; * // requires run-time processing to decode each html entity -> not handled at xjs level
-    * Hello {getName()} {1+2+3} *
+    # Hello World #
+     # some text  
+      on 2 lines #
+      # some text with a \#! #
+      # &lt; &nbsp; &#160; # // requires run-time processing to decode each html entity -> not handled at xjs level
+    # Hello {getName()} {1+2+3} #
 
     // attributes
     <div class = "the_good_life"/>
@@ -75,20 +76,20 @@ let foo = xx.template(`(state: MyStateType) => {
     <$b.tabBar @host(class={className})>
        <.tab id="a">
            <.title @tooltip(position="top" text={getMainTooltip()})> 
-               <div class="main_tab"> * Main tab (A) * </div> 
+               <div class="main_tab"> # Main tab (A) # </div> 
             </.title>
-           * (@i18n(id="contentA" gender={getGender()})) Hello {getTitle()} {getName()} *
-           <.footer> * footer text * </> 
+           # (#foo @i18n(id="contentA" gender={getGender()})) Hello {getTitle()} {getName()} #
+           <.footer> # footer text # </> 
        </.tab>
        if (someCondition) {
            <.tab id="b">
-               * Tab B content here *
+               # Tab B content here #
            </>
        }
     </$b.tabBar>
 
-    * (#myNode @i18n(ref=123 gender={getGender()})) Some string that depends 
-     on gender (@foo -> invalid here: must at the beginning of the string) *
+    # (#myNode @i18n(ref=123 gender={getGender()})) Some string that depends 
+     on gender (@foo -> invalid here: must at the beginning of the string) #
     
     // Dynamic attributes 
     <div>
@@ -100,7 +101,7 @@ let foo = xx.template(`(state: MyStateType) => {
     </div>
 
     // Dynamic nodes
-    <{getName()} class="foo"> * Content * </>
+    <{getName()} class="foo"> # Content # </>
     <div @content={getContent()}/> // Dynamic content as VDOM or HTML string (will be parsed)
     <div [innerHTML]={getHTML()}/>  // Dynamic content as string (will be parsed)
     <div [textContent]={getText()}/>  // Dynamic content as text
@@ -108,8 +109,8 @@ let foo = xx.template(`(state: MyStateType) => {
     <div @class(foo={expr()} bar={expr2()}) />
 
     // Fragments
-    <!> * Simple fragment * </>
-    <! #foo @detached> * Detached fragment (not immediately inserted) * </>
+    <!> # Simple fragment # </>
+    <! #foo @detached> # Detached fragment (not immediately inserted) # </>
 
     // attribute decorators with multiple arguments
     <div @b.tooltip(
@@ -119,11 +120,11 @@ let foo = xx.template(`(state: MyStateType) => {
     ) [className]={e()}/>
 
     <$list>
-        <.@tooltip position="top"> * Tooltip content as HTML {expr(1+2)} * </> // node decorator
-        <.item key=1> *Item 1* </.item>
-        <.item key=2> *Item 2* </>
+        <.@tooltip position="top"> # Tooltip content as HTML {expr(1+2)} # </> // node decorator
+        <.item key=1> #Item 1# </.item>
+        <.item key=2> #Item 2# </>
         <.separator/>
-        <.item key=3> *Item 3* </>
+        <.item key=3> #Item 3# </>
         <.itemTemplate @value={anotherTemplateRef} />
     </$list>
 
@@ -132,10 +133,10 @@ let foo = xx.template(`(state: MyStateType) => {
 }`);
 
 let sectionSample = xx.template(`() => {
-    * Here is a section sample *
+    # Here is a section sample #
     <$section open=true>
-        <.title> <b> * The great section * </b> </.title>
-        * Some content here *
+        <.title> <b> # The great section # </b> </.title>
+        # Some content here #
     </>
 }`);
 
@@ -157,7 +158,7 @@ class SomeClass {
 
     render = xx.template(`(foo) => {
         <div @host a={this.x}> 
-            * {this.superNiceProp} *
+            # {this.superNiceProp} #
         </div>
     }`);
 }
