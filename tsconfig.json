@@ -23,7 +23,7 @@
     "allowUnusedLabels": true
   },
   "include": [
-    "generator/**/*.ts"
+    "src/**/*.ts"
   ],
   "exclude": [],
   "compileOnSave": false

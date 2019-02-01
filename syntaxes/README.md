@@ -1,7 +1,14 @@
 
-## Local testing
+## Unit tests
 
-Testing this extension requires 2 steps:
+The grammar can be built and tested through the following command:
+```
+    yarn grammar
+```
+
+## Validating the grammar in VS Code
+
+Testing the syntax highlighting in VS Code requires 2 steps:
 1. Redeploying the extension locally when changes are made in the project (e.g. on the TM grammar file or on package.json)
 2. Refreshing Visual studio code
 
@@ -13,7 +20,7 @@ To refresh VS Code, simply reload the window through the **Reload Window** optio
 
 To view the text mate scope, use **Developer: Inspect TM Scopes** in the command palette
 
-The XJS grammar is generated from the TypeScript grammar through the *generator/ts-grammar* script. To update the grammar, simply modify *ts-grammar.ts* and run `bash generate-and-deploy.bash` (or `yarn generate`)
+The XJS grammar is generated from the TypeScript grammar through the *src/generator/ts-grammar* script. To update the grammar, simply modify *ts-grammar.ts* and run `bash generate-and-deploy.bash` (or `yarn grammar`)
 
 ## Shortcuts
 

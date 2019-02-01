@@ -5,7 +5,7 @@ old/
 .DS_STORE
 ._.DS_STORE
 .yarnclean
-.vscode
+.vscode/settings.*
 .rpt2_cache
 yarn-error.log
 todo.md

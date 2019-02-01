@@ -30,11 +30,16 @@
     },
     "scripts": {
         "build": "rm -rf dist/ && tsc",
-        "generate": "yarn run build && node --no-warnings dist/ts-grammar"
+        "generate": "yarn run build && node dist/generator/ts-grammar",
+        "grammar": "yarn run generate && yarn run mocha -r ts-node/register src/**/*.spec.ts --reporter dot"
     },
     "devDependencies": {
-        "typescript": "^3.2.2",
         "@types/node": "^10.12.18",
+        "@types/mocha": "^5.2.3",
+        "typescript": "^3.2.2",
+        "mocha": "^5.2.0",
+        "ts-node": "^7.0.1",
+        "vscode-textmate": "^4.0.1",
         "tslib": "^1.9.3"
     }
 }

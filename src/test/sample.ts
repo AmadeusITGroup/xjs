@@ -1,3 +1,4 @@
+import { formatWithOptions } from "util";
 
 /**
  * XJS benefits
@@ -25,7 +26,7 @@ let xx = {
     template: function (s: string) { }
 }
 
-let normaTemplateString = `hello world`;
+let normalTemplateString = `hello world`;
 
 let foo = xx.template(`(state: MyStateType) => {
     
@@ -60,20 +61,22 @@ let foo = xx.template(`(state: MyStateType) => {
     <span foo={a*2+123} bar="abc" />
     <section title={::getTitle()} /> // one-time binding expression
     <foo click(e)={doSomething(e); doSomethingElse(); return false} mouseMove={myFunc} mouseOver={() => {}} />
-    <! foo=123> </>
+    <foo @on(click(e)={doSomething(e)})/>
+
     // no values attributes
     <div important disabled foo=123 />
     // properties
-    <div [foo]=123 [baz]={expr()} [disabled] />
+    <div [foo]=123 [baz]={expr()}/>
     // ref attributes
     <div #foo[{expr()}] #bar2[{123}] #baz3 #blah[]/>
     // decorators
     <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>
-    <div @class(foo={isTrue()} bar={!isTrue()} @disabled={123} [a] abc) disabled />
-    
+    <div @class(foo={isTrue()} bar={!isTrue()} @disabled={123} abc) disabled />
+    <! @foo=123> </>
+
     // sub-component with property nodes
     let className = "main";
-    <$b.tabBar @host(class={className})>
+    <$b.tabBar @host(class={className} @foo)>
        <.tab id="a">
            <.title @tooltip(position="top" text={getMainTooltip()})> 
                <div class="main_tab"> # Main tab (A) # </div> 
@@ -102,6 +105,7 @@ let foo = xx.template(`(state: MyStateType) => {
 
     // Dynamic nodes
     <{getName()} class="foo"> # Content # </>
+    <.{someNameRef}/>
     <div @content={getContent()}/> // Dynamic content as VDOM or HTML string (will be parsed)
     <div [innerHTML]={getHTML()}/>  // Dynamic content as string (will be parsed)
     <div [textContent]={getText()}/>  // Dynamic content as text
