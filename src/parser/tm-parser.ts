@@ -21,7 +21,7 @@ const REGISTRY = new vsTM.Registry({
 
 let grammar: vsTM.IGrammar | null | undefined;
 
-export async function parseContent(src: string) {
+export async function tokenize(src: string) {
     if (!grammar) {
         grammar = await REGISTRY.loadGrammar("source.ts");
     }
