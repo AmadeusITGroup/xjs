@@ -97,9 +97,10 @@ function includeXjsTag(g: any) {
             "1": { "name": "punctuation.definition.tag.begin.js.xjs" },
             "2": { "name": "entity.name.tag.prefix.js.xjs" }
         },
-        "end": "\\/?\\>",
+        "end": "(\\/?)(\\>)",
         "endCaptures": {
-            "0": { "name": "punctuation.definition.tag.end.js.xjs" }
+            "1": { "name": "punctuation.definition.tag.close.js.xjs" },
+            "2": { "name": "punctuation.definition.tag.end.js.xjs" }
         },
         "patterns": [
             { "include": "#xjs-expression-block" },
@@ -153,7 +154,7 @@ function includeTextNode(g: any) {
 
     // text nodes with attributes - e.g. # (#myNode @i18n(ref=123 gender={getGender()})) Blah blah #
     g.repository["xjs-text-node-attributes"] = {
-        "name": "meta.block.ts",
+        "name": "meta.block.attributes.ts",
         "begin": "(?<=\\#)\\s*(\\()",
         "beginCaptures": {
             "0": { "name": "punctuation.section.embedded.begin.js.xjs" }
@@ -250,7 +251,7 @@ function includePropertyAttributes(g: any) {
             "1": { "name": "punctuation.section.embedded.property.begin.js.xjs" },
             "2": { "name": "entity.other.attribute-name.js.xjs" },
             "3": { "name": "punctuation.section.embedded.property.end.js.xjs" },
-            "4": { "name": "keyword.operator.assignment" }
+            "4": { "name": "keyword.operator.assignment.js.xjs" }
         },
         "end": " |(?=>)|(?=/)|(?=\\))",
         "patterns": attributeValues()
@@ -351,19 +352,19 @@ function includeFunctionAttributes(g: any) {
         "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.js.xjs" }
         },
-        "end": " |(?=>)|(?=/)|(?=\\))",
+        "end": " (?!(\\s*\\=))|(?=>)|(?=/)|(?=\\))",
         "patterns": [
             { "include": "#function-parameters" },
-            { "name": "keyword.operator.assignment", "match": "\\s*(\\=)\\s*" },
+            { "name": "keyword.operator.assignment.js.xjs", "match": "\\s*(\\=)\\s*" },
             {
                 "name": "meta.block.ts",
-                "begin": "\\{",
+                "begin": "\\s*(\\{)",
                 "beginCaptures": {
-                    "0": { "name": "punctuation.section.embedded.begin.js.xjs" } // change default name to get same highlighting as other expression blocks
+                    "1": { "name": "punctuation.section.embedded.begin.js.xjs" } // change default name to get same highlighting as other expression blocks
                 },
-                "end": "\\}",
+                "end": "\\s*(\\})",
                 "endCaptures": {
-                    "0": { "name": "punctuation.section.embedded.end.js.xjs" }
+                    "1": { "name": "punctuation.section.embedded.end.js.xjs" }
                 },
                 "patterns": [
                     { "include": "#statements" }

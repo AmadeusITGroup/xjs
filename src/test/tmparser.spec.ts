@@ -93,6 +93,19 @@ describe('TextMate parser', () => {
                     T_END 0:22/0:23
             ` , '<a-bcd /* comment */ />');
 
+        assert.deepEqual(await parseAndSerialize('<a-bcd // comment \n/>'), `
+            S 0:0/1:2
+                TAG 0:0/1:2
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:6
+                    CONTENT 0:6/0:7
+                    COMMENT1 0:7/0:18
+                        C_DEF 0:7/0:9
+                        CONTENT 0:9/0:18
+                    T_CLOSE 1:0/1:1
+                    T_END 1:1/1:2
+            ` , '<a-bcd /* comment */ />');
+
         assert.deepEqual(await parseAndSerialize('<.@b.tooltip />'), `
             S 0:0/0:15
                 TAG 0:0/0:15
@@ -102,6 +115,38 @@ describe('TextMate parser', () => {
                     T_CLOSE 0:13/0:14
                     T_END 0:14/0:15
             ` , "<.@b.tooltip />");
+    });
+
+    it("should parse expression tags", async function () {
+        assert.deepEqual(await parseAndSerialize('<{expr()}>'), `
+            S 0:0/0:10
+                TAG 0:0/0:10
+                    T_START 0:0/0:1
+                    BLOCK 0:1/0:9
+                        B_START 0:1/0:2
+                        F_CALL 0:2/0:6
+                            F_NAME 0:2/0:6
+                        BRACE_R 0:6/0:8
+                            CONTENT 0:7/0:8
+                        B_END 0:8/0:9
+                    T_END 0:9/0:10
+            ` , '1');
+
+        assert.deepEqual(await parseAndSerialize('<.{expr()}/>'), `
+            S 0:0/0:12
+                TAG 0:0/0:12
+                    T_START 0:0/0:1
+                    T_PREFIX 0:1/0:2
+                    BLOCK 0:2/0:10
+                        B_START 0:2/0:3
+                        F_CALL 0:3/0:7
+                            F_NAME 0:3/0:7
+                        BRACE_R 0:7/0:9
+                            CONTENT 0:8/0:9
+                        B_END 0:9/0:10
+                    T_CLOSE 0:10/0:11
+                    T_END 0:11/0:12
+            ` , '2');
     });
 
     it("should parse text nodes", async function () {
@@ -117,7 +162,7 @@ describe('TextMate parser', () => {
             S 0:0/0:30
                 TXT 0:0/0:30
                     TXT_START 0:0/0:1
-                    BLOCK 0:1/0:17
+                    BLOCK_ATT 0:1/0:17
                         B_START 0:1/0:3
                         DECO 0:3/0:12
                             D_DEF 0:3/0:4
@@ -132,6 +177,20 @@ describe('TextMate parser', () => {
                     CONTENT 0:17/0:29
                     TXT_END 0:29/0:30
             ` , "2");
+
+        assert.deepEqual(await parseAndSerialize('# Hello {::123} #'), `
+            S 0:0/0:17
+                TXT 0:0/0:17
+                    TXT_START 0:0/0:1
+                    CONTENT 0:1/0:8
+                    BLOCK 0:8/0:15
+                        B_START 0:8/0:9
+                        EXP_MOD 0:9/0:11
+                        NUM 0:11/0:14
+                        B_END 0:14/0:15
+                    CONTENT 0:15/0:16
+                    TXT_END 0:16/0:17
+            ` , "3");
     });
 
     it("should parse comments", async function () {
@@ -320,7 +379,9 @@ describe('TextMate parser', () => {
                         NUM 0:28/0:31
                     T_END 0:31/0:32
             ` , "2");
+    })
 
+    it("should parse event listeners", async function () {
         assert.deepEqual(await parseAndSerialize('<div click(e)={abc(123)}>'), `
             S 0:0/0:25
                 TAG 0:0/0:25
@@ -342,8 +403,58 @@ describe('TextMate parser', () => {
                             BRACE_R 0:22/0:23
                             B_END 0:23/0:24
                     T_END 0:24/0:25
+            ` , "1");
+
+        assert.deepEqual(await parseAndSerialize('<div click(a,b)={expr(a,b+2)}>'), `
+            S 0:0/0:30
+                TAG 0:0/0:30
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT 0:4/0:29
+                        A_NAME 0:5/0:10
+                        PARAM 0:10/0:15
+                            P_START 0:10/0:11
+                            P_VAR 0:11/0:12
+                            SEP 0:12/0:13
+                            P_VAR 0:13/0:14
+                            P_END 0:14/0:15
+                        EQ 0:15/0:16
+                        BLOCK 0:16/0:29
+                            B_START 0:16/0:17
+                            F_CALL 0:17/0:21
+                                F_NAME 0:17/0:21
+                            BRACE_R 0:21/0:22
+                            V_RW 0:22/0:23
+                            COMMA 0:23/0:24
+                            V_RW 0:24/0:25
+                            OP 0:25/0:26
+                            NUM 0:26/0:27
+                            BRACE_R 0:27/0:28
+                            B_END 0:28/0:29
+                    T_END 0:29/0:30
+            ` , "2");
+
+        assert.deepEqual(await parseAndSerialize('<div click() = {foo()}>'), `
+            S 0:0/0:23
+                TAG 0:0/0:23
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT 0:4/0:22
+                        A_NAME 0:5/0:10
+                        PARAM 0:10/0:12
+                            P_START 0:10/0:11
+                            P_END 0:11/0:12
+                        EQ 0:12/0:15
+                        BLOCK 0:15/0:22
+                            B_START 0:15/0:16
+                            F_CALL 0:16/0:19
+                                F_NAME 0:16/0:19
+                            BRACE_R 0:19/0:21
+                                CONTENT 0:20/0:21
+                            B_END 0:21/0:22
+                    T_END 0:22/0:23
             ` , "3");
-    })
+    });
 
     it("should parse decorators", async function () {
         assert.deepEqual(await parseAndSerialize('<div @foo @bar>'), `

@@ -1,9 +1,9 @@
 
 ## Unit tests
 
-The grammar can be built and tested through the following command:
+The grammar can be built tested through the following command:
 ```
-    yarn grammar
+    yarn test
 ```
 
 ## Validating the grammar in VS Code

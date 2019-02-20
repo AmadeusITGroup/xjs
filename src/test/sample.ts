@@ -60,7 +60,7 @@ let foo = xx.template(`(state: MyStateType) => {
     />
     <span foo={a*2+123} bar="abc" />
     <section title={::getTitle()} /> // one-time binding expression
-    <foo click(e)={doSomething(e); doSomethingElse(); return false} mouseMove={myFunc} mouseOver={() => {}} />
+    <foo click(e) = {doSomething(e); doSomethingElse(); return false} mouseMove={myFunc} mouseOver={() => {}} />
     <foo @on(click(e)={doSomething(e)})/>
 
     // no values attributes

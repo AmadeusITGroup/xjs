@@ -1,6 +1,6 @@
 
 export interface XjsNode {
-    kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#propertyNode" | "#decoratorNode" | "#textNode" | "#attribute" | "#property" | "#decorator" | "#reference" | "#expression" | "#number" | "#boolean" | "#string";
+    kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#param" | "#property" | "#decorator" | "#reference" | "#expression" | "#number" | "#boolean" | "#string" | "#eventListener";
 }
 
 /**
@@ -41,8 +41,8 @@ export interface XjsJsStatements extends XjsNode {
  */
 export interface XjsJsBlock extends XjsNode {
     kind: "#jsBlock";
-    startCode: string;  // the js/ts code at the beginning of the block - e.g. "if (expr()) {" or "else {"
-    endCode: string;    // the js/ts code at the end of the block - e.g. "}" or "} while(expr())"
+    startCode: string;  // the js/ts code at the beginning of the block - e.g. "if (expr()) {" or " else {"
+    endCode: string;    // end block code. Should match /\n?\s*\{$/ - e.g. "\n      {"
     content: XjsContentNode[] | undefined; // content is undefined if isStart===false
 }
 
@@ -51,9 +51,9 @@ export interface XjsJsBlock extends XjsNode {
  * <! foo="abc" @bar> or <!/>
  */
 export interface XjsFragment extends XjsNode {
-    kind: "#fragment" | "#element" | "#component" | "#propertyNode" | "#decoratorNode";
-    closed: boolean;  // true if ends with />
-    attributes: XjsAttribute[] | undefined;
+    kind: "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode";
+    params: XjsParam[] | undefined;
+    listeners: XjsEvtListener[] | undefined;
     properties: XjsProperty[] | undefined;
     decorators: XjsDecorator[] | undefined;
     references: XjsReference[] | undefined;
@@ -64,8 +64,8 @@ export interface XjsFragment extends XjsNode {
  * Attribute node - e.g.
  * title = {getTitle()} or disabled
  */
-export interface XjsAttribute extends XjsNode {
-    kind: "#attribute";
+export interface XjsParam extends XjsNode {
+    kind: "#param";
     name: string;      // e.g. "title" or "disabled"
     isOrphan: boolean; // true if no value is defined
     value: XjsNumber | XjsBoolean | XjsString | XjsExpression | undefined;
@@ -88,8 +88,9 @@ export interface XjsProperty extends XjsNode {
 export interface XjsDecorator extends XjsNode {
     kind: "#decorator";
     ref: string; // e.g. "disabled" or "b.tooltip"
-    attributes: XjsAttribute[] | undefined;
+    params: XjsParam[] | undefined;
     decorators: XjsDecorator[] | undefined;
+    references: XjsReference[] | undefined;
     hasDefaultPropValue: boolean; // true if value is defined
     isOrphan: boolean;            // true if no value and no attribute nor decorators are defined
     defaultPropValue: XjsNumber | XjsBoolean | XjsString | XjsExpression | undefined;
@@ -131,13 +132,24 @@ export interface XjsString extends XjsNode {
 }
 
 /**
+ * Event listener - e.g.
+ * click(e)={doSomething(); doSomethingElse()}
+ */
+export interface XjsEvtListener extends XjsNode {
+    kind: "#eventListener";
+    name: string;                        // e.g. "click"
+    argumentNames: string[] | undefined; // e.g. [evt]
+    code: string;                        // e.g. "doSomething(evt)"
+}
+
+/**
  * Value node: expression - e.g.
  * {getSomeValue()*3} or {::getSomeValue()*3}
  */
 export interface XjsExpression extends XjsNode {
     kind: "#expression";
     oneTime: boolean;  // true if "::" is used in the expression
-    value: string;     // e.g. "getSomeValue()*3"
+    code: string;      // e.g. "getSomeValue()*3"
 }
 
 /**
@@ -145,17 +157,17 @@ export interface XjsExpression extends XjsNode {
  * <div title="foo"> or <{expr()}>
  */
 export interface XjsElement extends XjsFragment {
-    kind: "#element" | "#propertyNode";
-    hasNameExpression: boolean;  // true if name is an expression
-    name: string;                // "div" or "expr()"
+    kind: "#element" | "#paramNode";
+    nameExpression: XjsExpression | undefined;  // defined if name is an expression (e.g. <{expr()}/>)
+    name: string;                               // "div" or "" if name is an expression
 }
 
 /**
  * Property node - e.g.
  * <.header title="foo"> or <.{propName()}>
  */
-export interface XjsPropertyNode extends XjsElement {
-    kind: "#propertyNode";
+export interface XjsParamNode extends XjsElement {
+    kind: "#paramNode";
 }
 
 /**
@@ -181,8 +193,9 @@ export interface XjsDecoratorNode extends XjsComponent {
  */
 export interface XjsText extends XjsNode {
     kind: "#textNode";
-    attributes: XjsAttribute[] | undefined;
+    params: XjsParam[] | undefined;
     decorators: XjsDecorator[] | undefined;
+    references: XjsReference[] | undefined;
     textFragments: string[];                  // e.g. [" Hello "] or [" Hello "," "]
     expressions: XjsExpression[] | undefined; // first expression comes after first text fragment
 }

@@ -7,7 +7,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Grammar",
+            "name": "Grammar tests",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "args": [
                 "-r",
@@ -16,6 +16,23 @@
                 "999999",
                 "--colors",
                 "${workspaceFolder}/src/test/tmgrammar.spec.ts"
+            ],
+            "console": "integratedTerminal",
+            //"internalConsoleOptions": "neverOpen",
+            "protocol": "inspector"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "All tests",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "args": [
+                "-r",
+                "ts-node/register",
+                "--timeout",
+                "999999",
+                "--colors",
+                "${workspaceFolder}/src/test/*.spec.ts"
             ],
             "console": "integratedTerminal",
             //"internalConsoleOptions": "neverOpen",

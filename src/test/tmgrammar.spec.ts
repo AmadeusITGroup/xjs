@@ -167,15 +167,15 @@ describe('TextMate grammar', () => {
     it("should support text nodes with attributes", async function () {
         let r: IToken[][];
         r = await tokenize('# (abc=123) Hello #');
-        assert.equal(lineInfo(r[0]), "0:1/S/TXT/TXT_START  1:3/S/TXT/BLOCK/B_START  3:6/S/TXT/BLOCK/ATT/A_NAME  6:7/S/TXT/BLOCK/ATT/EQ  7:10/S/TXT/BLOCK/ATT/NUM  10:11/S/TXT/BLOCK/B_END  11:18/S/TXT  18:19/S/TXT/TXT_END", "# (abc=123) Hello #");
+        assert.equal(lineInfo(r[0]), "0:1/S/TXT/TXT_START  1:3/S/TXT/BLOCK_ATT/B_START  3:6/S/TXT/BLOCK_ATT/ATT/A_NAME  6:7/S/TXT/BLOCK_ATT/ATT/EQ  7:10/S/TXT/BLOCK_ATT/ATT/NUM  10:11/S/TXT/BLOCK_ATT/B_END  11:18/S/TXT  18:19/S/TXT/TXT_END", "# (abc=123) Hello #");
     });
 
     it("should support dynamic names for node, property nodes and attribute nodes", async function () {
         let r: IToken[][];
         r = await tokenize('<{getName()} />');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/BLOCK/B_START  2:9/S/TAG/BLOCK/F_CALL/F_NAME  9:10/S/TAG/BLOCK/BRACE_R  10:11/S/TAG/BLOCK/BRACE_R  11:12/S/TAG/BLOCK/B_END  12:13/S/TAG  13:15/S/TAG/T_END", "<{getName()} />");
+        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/BLOCK/B_START  2:9/S/TAG/BLOCK/F_CALL/F_NAME  9:10/S/TAG/BLOCK/BRACE_R  10:11/S/TAG/BLOCK/BRACE_R  11:12/S/TAG/BLOCK/B_END  12:13/S/TAG  13:14/S/TAG/T_CLOSE  14:15/S/TAG/T_END", "<{getName()} />");
 
         r = await tokenize('<.{propRef}/>');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_PREFIX  2:3/S/TAG/BLOCK/B_START  3:10/S/TAG/BLOCK/V_RW  10:11/S/TAG/BLOCK/B_END  11:13/S/TAG/T_END", "<.{propRef}/>");
+        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_PREFIX  2:3/S/TAG/BLOCK/B_START  3:10/S/TAG/BLOCK/V_RW  10:11/S/TAG/BLOCK/B_END  11:12/S/TAG/T_CLOSE  12:13/S/TAG/T_END", "<.{propRef}/>");
     });
 });
