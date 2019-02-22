@@ -429,6 +429,7 @@ describe('XJS parser', () => {
 
     it("should not create unnecessary js blocks", async function () {
         assert.equal(await ast.template(`(a,b) => {
+            // indent initializer
             if (a) {
                 doSomething();
             }
@@ -439,11 +440,12 @@ describe('XJS parser', () => {
         }`), `
             #tplFunction(a, b)
                 #jsStatements
+                    // indent initializer
                     if (a) {
-                    doSomething();
+                        doSomething();
                     }
                     if (b) {
-                    somethingElse();
+                        somethingElse();
                     }
                 #element <div/>
         ` , '1');
@@ -492,6 +494,7 @@ describe('XJS parser', () => {
         ` , '3');
 
         assert.equal(await ast.template(`(a,b) => {
+            // indent initializer
             if (a) {
                 doSomething();
                 if (b) {
@@ -501,25 +504,24 @@ describe('XJS parser', () => {
         }`), `
             #tplFunction(a, b)
                 #jsStatements
+                    // indent initializer
                     if (a) {
-                    doSomething();
-                    if (b) {
-                    somethingElse();
-                    }
+                        doSomething();
+                        if (b) {
+                            somethingElse();
+                        }
                     }
         ` , '4');
     });
 
     it("should properly handle object literals", async function () {
         assert.equal(await ast.template(`(a,b) => {
-            let x = {a:a, b:b};
+            let x =  { a:a, b:b };
             <div/>
         }`), `
             #tplFunction(a, b)
                 #jsStatements
-                    let x = {
-                    a:a, b:b
-                    };
+                    let x =  { a:a, b:b };
                 #element <div/>
         ` , '1');
 
@@ -537,17 +539,18 @@ describe('XJS parser', () => {
                 #jsStatements
                     let x;
                     if (a) {
-                    x = {
-                    a:a, 
-                    b:b
-                    };
-                    a+=b;
+                        x = {
+                            a:a, 
+                            b:b
+                        };
+                        a+=b;
                     }
         ` , '2');
 
         assert.equal(await ast.template(`(a,b) => {
             let x;
             if (a) {
+                // indent initializer
                 x = {
                     a: { a: a}, 
                     b:b
@@ -560,15 +563,13 @@ describe('XJS parser', () => {
                     let x;
                     if (a) {
                         #jsStatements
+                            // indent initializer
                             x = {
-                            a: {
-                            a: a
-                            }, 
-                            b:b
+                                a: { a: a}, 
+                                b:b
                             };
                         #element <div/>
                     }
         ` , '3');
     });
-
 });

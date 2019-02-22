@@ -2,7 +2,9 @@ import { TmAstNode, parse as tmParse } from './tm-parser';
 import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, SCOPES, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, REF, R_DEF, R_COL, R_COL_START, R_COL_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX } from './scopes';
 import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsReference, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock } from './types';
 
-const RX_END_TAG = /^\s*\<\//, RX_OPENING_BLOCK = /^\s*\{/, RX_TRAILING_LINE = /\n\s*$/;
+const RX_END_TAG = /^\s*\<\//,
+    RX_OPENING_BLOCK = /^\s*\{/,
+    RX_TRAILING_LINE = /\n\s*$/;
 
 export async function parse(tpl: string) {
     let nd: TmAstNode, lines: string[] = tpl.split("\n");
@@ -13,7 +15,8 @@ export async function parse(tpl: string) {
     let cursor: number[] = [0],
         tNodes: TmAstNode[] = [nd.children[0]],    // nodes corresponding to each cursor in the cursor stack
         cNode: TmAstNode | null = nd.children[0],  // current node
-        cNodeValidated = true;
+        cNodeValidated = true,
+        context: string[] = []; // error context
 
     let root = xjsTplFunction();
 
@@ -24,7 +27,7 @@ export async function parse(tpl: string) {
 
     function error(msg) {
         // console.log("ERROR: " + msg);
-        throw new Error(msg); // todo
+        throw new Error(msg + "\n" + context.join(" > ")); // todo
     }
 
     // return the text string that corresponds to the current node
@@ -116,7 +119,7 @@ export async function parse(tpl: string) {
     function advance(expectedScope: string, ignoreContent = true) {
         moveNext(ignoreContent);
         if (!cNode) {
-            error("Unexpected token (end of template)");
+            error("Unexpected token (end of template) / expected token: " + tokenScope(expectedScope));
         } else if (cNode.scopeName !== expectedScope) {
             error("Unexpected token: " + tokenScope() + " instead of " + tokenScope(expectedScope));
         }
@@ -128,7 +131,7 @@ export async function parse(tpl: string) {
     function lookup(expectedScope: string, ignoreContent = true) {
         moveNext(ignoreContent);
         if (!cNode) {
-            error("Unexpected token (end of template)");
+            error("Unexpected token (end of template) / looked-up token: " + tokenScope(expectedScope));
             return false; // unreachable
         } else {
             return cNode.scopeName === expectedScope
@@ -150,6 +153,7 @@ export async function parse(tpl: string) {
             arguments: undefined,
             content: undefined
         };
+        context.push("template-function");
         if (lookup(P_VAR)) {
             // we have one single param - e.g. a => {}
             advance(P_VAR);
@@ -174,6 +178,7 @@ export async function parse(tpl: string) {
         }
         advance(ARROW); // =>
         nd.content = xjsContentBlock();
+        context.pop();
         return nd;
     }
 
@@ -195,16 +200,24 @@ export async function parse(tpl: string) {
 
     // block containing xjs nodes: e.g. { <div/> }
     function xjsContentBlock(): XjsContentNode[] | undefined {
+        context.push("content-block");
         advance(BLOCK);
         advance(B_DEF); // { -> block start
 
         let nodes = contentNodes(() => lookup(B_DEF));
+        for (let nd of nodes) {
+            // trim cannot be done inside scanJsCode to preserver white spaces when necessary
+            if (nd.kind === "#jsStatements") {
+                nd.code = nd.code.trim();
+            }
+        }
 
         advance(B_DEF); // } -> block end
+        context.pop();
         return (nodes && nodes.length) ? nodes : undefined;
     }
 
-    function contentNodes(endFunction: () => boolean) {
+    function contentNodes(endFunction: () => boolean, startLineIdx = 0) {
         let nodes: XjsContentNode[] = [];
         while (!endFunction()) {
             if (lookup(TXT)) {
@@ -212,7 +225,7 @@ export async function parse(tpl: string) {
             } else if (lookupFragment()) {
                 nodes.push(xjsFragment());
             } else {
-                let jsc = scanJsCode();
+                let jsc = scanJsCode(startLineIdx);
                 if ((jsc.kind === "#jsStatements" && (jsc as XjsJsStatements).code === "")
                     || (jsc.kind === "#jsBlock" && (jsc as XjsJsBlock).startCode === "")) {
                     break;
@@ -220,15 +233,27 @@ export async function parse(tpl: string) {
                 nodes.push(jsc);
             }
         }
+        if (nodes.length > 1) {
+            // trim js statements
+            for (let nd of nodes) {
+                if (nd.kind === "#jsStatements") {
+                    nd.code = nd.code.trim();
+                }
+            }
+        }
         return nodes;
     }
 
-    function scanJsCode(): XjsJsStatements | XjsJsBlock {
-        let code: string[] = [], stop = false, lineIdx = cNode ? cNode.startLineIdx : 0, isJsBlock = false, nodes: XjsContentNode[] | undefined = undefined;
+    function scanJsCode(startLineIdx = 0): XjsJsStatements | XjsJsBlock {
+        context.push("js-code");
+        let code: string[] = [], stop = false, lineIdx = startLineIdx, isJsBlock = false, nodes: XjsContentNode[] | undefined = undefined;
 
+        if (startLineIdx === 0 && cNode) {
+            lineIdx = cNode.startLineIdx;
+        }
         function captureCode() {
             cNodeValidated = true;
-            let idx = cNode ? cNode.startLineIdx : 0;
+            let idx = cNode ? cNode.startLineIdx : startLineIdx;
             if (lineIdx !== idx) {
                 lineIdx = idx;
                 code.push("\n"); // keep line formatting
@@ -236,26 +261,34 @@ export async function parse(tpl: string) {
             code.push(currentText(true, false));
         }
 
+        if (lookup(B_DEF, false)) {
+            stop = true;
+        } else {
+            captureCode(); // preserve white spaces
+        }
         while (!stop) {
             if (lookup(TAG, false) || lookup(TXT, false)) {
                 stop = true;
             } else if (lookup(B_DEF, false)) {
-                let isNewBlock = currentText().match(RX_OPENING_BLOCK);
+                let ct = currentText(false, false);
+                let isNewBlock = ct.match(RX_OPENING_BLOCK);
                 stop = true;
                 if (isNewBlock) {
                     advance(B_DEF); // {
                     captureCode();
+                    if (lookup(CONTENT, false)) {
+                        // capture the next white spaces
+                        captureCode();
+                    }
 
                     // parse content
-                    nodes = contentNodes(() => lookup(B_DEF));
+                    nodes = contentNodes(() => lookup(B_DEF, false), lineIdx);
 
                     if (nodes.length === 1 && nodes[0].kind === "#jsStatements") {
                         // this block can be considered as code
-                        code.push("\n");
                         code.push((nodes[0] as XjsJsStatements).code);
                         lineIdx = cNode ? cNode.startLineIdx : 0;
                         advance(B_DEF);
-                        code.push("\n");
                         captureCode();
                         stop = false;
                     } else {
@@ -269,6 +302,7 @@ export async function parse(tpl: string) {
                 captureCode();
             }
         }
+        context.pop();
         let jss: XjsJsStatements = {
             kind: "#jsStatements",
             code: code.join("")
@@ -276,18 +310,18 @@ export async function parse(tpl: string) {
         if (isJsBlock) {
             return {
                 kind: "#jsBlock",
-                startCode: jss.code,
+                startCode: jss.code.replace(RX_TRAILING_LINE, ""),
                 endCode: "}",
                 content: nodes
             } as XjsJsBlock;
         } else {
-            jss.code = jss.code.replace(RX_TRAILING_LINE, "");
             return jss;
         }
     }
 
     // text node # Hello {expr()} #
     function xjsText(): XjsText {
+        context.push("text-node");
         advance(TXT);
         advance(TXT_START); // # -> beginning of text node
         let nd: XjsText = {
@@ -322,11 +356,13 @@ export async function parse(tpl: string) {
         let s = buffer.join("");
         if (s.length) nd.textFragments.push(s);
         advance(TXT_END); // # -> end of text node
+        context.pop();
         return nd;
     }
 
     // expression in a block (e.g. attributes or text nodes)
     function xjsExpression(): XjsExpression {
+        context.push("expression-block");
         advance(BLOCK);
         advance(B_START);
         let nd: XjsExpression = {
@@ -345,12 +381,14 @@ export async function parse(tpl: string) {
         }
         nd.code = buffer.join("");
         advance(B_END);
+        context.pop()
         return nd;
     }
 
     // parse a fragment or one of its sub-type
     // "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode";
     function xjsFragment(): XjsFragment {
+        context.push("node");
         let nd: XjsFragment = {
             kind: "#fragment",
             params: undefined,
@@ -442,10 +480,12 @@ export async function parse(tpl: string) {
         } else {
             error(`Invalid token in ${nd.kind} : ${cNode ? cNode.scopeName : "EOT"}`);
         }
+        context.pop();
         return nd;
     }
 
     function params(f: XjsFragment | XjsDecorator | XjsText, acceptProperties = true, acceptListeners = true) {
+        context.push("params");
         try {
             let stop = false;
             while (!stop) {
@@ -468,11 +508,13 @@ export async function parse(tpl: string) {
         } catch (e) {
             error(`Invalid attribute\n${e.message || e}`);
         }
+        context.pop();
     }
 
     function comment(f: XjsFragment | XjsDecorator | XjsText) {
         let isMultiLine = lookup(COMMENT);
         if (lookup(COMMENT1) || isMultiLine) {
+            context.push("comment");
             cNodeValidated = true; // validate current token
             advance(C_DEF); // /* or //
             while (lookup(CONTENT) || lookup(C_WS)) {
@@ -481,6 +523,7 @@ export async function parse(tpl: string) {
             if (isMultiLine) {
                 advance(C_DEF); // */
             }
+            context.pop();
             return true;
         }
         return false;

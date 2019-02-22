@@ -83,9 +83,20 @@ function jsBlock(n: XjsJsBlock, lines: string[], prefix: string) {
 }
 
 function jsCode(code: string, lines: string[], prefix: string) {
-    let codeLines = code.split("\n"), s = "";
+    let codeLines = code.split("\n"), s = "", idx = 0, indent = 0, ws = "";
     for (let ln of codeLines) {
-        lines.push(ln.replace(/^\s*/, prefix));
+        // first line will always have 0 indent as spaces are eaten by the parser
+
+        if (idx > 0) {
+            ws = ln.match(/^\s*/g)![0];
+            if (idx === 1) {
+                indent = ws.length;
+            } else if (ws.length < indent) {
+                indent = ws.length;
+            }
+        }
+        lines.push(prefix + ln.slice(indent));
+        idx++;
     }
 }
 
