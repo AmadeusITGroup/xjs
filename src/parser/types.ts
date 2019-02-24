@@ -3,6 +3,13 @@ export interface XjsNode {
     kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#param" | "#property" | "#decorator" | "#reference" | "#expression" | "#number" | "#boolean" | "#string" | "#eventListener";
 }
 
+export interface XjsError extends Error {
+    kind: "#xjsError";
+    message: string;
+    context: string;
+    lineNumber: number;
+}
+
 /**
  * Template function (arguments and content) - e.g. 
  * let f = xx.template(`(msg:string) => {

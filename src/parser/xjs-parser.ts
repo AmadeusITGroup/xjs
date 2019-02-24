@@ -1,6 +1,6 @@
 import { TmAstNode, parse as tmParse } from './tm-parser';
 import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, SCOPES, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, REF, R_DEF, R_COL, R_COL_START, R_COL_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX } from './scopes';
-import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsReference, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock } from './types';
+import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsReference, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock, XjsError } from './types';
 
 const RX_END_TAG = /^\s*\<\//,
     RX_OPENING_BLOCK = /^\s*\{/,
@@ -12,22 +12,27 @@ export async function parse(tpl: string) {
 
     // position of current cursor
     // [0,1] corresponds to root.children[0].children[1]
-    let cursor: number[] = [0],
-        tNodes: TmAstNode[] = [nd.children[0]],    // nodes corresponding to each cursor in the cursor stack
+    let cursor: number[] = [0, 0],
+        tNodes: TmAstNode[] = [nd, nd.children[0]],    // nodes corresponding to each cursor in the cursor stack
         cNode: TmAstNode | null = nd.children[0],  // current node
         cNodeValidated = true,
+        lastLine = nd.endLineIdx,
         context: string[] = []; // error context
 
     let root = xjsTplFunction();
 
-    if (!root) {
-        // todo: errors
-    }
     return root;
 
-    function error(msg) {
+    function error(msg: string) {
+        let ln = cNode ? cNode.startLineIdx : lastLine;
+
         // console.log("ERROR: " + msg);
-        throw new Error(msg + "\n" + context.join(" > ")); // todo
+        throw {
+            kind: "#xjsError",
+            message: msg,
+            context: context[context.length - 1],
+            lineNumber: ln + 1
+        } as XjsError;
     }
 
     // return the text string that corresponds to the current node
@@ -98,30 +103,26 @@ export async function parse(tpl: string) {
         }
     }
 
-    // move cursor to next position and ignore content
-    function moveNext(ignoreContent = true) {
+    // move cursor to next position and ignore white-space content
+    function moveNext(ignoreWsContent = true) {
         moveCursor();
-        if (ignoreContent) {
+        if (ignoreWsContent) {
             while (cNode && cNode.scopeName === CONTENT) {
+                // let ct = currentText(false);
+                // console.log("ct", "'" + ct + "'", cNode.scopeName, cNode.startLineIdx);
                 cNodeValidated = true;
                 moveCursor();
             }
         }
     }
 
-    // return the friendly name of the token passed as argument
-    function tokenScope(scopeName?: string) {
-        scopeName = scopeName || (cNode ? cNode.scopeName : "");
-        return SCOPES[scopeName] || scopeName;
-    }
-
     // move cursor and check expected scope - throw error if not found
-    function advance(expectedScope: string, ignoreContent = true) {
+    function advance(expectedScope: string, ignoreContent = true, errMsg?: string) {
         moveNext(ignoreContent);
         if (!cNode) {
-            error("Unexpected token (end of template) / expected token: " + tokenScope(expectedScope));
+            error(errMsg || "Unexpected end of template");
         } else if (cNode.scopeName !== expectedScope) {
-            error("Unexpected token: " + tokenScope() + " instead of " + tokenScope(expectedScope));
+            error(errMsg || "Unexpected token '" + currentText() + "'");
         }
         cNodeValidated = true;
     }
@@ -131,7 +132,7 @@ export async function parse(tpl: string) {
     function lookup(expectedScope: string, ignoreContent = true) {
         moveNext(ignoreContent);
         if (!cNode) {
-            error("Unexpected token (end of template) / looked-up token: " + tokenScope(expectedScope));
+            error("Unexpected end of template");
             return false; // unreachable
         } else {
             return cNode.scopeName === expectedScope
@@ -146,22 +147,27 @@ export async function parse(tpl: string) {
 
     // template function
     function xjsTplFunction() {
-        if (!cNode || cNode.scopeName !== ARROW_FUNCTION) return null;
-
         let nd: XjsTplFunction = {
             kind: "#tplFunction",
             arguments: undefined,
             content: undefined
         };
-        context.push("template-function");
-        if (lookup(P_VAR)) {
+        context.push("template function");
+        if (!cNode) {
+            error("Empty template");
+        }
+        if (cNode!.scopeName !== ARROW_FUNCTION) {
+            error("Invalid arrow function");
+        }
+        context.push("template params");
+        if (lookup(P_VAR, false)) {
             // we have one single param - e.g. a => {}
             advance(P_VAR);
             nd.arguments = [{
                 name: currentText(),
                 typeRef: undefined
             }];
-        } else {
+        } else if (lookup(PARAM)) {
             // parens mode - e.g. () => {}
             advance(PARAM);   // parameter block
             advance(P_START); // (
@@ -175,9 +181,12 @@ export async function parse(tpl: string) {
                 }
             }
             advance(P_END); // )
+        } else {
+            error("Invalid template param")
         }
+        context.pop();
         advance(ARROW); // =>
-        nd.content = xjsContentBlock();
+        nd.content = xjsContentBlock("template content");
         context.pop();
         return nd;
     }
@@ -199,9 +208,9 @@ export async function parse(tpl: string) {
     }
 
     // block containing xjs nodes: e.g. { <div/> }
-    function xjsContentBlock(): XjsContentNode[] | undefined {
-        context.push("content-block");
-        advance(BLOCK);
+    function xjsContentBlock(ctxt = "content-block"): XjsContentNode[] | undefined {
+        context.push(ctxt);
+        advance(BLOCK, true, "Invalid JS Block");
         advance(B_DEF); // { -> block start
 
         let nodes = contentNodes(() => lookup(B_DEF));
