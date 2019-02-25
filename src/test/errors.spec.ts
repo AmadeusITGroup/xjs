@@ -11,14 +11,15 @@ describe('Parsing errors', () => {
                 await parse(tpl);
             } catch (err) {
                 if (err.kind === "#xjsError") {
-                    let e = err as XjsError;
-                    return `Invalid ${e.context} - ${e.message} at line ${e.lineNumber}`;
+                    return err.message;
                 }
                 return "Non-xjs error: " + err.message;
             }
             return 'ok';
-        }
+        },
+        template2: async function (s: string) { return '' }
     }
+    err.template2 = err.template; // to avoid highlighting for wrong templates
 
     it("should be raised for invalid template functions", async function () {
         assert.equal(
@@ -68,14 +69,215 @@ describe('Parsing errors', () => {
             "8");
     });
 
-    xit("should be raised for invalid elements", async function () {
+    it("should be raised for invalid node names", async function () {
         assert.equal(
             await err.template(`() => {
                 <d.d/>
             }`),
-            "Invalid template element - xx at line 2",
+            "Invalid element (d.d) - Invalid name 'd.d' at line 2",
             "1");
+
+        assert.equal(
+            await err.template(`() => {
+                <$d.1d/>
+            }`),
+            "Invalid component (d.1d) - Invalid name 'd.1d' at line 2",
+            "2");
+
+        assert.equal(
+            await err.template(`() => {
+                <.d1.d/>
+            }`),
+            "Invalid param node (d1.d) - Invalid name 'd1.d' at line 2",
+            "3");
+
+        assert.equal(
+            await err.template(`() => {
+                <.@w1.123/>
+            }`),
+            "Invalid decorator node (w1.123) - Invalid name 'w1.123' at line 2",
+            "4");
+
+        assert.equal(
+            await err.template(`() => {
+                <hello-world/>
+            }`),
+            "ok",
+            "5");
     });
 
+    it("should be raised for invalid node names", async function () {
+        assert.equal(
+            await err.template2(`() => {
+                <{foo(/> <div>
+            }`),
+            "Invalid expression (foo(/> <) - Unexpected end of template at line 3",
+            "1");
 
+        assert.equal(
+            await err.template2(`() => {
+                <div title = {expr( />
+            }`),
+            "Invalid expression (expr( />) - Unexpected end of template at line 3",
+            "2");
+
+        assert.equal(
+            await err.template(`() => {
+                <{foo()} bar=123/>
+            }`),
+            "ok",
+            "3");
+    });
+
+    it("should be raised for text nodes", async function () {
+        assert.equal(
+            await err.template2(`() => {
+                # Hello {exp #
+                <div>
+            }`),
+            "Invalid text node - Unexpected end of template at line 4",
+            "1");
+
+        assert.equal(
+            await err.template(`() => {
+                # (1att=234) Hello {exp} #
+            }`),
+            "Invalid param - Invalid name '1att' at line 2",
+            "2");
+
+        assert.equal(
+            await err.template2(`() => {
+                # Hello { expr Some other text #
+            }`),
+            "Invalid text node - Unexpected end of template at line 3",
+            "3");
+    });
+
+    it("should be raised for invalid params", async function () {
+        assert.equal(
+            await err.template(`() => {
+                <div adf.w=123/>
+            }`),
+            "Invalid element (div) - Invalid param content 'adf.w=123' at line 2",
+            "1");
+
+        assert.equal(
+            await err.template(`() => {
+                <div adf=w1/>
+            }`),
+            "Invalid param - Invalid param value 'w1' at line 2",
+            "2");
+
+        assert.equal(
+            await err.template2(`() => {
+                <div adf=123 /* />
+            }`),
+            "Invalid comment - Unexpected end of template at line 3",
+            "3");
+
+        assert.equal(
+            await err.template2(`() => {
+                <div adf=123 
+            }`),
+            "Invalid element (div) - Invalid param content '}' at line 3",
+            "4");
+    });
+
+    it("should be raised for invalid decorator params", async function () {
+        assert.equal(
+            await err.template(`() => {
+                <div @1deprecated/>
+            }`),
+            "Invalid decorator - Invalid name '1deprecated' at line 2",
+            "1");
+
+        assert.equal(
+            await err.template(`() => {
+                <div @foo(1bar=1)/>
+            }`),
+            "Invalid param - Invalid name '1bar' at line 2",
+            "2");
+    });
+
+    it("should be raised for invalid references", async function () {
+        assert.equal(
+            await err.template(`() => {
+                <div #d.d/>
+            }`),
+            "Invalid reference - Invalid content '.d' at line 2",
+            "1");
+
+        assert.equal(
+            await err.template(`() => {
+                <div #d[expr()]/>
+            }`),
+            "Invalid reference - Invalid content '[' at line 2",
+            "2");
+    });
+
+    it("should be raised for invalid tag closing", async function () {
+        assert.equal(
+            await err.template(`() => {
+                <div>
+                    # Hello #
+                </span>
+            }`),
+            "Invalid end of element (div) - Name mismatch: 'span' instead of 'div' at line 4",
+            "1");
+
+        assert.equal(
+            await err.template(`() => {
+                <div>
+                    # Hello #
+                </>
+            }`),
+            "ok",
+            "2");
+
+        assert.equal(
+            await err.template(`() => {
+                <div>
+                    <div>
+                        # Hello #
+                    </span>
+                </div>
+            }`),
+            "Invalid end of element (div) - Name mismatch: 'span' instead of 'div' at line 5",
+            "3");
+
+        assert.equal(
+            await err.template(`() => {
+                <! foo="bar">
+                    <span> # Hello # </>
+            }`),
+            "Invalid end of fragment - Unexpected token '}' at line 4",
+            "4");
+
+        assert.equal(
+            await err.template(`() => {
+                <{expr()}>
+                    <span> # Hello # </>
+                </{expr()}>
+            }`),
+            "Invalid end of element ({expr()}) - Unexpected token '{expr()}' at line 4",
+            "5");
+
+        assert.equal(
+            await err.template(`() => {
+                if (test()) {
+                    <div>
+                    // comment here
+                }
+                </div>
+            }`),
+            "Invalid end of element (div) - Unexpected token '}' at line 5",
+            "6");
+
+        assert.equal(
+            await err.template(`() => {
+                </div>
+            }`),
+            "Invalid tag - Unexpected token '/' at line 2",
+            "8");
+    });
 });

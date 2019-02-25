@@ -4,7 +4,11 @@ import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression,
 
 const RX_END_TAG = /^\s*\<\//,
     RX_OPENING_BLOCK = /^\s*\{/,
-    RX_TRAILING_LINE = /\n\s*$/;
+    RX_TRAILING_LINE = /\n\s*$/,
+    RX_SIMPLE_JS_IDENTIFIER = /^[\$_[a-zA-Z]\w*$/,
+    RX_FRAGMENT_IDENTIFIER = /^\!$/,
+    RX_JS_REF_IDENTIFIER = /^([\$_[a-zA-Z]\w*)(\.[\$_[a-zA-Z]\w*)*$/,
+    RX_ELT_NAME = /^[\w\$\_][\w\_\-]*$/
 
 export async function parse(tpl: string) {
     let nd: TmAstNode, lines: string[] = tpl.split("\n");
@@ -17,22 +21,28 @@ export async function parse(tpl: string) {
         cNode: TmAstNode | null = nd.children[0],  // current node
         cNodeValidated = true,
         lastLine = nd.endLineIdx,
-        context: string[] = []; // error context
+        context: string[] = [];   // error context - provides better error understanding
 
     let root = xjsTplFunction();
 
     return root;
 
     function error(msg: string) {
-        let ln = cNode ? cNode.startLineIdx : lastLine;
+        let ln = cNode ? cNode.startLineIdx : lastLine, c = context[context.length - 1];
 
-        // console.log("ERROR: " + msg);
         throw {
             kind: "#xjsError",
-            message: msg,
-            context: context[context.length - 1],
+            message: `Invalid ${c} - ${msg} at line ${ln + 1}`,
+            context: c,
+            description: msg,
             lineNumber: ln + 1
         } as XjsError;
+    }
+
+    function checkName(nm, rx) {
+        if (!nm.match(rx)) {
+            error("Invalid name '" + nm + "'");
+        }
     }
 
     // return the text string that corresponds to the current node
@@ -107,9 +117,7 @@ export async function parse(tpl: string) {
     function moveNext(ignoreWsContent = true) {
         moveCursor();
         if (ignoreWsContent) {
-            while (cNode && cNode.scopeName === CONTENT) {
-                // let ct = currentText(false);
-                // console.log("ct", "'" + ct + "'", cNode.scopeName, cNode.startLineIdx);
+            while (cNode && cNode.scopeName === CONTENT && currentText() === "") {
                 cNodeValidated = true;
                 moveCursor();
             }
@@ -330,7 +338,7 @@ export async function parse(tpl: string) {
 
     // text node # Hello {expr()} #
     function xjsText(): XjsText {
-        context.push("text-node");
+        context.push("text node");
         advance(TXT);
         advance(TXT_START); // # -> beginning of text node
         let nd: XjsText = {
@@ -345,10 +353,12 @@ export async function parse(tpl: string) {
         let buffer: string[] = [];
         while (!lookup(TXT_END, false)) {
             if (lookup(BLOCK_ATT, false)) {
+                context.push("text param");
                 advance(BLOCK_ATT);
                 advance(B_START); // (
                 params(nd, false, false);
                 advance(B_END); // )
+                context.pop();
             } else if (lookup(BLOCK, false)) {
                 // expression block
                 nd.textFragments.push(buffer.join(""));
@@ -371,7 +381,7 @@ export async function parse(tpl: string) {
 
     // expression in a block (e.g. attributes or text nodes)
     function xjsExpression(): XjsExpression {
-        context.push("expression-block");
+        context.push("expression");
         advance(BLOCK);
         advance(B_START);
         let nd: XjsExpression = {
@@ -383,9 +393,16 @@ export async function parse(tpl: string) {
             nd.oneTime = true;
             advance(EXP_MOD);
         }
-        let buffer: string[] = [];
+        let buffer: string[] = [], nm = "";
         while (!lookup(B_END, false)) {
             buffer.push(currentText(true, false));
+            if (nm.length < 8) {
+                nm = buffer.join("").trim();
+                if (nm.length > 8) {
+                    nm = nm.slice(0, 8);
+                }
+                context[context.length - 1] = `expression (${nm})`;
+            }
             cNodeValidated = true;
         }
         nd.code = buffer.join("");
@@ -397,7 +414,8 @@ export async function parse(tpl: string) {
     // parse a fragment or one of its sub-type
     // "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode";
     function xjsFragment(): XjsFragment {
-        context.push("node");
+        context.push("tag");
+        let cPos = context.length - 1;
         let nd: XjsFragment = {
             kind: "#fragment",
             params: undefined,
@@ -415,6 +433,7 @@ export async function parse(tpl: string) {
         if (lookup(T_PREFIX)) {
             // paramNode with dynamic name - e.g. <.{expr()}/>
             advance(T_PREFIX);
+            context[cPos] = "param node";
             nd.kind = "#paramNode";
             nd["name"] = "";
         }
@@ -422,30 +441,49 @@ export async function parse(tpl: string) {
             // paramNode or element with dynamic name e.g. <{expr()}/>
             let exp = nd["nameExpression"] = xjsExpression();
             nd["name"] = "";
+            nm = `{${exp.oneTime ? '::' : ''}${exp.code}}`;
             if (nd.kind !== "#paramNode") {
+                context[cPos] = `element (${nm})`;
                 nd.kind = "#element";
+            } else {
+                context[cPos] = `param node (${nm})`;
             }
-            nm = "{" + exp.code + "}";
         } else {
+            let rx = RX_SIMPLE_JS_IDENTIFIER, nm2: string;
             advance(T_NAME, false);
-            nm = currentText();
+            nm2 = nm = currentText();
             if (nm.charAt(0) === ".") {
                 if (nm.charAt(1) === "@") {
+                    nm2 = nm.slice(2);
+                    context[cPos] = `decorator node (${nm2})`;
+                    rx = RX_JS_REF_IDENTIFIER;
                     nd.kind = "#decoratorNode";
-                    nd["ref"] = nm.slice(2);
+                    nd["ref"] = nm2;
                 } else {
+                    nm2 = nm.slice(1);
+                    context[cPos] = `param node (${nm2})`;
+                    rx = RX_SIMPLE_JS_IDENTIFIER;
                     nd.kind = "#paramNode";
-                    nd["name"] = nm.slice(1);
+                    nd["name"] = nm2;
                     nd["nameExpression"] = undefined;
                 }
             } else if (nm.charAt(0) === "$") {
+                nm2 = nm.slice(1);
+                context[cPos] = `component (${nm2})`;
+                rx = RX_JS_REF_IDENTIFIER;
                 nd.kind = "#component";
-                nd["ref"] = nm.slice(1);
+                nd["ref"] = nm2;
             } else if (nm !== "!") {
+                context[cPos] = `element (${nm})`;
+                rx = RX_ELT_NAME;
                 nd.kind = "#element"
                 nd["name"] = nm;
                 nd["nameExpression"] = undefined;
+            } else {
+                context[cPos] = "fragment";
+                rx = RX_FRAGMENT_IDENTIFIER;
             }
+            checkName(nm2, rx);
         }
 
         // extract params
@@ -459,63 +497,56 @@ export async function parse(tpl: string) {
             // look for child nodes
             advance(T_END)
 
-            try {
-                nd.content = contentNodes(() => {
-                    if (lookup(TAG)) {
-                        if (currentText(false).match(RX_END_TAG)) return true;
-                    }
-                    return false;
-                });
-            } catch (e) {
-                // todo - improve!
-                error(`Closing tag not found for ${nm} (${e.message || e})`);
-            }
-
-            try {
-                // end fragment / element - e.g. </div> or </> or </!>
-                advance(TAG);
-                advance(T_START);
-                advance(T_CLOSE);
-                if (lookup(T_NAME)) {
-                    advance(T_NAME);
-                    let nm2 = currentText();
-                    if (nm !== nm2) error(`Start/End tag mismatch: ${nm}/${nm2}`);
+            nd.content = contentNodes(() => {
+                if (lookup(TAG)) {
+                    if (currentText(false).match(RX_END_TAG)) return true;
                 }
-                advance(T_END);
-            } catch (e) {
-                // todo - improve!
-                error(`Invalid closing tag for ${nm} (${e.message || e})`);
+                return false;
+            });
+
+            // end fragment / element - e.g. </div> or </> or </!>
+            context.push("end of " + context[cPos]);
+            advance(TAG);
+            advance(T_START);
+            advance(T_CLOSE);
+            if (lookup(T_NAME)) {
+                advance(T_NAME);
+                let nm2 = currentText();
+                if (nm !== nm2) error(`Name mismatch: '${nm2}' instead of '${nm}'`);
             }
+            advance(T_END);
+            context.pop()
         } else {
-            error(`Invalid token in ${nd.kind} : ${cNode ? cNode.scopeName : "EOT"}`);
+            if (cNode) {
+                error(`Invalid param content '${currentText()}'`);
+            } else {
+                error('Unexpected end of template');
+            }
         }
         context.pop();
         return nd;
     }
 
     function params(f: XjsFragment | XjsDecorator | XjsText, acceptProperties = true, acceptListeners = true) {
-        context.push("params");
-        try {
-            let stop = false;
-            while (!stop) {
-                if (!comment(f)) {
-                    if (!attParam(f, acceptListeners)) {
-                        if (!refParam(f)) {
-                            if (!decoParam(f)) {
-                                if (acceptProperties) {
-                                    if (!propParam(f as XjsFragment)) {
-                                        stop = true;
-                                    }
-                                } else {
+        context.push("param");
+
+        let stop = false;
+        while (!stop) {
+            if (!comment(f)) {
+                if (!attParam(f, acceptListeners)) {
+                    if (!refParam(f)) {
+                        if (!decoParam(f)) {
+                            if (acceptProperties) {
+                                if (!propParam(f as XjsFragment)) {
                                     stop = true;
                                 }
+                            } else {
+                                stop = true;
                             }
                         }
                     }
                 }
             }
-        } catch (e) {
-            error(`Invalid attribute\n${e.message || e}`);
         }
         context.pop();
     }
@@ -591,6 +622,9 @@ export async function parse(tpl: string) {
                     nd!.value = paramValue();
                 }
             }
+            if (nd) {
+                checkName(nd.name, RX_SIMPLE_JS_IDENTIFIER);
+            }
             if (el) {
                 let ff = f as XjsFragment;
                 if (!ff.listeners) ff.listeners = [];
@@ -606,10 +640,12 @@ export async function parse(tpl: string) {
 
     function propParam(f: XjsFragment) {
         if (lookup(PR)) {
+            context.push("property");
             advance(PR);
             advance(PR_START); // [
             advance(A_NAME);
             let nm = currentText();
+            checkName(nm, RX_SIMPLE_JS_IDENTIFIER);
             advance(PR_END);   // ]
             advance(EQ);       // =
             let v = paramValue();
@@ -622,6 +658,7 @@ export async function parse(tpl: string) {
                 if (!f.properties) f.properties = [];
                 f.properties.push(nd);
             }
+            context.pop();
             return true;
         }
         return false;
@@ -629,6 +666,7 @@ export async function parse(tpl: string) {
 
     function refParam(f: XjsFragment | XjsDecorator | XjsText) {
         if (lookup(REF)) {
+            context.push("reference");
             // e.g. #foo or #bar[] or #baz[{expr()}]
             let nd: XjsReference = {
                 kind: "#reference",
@@ -663,9 +701,12 @@ export async function parse(tpl: string) {
                     oneTime: false,
                     code: buffer.join("")
                 }
+            } else if (lookup(CONTENT, false) && currentText() !== '') {
+                error("Invalid content '" + currentText() + "'");
             }
             if (!f.references) f.references = [];
             f.references.push(nd);
+            context.pop();
             return true;
         }
         return false;
@@ -673,6 +714,7 @@ export async function parse(tpl: string) {
 
     function decoParam(f: XjsFragment | XjsDecorator | XjsText) {
         if (lookup(DECO1) || lookup(DECO)) {
+            context.push("decorator");
             let nd: XjsDecorator = {
                 kind: "#decorator",
                 ref: "",
@@ -690,6 +732,7 @@ export async function parse(tpl: string) {
                 advance(D_DEF);  // @
                 advance(A_NAME); // decorator ref
                 nd.ref = currentText();
+                checkName(nd.ref, RX_JS_REF_IDENTIFIER);
             } else {
                 // normal decorator e.g. @foo=123 or @foo(p1=123 p2={expr()})
                 advance(DECO);
@@ -705,9 +748,10 @@ export async function parse(tpl: string) {
                     params(nd, false);
                     advance(D_END);
                 } else {
-                    error("Invalid decorator token: = or ( expected instead");
+                    error("Invalid decorator token: '=' or '(' expected");
                 }
             }
+            context.pop();
             if (!f.decorators) f.decorators = [];
             f.decorators.push(nd);
             return true;
@@ -747,6 +791,8 @@ export async function parse(tpl: string) {
             return nd;
         } else if (lookup(BLOCK)) {
             return xjsExpression();
+        } else {
+            error("Invalid param value '" + currentText() + "'");
         }
         return undefined;
     }
