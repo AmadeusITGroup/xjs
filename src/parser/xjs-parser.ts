@@ -1,5 +1,5 @@
 import { TmAstNode, parse as tmParse } from './tm-parser';
-import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, SCOPES, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, REF, R_DEF, R_COL, R_COL_START, R_COL_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX } from './scopes';
+import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, REF, R_DEF, R_COL, R_COL_START, R_COL_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX } from './scopes';
 import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsReference, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock, XjsError } from './types';
 
 const RX_END_TAG = /^\s*\<\//,

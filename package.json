@@ -30,7 +30,7 @@
     },
     "scripts": {
         "build": "rm -rf dist/ && tsc",
-        "generate": "yarn run build && node dist/generator/ts-grammar",
+        "generate": "yarn run build && node dist/grammar/ts-grammar",
         "test": "yarn run generate && yarn run mocha -r ts-node/register src/**/*.spec.ts --reporter dot"
     },
     "devDependencies": {
