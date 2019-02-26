@@ -192,7 +192,7 @@ function fragment(n: XjsFragment, lines: string[], prefix: string) {
             nm = n["name"];
         }
     } else if (n.kind === "#decoratorNode") {
-        nm = ".@" + n["ref"];
+        nm = "@" + n["ref"];
     }
     if (n.kind === "#paramNode") {
         nm = "." + nm;

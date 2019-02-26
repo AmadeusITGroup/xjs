@@ -38,8 +38,8 @@ describe('TextMate grammar', () => {
         r = await tokenize('<.item/>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:6/S/TAG/T_NAME  6:7/S/TAG/T_CLOSE  7:8/S/TAG/T_END", "<.item/>");
 
-        r = await tokenize('<.@abc.def>');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:10/S/TAG/T_NAME  10:11/S/TAG/T_END", "<.@abc.def>");
+        r = await tokenize('<@abc.def>');
+        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:9/S/TAG/T_NAME  9:10/S/TAG/T_END", "<@abc.def>");
 
         r = await tokenize('<!>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_NAME  2:3/S/TAG/T_END", "<!>");
@@ -60,8 +60,8 @@ describe('TextMate grammar', () => {
         r = await tokenize('</.propName>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_CLOSE  2:11/S/TAG/T_NAME  11:12/S/TAG/T_END", "</div>");
 
-        r = await tokenize('</.@b.tooltip>');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_CLOSE  2:13/S/TAG/T_NAME  13:14/S/TAG/T_END", "</div>");
+        r = await tokenize('</@b.tooltip>');
+        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_CLOSE  2:12/S/TAG/T_NAME  12:13/S/TAG/T_END", "</@b.tooltip>");
     });
 
     it("should support xml tag end", async function () {

@@ -426,7 +426,6 @@ export async function parse(tpl: string) {
             content: undefined
         }
         let nm = "";
-
         advance(TAG);
         advance(T_START, false);
 
@@ -449,29 +448,28 @@ export async function parse(tpl: string) {
                 context[cPos] = `param node (${nm})`;
             }
         } else {
-            let rx = RX_SIMPLE_JS_IDENTIFIER, nm2: string;
+            let rx = RX_SIMPLE_JS_IDENTIFIER, nm2: string, char0 = '';
             advance(T_NAME, false);
             nm2 = nm = currentText();
-            if (nm.charAt(0) === ".") {
-                if (nm.charAt(1) === "@") {
-                    nm2 = nm.slice(2);
-                    context[cPos] = `decorator node (${nm2})`;
-                    rx = RX_JS_REF_IDENTIFIER;
-                    nd.kind = "#decoratorNode";
-                    nd["ref"] = nm2;
-                } else {
-                    nm2 = nm.slice(1);
-                    context[cPos] = `param node (${nm2})`;
-                    rx = RX_SIMPLE_JS_IDENTIFIER;
-                    nd.kind = "#paramNode";
-                    nd["name"] = nm2;
-                    nd["nameExpression"] = undefined;
-                }
-            } else if (nm.charAt(0) === "$") {
+            char0 = nm.charAt(0);
+            if (char0 === ".") {
+                nm2 = nm.slice(1);
+                context[cPos] = `param node (${nm2})`;
+                rx = RX_SIMPLE_JS_IDENTIFIER;
+                nd.kind = "#paramNode";
+                nd["name"] = nm2;
+                nd["nameExpression"] = undefined;
+            } else if (char0 === "$") {
                 nm2 = nm.slice(1);
                 context[cPos] = `component (${nm2})`;
                 rx = RX_JS_REF_IDENTIFIER;
                 nd.kind = "#component";
+                nd["ref"] = nm2;
+            } else if (char0 === "@") {
+                nm2 = nm.slice(1);
+                context[cPos] = `decorator node (${nm2})`;
+                rx = RX_JS_REF_IDENTIFIER;
+                nd.kind = "#decoratorNode";
                 nd["ref"] = nm2;
             } else if (nm !== "!") {
                 context[cPos] = `element (${nm})`;

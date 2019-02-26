@@ -71,7 +71,7 @@ function addStatement(g: any, name: string, json: any) {
 }
 
 function includeXjsTag(g: any) {
-    let tagName = "(\\!|((\\.\\@|\\.|\\$)?[a-zA-Z][\\w\\-\\.]*))";
+    let tagName = "(\\!|((\\@|\\.|\\$)?[a-zA-Z][\\w\\-\\.]*))";
 
     addStatement(g, "xjs-tag-open", {
         "name": "meta.tag.js.xjs",

@@ -216,7 +216,7 @@ describe('XJS parser', () => {
     it("should parse decorator nodes", async function () {
         assert.equal(await ast.template(`() => {
             <div @highlight>
-                <.@b.tooltip @class(dark={e()}) position="top" sync = false>
+                <@b.tooltip @class(dark={e()}) position="top" sync = false>
                     # Rich content #
                 </>
                 # Div content #
@@ -224,7 +224,7 @@ describe('XJS parser', () => {
         }`), `
             #tplFunction()
                 #element <div @highlight>
-                    #decoratorNode <.@b.tooltip position="top" sync=false @class(dark={e()})>
+                    #decoratorNode <@b.tooltip position="top" sync=false @class(dark={e()})>
                         #textNode " Rich content "
                     #textNode " Div content "
         ` , '1');
@@ -303,10 +303,10 @@ describe('XJS parser', () => {
         ` , '4');
 
         assert.equal(await ast.template(`() => {
-            <.@tooltip selection(  )={foo()}/>
+            <@tooltip selection(  )={foo()}/>
         }`), `
             #tplFunction()
-                #decoratorNode <.@tooltip selection()={foo()}/>
+                #decoratorNode <@tooltip selection()={foo()}/>
         ` , '5');
     });
 

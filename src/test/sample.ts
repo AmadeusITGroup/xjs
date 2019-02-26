@@ -40,7 +40,7 @@ let foo = xx.template(`(state: MyStateType) => {
     <$foo> </>
     <$foo.bar> </$foo.bar>
     <.item> </.item>
-    <.@abc.def> </>
+    <@abc.def> </>
     <!></!> // fragment
     <!></>
 
@@ -124,7 +124,7 @@ let foo = xx.template(`(state: MyStateType) => {
     ) [className]={e()}/>
 
     <$list>
-        <.@tooltip position="top"> # Tooltip content as HTML {expr(1+2)} # </> // node decorator
+        <@tooltip position="top"> # Tooltip content as HTML {expr(1+2)} # </> // node decorator
         <.item key=1> #Item 1# </.item>
         <.item key=2> #Item 2# </>
         <.separator/>

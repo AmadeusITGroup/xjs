@@ -106,15 +106,15 @@ describe('TextMate parser', () => {
                     T_END 1:1/1:2
             ` , '<a-bcd /* comment */ />');
 
-        assert.deepEqual(await parseAndSerialize('<.@b.tooltip />'), `
-            S 0:0/0:15
-                TAG 0:0/0:15
+        assert.deepEqual(await parseAndSerialize('<@b.tooltip />'), `
+            S 0:0/0:14
+                TAG 0:0/0:14
                     T_START 0:0/0:1
-                    T_NAME 0:1/0:12
-                    CONTENT 0:12/0:13
-                    T_CLOSE 0:13/0:14
-                    T_END 0:14/0:15
-            ` , "<.@b.tooltip />");
+                    T_NAME 0:1/0:11
+                    CONTENT 0:11/0:12
+                    T_CLOSE 0:12/0:13
+                    T_END 0:13/0:14
+            ` , "<@b.tooltip />");
     });
 
     it("should parse expression tags", async function () {

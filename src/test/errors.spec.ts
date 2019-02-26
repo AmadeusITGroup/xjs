@@ -93,9 +93,9 @@ describe('Parsing errors', () => {
 
         assert.equal(
             await err.template(`() => {
-                <.@w1.123/>
+                <@w1.1.abc/>
             }`),
-            "Invalid decorator node (w1.123) - Invalid name 'w1.123' at line 2",
+            "Invalid decorator node (w1.1.abc) - Invalid name 'w1.1.abc' at line 2",
             "4");
 
         assert.equal(
@@ -106,7 +106,7 @@ describe('Parsing errors', () => {
             "5");
     });
 
-    it("should be raised for invalid node names", async function () {
+    it("should be raised for invalid expression nodes", async function () {
         assert.equal(
             await err.template2(`() => {
                 <{foo(/> <div>
