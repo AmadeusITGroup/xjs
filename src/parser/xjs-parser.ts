@@ -5,10 +5,11 @@ import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression,
 const RX_END_TAG = /^\s*\<\//,
     RX_OPENING_BLOCK = /^\s*\{/,
     RX_TRAILING_LINE = /\n\s*$/,
-    RX_SIMPLE_JS_IDENTIFIER = /^[\$_[a-zA-Z]\w*$/,
+    RX_SIMPLE_JS_IDENTIFIER = /^[\$_a-zA-Z]\w*$/,
     RX_FRAGMENT_IDENTIFIER = /^\!$/,
     RX_JS_REF_IDENTIFIER = /^([\$_[a-zA-Z]\w*)(\.[\$_[a-zA-Z]\w*)*$/,
-    RX_ELT_NAME = /^[\w\$\_][\w\_\-]*$/
+    RX_ELT_NAME = /^[\w\$\_][\w\-]*$/,
+    RX_ATT_NAME = /^[\$_a-zA-Z][\w\-]*$/;
 
 export async function parse(tpl: string) {
     let nd: TmAstNode, lines: string[] = tpl.split("\n");
@@ -621,7 +622,7 @@ export async function parse(tpl: string) {
                 }
             }
             if (nd) {
-                checkName(nd.name, RX_SIMPLE_JS_IDENTIFIER);
+                checkName(nd.name, RX_ATT_NAME);
             }
             if (el) {
                 let ff = f as XjsFragment;

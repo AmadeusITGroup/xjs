@@ -1,4 +1,3 @@
-import { formatWithOptions } from "util";
 
 /**
  * XJS benefits
@@ -29,7 +28,6 @@ let xx = {
 let normalTemplateString = `hello world`;
 
 let foo = xx.template(`(state: MyStateType) => {
-    
     // tag names
     <div/>
     <div> </div>
@@ -58,7 +56,7 @@ let foo = xx.template(`(state: MyStateType) => {
         // comment
         foo2 = 123.42 bar2 = false 
     />
-    <span foo={a*2+123} bar="abc" />
+    <span foo={a*2+123} bar="abc" aria-label="some label"/>
     <section title={::getTitle()} /> // one-time binding expression
     <foo click(e) = {doSomething(e); doSomethingElse(); return false} mouseMove={myFunc} mouseOver={() => {}} />
     <foo @on(click(e)={doSomething(e)})/>

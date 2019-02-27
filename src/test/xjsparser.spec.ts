@@ -122,6 +122,13 @@ describe('XJS parser', () => {
             #tplFunction()
                 #element <div a={1+2+3} b={:: foo() }/>
         ` , '3');
+
+        assert.equal(await ast.template(`() => {
+            <div aria-label="some label"/>
+        }`), `
+            #tplFunction()
+                #element <div aria-label="some label"/>
+        ` , '4');
     });
 
     it("should parse comments in params", async function () {

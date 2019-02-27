@@ -206,7 +206,10 @@ function attributeSeparator() {
     return "(?<= |\\()";
 }
 
-function attributeName(withDots = false) {
+function attributeName(withDots = false, withDashes = false) {
+    if (withDashes) {
+        return withDots ? "[\\$\\w][\\w\\-\\.]*" : "[\\$\\w][\\w\\-]*"
+    }
     return withDots ? "[\\$\\w][\\w\\.]*" : "[\\$\\w]\\w*"
 }
 
@@ -220,10 +223,10 @@ function attributeValues() {
 }
 
 function includeNormalAttributes(g: any) {
-    // attribute with value - e.g. <span foo={a*2+123} bar="abc" />
+    // attribute with value - e.g. <span foo={a*2+123} aria-label="abc" />
     addXjsTagAttributeType(g, "xjs-tag-attribute", {
         "name": "tag.attribute.assignment",
-        "begin": "\\s*(" + attributeSeparator() + attributeName() + ")\\s*(=)\\s*",
+        "begin": "\\s*(" + attributeSeparator() + attributeName(false, true) + ")\\s*(=)\\s*",
         "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.js.xjs" },
             "2": { "name": "keyword.operator.assignment.js.xjs" }
@@ -235,7 +238,7 @@ function includeNormalAttributes(g: any) {
     // no values attribute - e.g. <div disabled/>
     addXjsTagAttributeType(g, "xjs-tag-attribute-no-values", {
         "name": "tag.attribute",
-        "match": "\\s*(" + attributeSeparator() + attributeName() + ")(?=(\\s|/|>|\\)))", // no need to support . notation
+        "match": "\\s*(" + attributeSeparator() + attributeName(false, true) + ")(?=(\\s|/|>|\\)))", // no need to support . notation
         "captures": {
             "1": { "name": "entity.other.attribute-name.js.xjs" }
         }
@@ -256,25 +259,12 @@ function includePropertyAttributes(g: any) {
         "end": " |(?=>)|(?=/)|(?=\\))",
         "patterns": attributeValues()
     });
-
-    // no-values properties don't really make sense
-    // no-values properties - e.g. <div [disabled] />
-    // addXjsTagAttributeType(g, "xjs-tag-property-no-values", {
-    //     "name": "tag.attribute.assignment",
-    //     "match": "(" + attributeSeparator() + "\\[)(" + attributeName() + ")(\\])(?=(\\s|/|>|\\)))",
-    //     "captures": {
-    //         "1": { "name": "punctuation.definition.property.begin.js.xjs" },
-    //         "2": { "name": "entity.other.attribute-name.js.xjs" },
-    //         "3": { "name": "punctuation.definition.property.end.js.xjs" }
-    //     }
-    // });
 }
 
 function includeDecoratorAttributes(g: any) {
     // decorator with value - e.g. @class="foo"
     addXjsTagAttributeType(g, "xjs-tag-attribute-decorator", {
         "name": "tag.attribute.decorator.assignment",
-        //"\\s*(" + attributeSeparator() + attributeName() + ")\\s*(=)\\s*",
         "begin": "\\s*(" + attributeSeparator() + "\\@)(" + attributeName(true) + ")\\s*(\\=)\\s*",
         "beginCaptures": {
             "1": { "name": "punctuation.section.embedded.decorator.js.xjs" },
