@@ -1,5 +1,5 @@
 {
-    "name": "vscode-xjs",
+    "name": "xjs",
     "displayName": "XJS",
     "description": "XJS syntax highlighter for vscode",
     "keywords": [
@@ -14,6 +14,9 @@
     "engines": {
         "vscode": "^1.22.0"
     },
+    "files": [
+        "dist/*"
+    ],
     "categories": [
         "Programming Languages"
     ],

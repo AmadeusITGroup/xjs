@@ -9,7 +9,8 @@ const RX_END_TAG = /^\s*\<\//,
     RX_FRAGMENT_IDENTIFIER = /^\!$/,
     RX_JS_REF_IDENTIFIER = /^([\$_[a-zA-Z]\w*)(\.[\$_[a-zA-Z]\w*)*$/,
     RX_ELT_NAME = /^[\w\$\_][\w\-]*$/,
-    RX_ATT_NAME = /^[\$_a-zA-Z][\w\-]*$/;
+    RX_ATT_NAME = /^[\$_a-zA-Z][\w\-]*$/,
+    RX_INDENT = /(^\s+)/;
 
 export async function parse(tpl: string) {
     let nd: TmAstNode, lines: string[] = tpl.split("\n");
@@ -17,7 +18,9 @@ export async function parse(tpl: string) {
 
     // position of current cursor
     // [0,1] corresponds to root.children[0].children[1]
-    let cursor: number[] = [0, 0],
+    let initIndent = "",
+        firstNodeFound = false,
+        cursor: number[] = [0, 0],
         tNodes: TmAstNode[] = [nd, nd.children[0]],    // nodes corresponding to each cursor in the cursor stack
         cNode: TmAstNode | null = nd.children[0],  // current node
         cNodeValidated = true,
@@ -25,6 +28,7 @@ export async function parse(tpl: string) {
         context: string[] = [];   // error context - provides better error understanding
 
     let root = xjsTplFunction();
+    root.indent = initIndent;
 
     return root;
 
@@ -159,7 +163,8 @@ export async function parse(tpl: string) {
         let nd: XjsTplFunction = {
             kind: "#tplFunction",
             arguments: undefined,
-            content: undefined
+            content: undefined,
+            indent: "",
         };
         context.push("template function");
         if (!cNode) {
@@ -217,10 +222,22 @@ export async function parse(tpl: string) {
     }
 
     // block containing xjs nodes: e.g. { <div/> }
-    function xjsContentBlock(ctxt = "content-block"): XjsContentNode[] | undefined {
+    function xjsContentBlock(ctxt = "content block"): XjsContentNode[] | undefined {
         context.push(ctxt);
         advance(BLOCK, true, "Invalid JS Block");
         advance(B_DEF); // { -> block start
+
+        if (ctxt === "template content") {
+            // calculate first indent
+            let c = "";
+            while (lookup(CONTENT, false)) {
+                advance(CONTENT, false);
+                c = currentText(true, false);
+                if (c.match(RX_INDENT)) {
+                    initIndent = RegExp.$1;
+                }
+            }
+        }
 
         let nodes = contentNodes(() => lookup(B_DEF));
         for (let nd of nodes) {
@@ -291,6 +308,7 @@ export async function parse(tpl: string) {
                 let ct = currentText(false, false);
                 let isNewBlock = ct.match(RX_OPENING_BLOCK);
                 stop = true;
+                firstNodeFound = true;
                 if (isNewBlock) {
                     advance(B_DEF); // {
                     captureCode();
@@ -341,6 +359,8 @@ export async function parse(tpl: string) {
     function xjsText(): XjsText {
         context.push("text node");
         advance(TXT);
+        checkInitIndent()
+
         advance(TXT_START); // # -> beginning of text node
         let nd: XjsText = {
             kind: "#textNode",
@@ -412,6 +432,14 @@ export async function parse(tpl: string) {
         return nd;
     }
 
+    function checkInitIndent() {
+        if (!firstNodeFound && cNode && cNode.children && cNode.children.length && cNode.startPosition !== cNode.children[0].startPosition) {
+            let ch0 = cNode.children[0], idx = ch0.startLineIdx;
+            initIndent = lines[idx].slice(cNode.startPosition, ch0.startPosition);
+        }
+        firstNodeFound = true;
+    }
+
     // parse a fragment or one of its sub-type
     // "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode";
     function xjsFragment(): XjsFragment {
@@ -428,6 +456,7 @@ export async function parse(tpl: string) {
         }
         let nm = "";
         advance(TAG);
+        checkInitIndent()
         advance(T_START, false);
 
         if (lookup(T_PREFIX)) {

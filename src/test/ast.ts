@@ -21,6 +21,15 @@ export let ast = {
         let r = lines.join("\n");
         if (log) console.log(r);
         return r;
+    },
+
+    async initIndent(tpl: string, log = false) {
+        let root = await parse(tpl);
+        if (!root) {
+            return "ERROR";
+        }
+        if (log) console.log(`'${root.indent}'`);
+        return root.indent;
     }
 }
 

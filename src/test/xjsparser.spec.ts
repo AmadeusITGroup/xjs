@@ -21,6 +21,27 @@ describe('XJS parser', () => {
         ` , '4');
     });
 
+    it("should parse the template function indentation", async function () {
+        assert.equal(await ast.initIndent(`() => {}`), "", '1');
+        assert.equal(await ast.initIndent(`() => {  
+            let x = 3;
+        }`), "            ", '2');
+        assert.equal(await ast.initIndent(`() => {
+            <div/>
+        }`,), "            ", '3');
+        assert.equal(await ast.initIndent(`() => {
+            <!/>
+        }`,), "            ", '4');
+        assert.equal(await ast.initIndent(`() => {
+              # Hello #
+        }`,), "              ", '5');
+        assert.equal(await ast.initIndent(`() => {
+                if (true) {
+                    <div/>
+                }
+        }`), "                ", '6');
+    });
+
     it("should parse simple text nodes", async function () {
         assert.equal(await ast.template(`() => {
             # Hello World #

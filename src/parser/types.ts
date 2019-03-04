@@ -21,6 +21,7 @@ export interface XjsTplFunction extends XjsNode {
     kind: "#tplFunction";
     arguments: XjsTplArgument[] | undefined;
     content: XjsContentNode[] | undefined; // e.g. [<div>, # Hello #, </div>]
+    indent: string;    // first line indentation (string composed of white spaces)
 }
 
 export interface XjsTplArgument {
