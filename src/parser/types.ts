@@ -96,7 +96,7 @@ export interface XjsProperty extends XjsNode {
  */
 export interface XjsDecorator extends XjsNode {
     kind: "#decorator";
-    ref: string; // e.g. "disabled" or "b.tooltip"
+    ref: XjsExpression; // e.g. code = "disabled" or "b.tooltip"
     params: XjsParam[] | undefined;
     decorators: XjsDecorator[] | undefined;
     references: XjsReference[] | undefined;
@@ -185,7 +185,7 @@ export interface XjsParamNode extends XjsElement {
  */
 export interface XjsComponent extends XjsFragment {
     kind: "#component" | "#decoratorNode";
-    ref: string;    // e.g. "b.modal"
+    ref: XjsExpression; // e.g. code = "b.modal"
 }
 
 /**

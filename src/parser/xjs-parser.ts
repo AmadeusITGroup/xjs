@@ -494,13 +494,21 @@ export async function parse(tpl: string) {
                 context[cPos] = `component (${nm2})`;
                 rx = RX_JS_REF_IDENTIFIER;
                 nd.kind = "#component";
-                nd["ref"] = nm2;
+                nd["ref"] = {
+                    kind: "#expression",
+                    oneTime: false,
+                    code: nm2
+                } as XjsExpression
             } else if (char0 === "@") {
                 nm2 = nm.slice(1);
                 context[cPos] = `decorator node (${nm2})`;
                 rx = RX_JS_REF_IDENTIFIER;
                 nd.kind = "#decoratorNode";
-                nd["ref"] = nm2;
+                nd["ref"] = {
+                    kind: "#expression",
+                    oneTime: false,
+                    code: nm2
+                } as XjsExpression
             } else if (nm !== "!") {
                 context[cPos] = `element (${nm})`;
                 rx = RX_ELT_NAME;
@@ -740,12 +748,20 @@ export async function parse(tpl: string) {
         return false;
     }
 
+    function expr(code) {
+        return {
+            kind: "#expression",
+            oneTime: false,
+            code: code
+        } as XjsExpression;
+    }
+
     function decoParam(f: XjsFragment | XjsDecorator | XjsText) {
         if (lookup(DECO1) || lookup(DECO)) {
             context.push("decorator");
             let nd: XjsDecorator = {
                 kind: "#decorator",
-                ref: "",
+                ref: expr(""),
                 hasDefaultPropValue: false,
                 isOrphan: false,
                 params: undefined,
@@ -759,14 +775,14 @@ export async function parse(tpl: string) {
                 advance(DECO1);
                 advance(D_DEF);  // @
                 advance(A_NAME); // decorator ref
-                nd.ref = currentText();
-                checkName(nd.ref, RX_JS_REF_IDENTIFIER);
+                nd.ref = expr(currentText());
+                checkName(nd.ref.code, RX_JS_REF_IDENTIFIER);
             } else {
                 // normal decorator e.g. @foo=123 or @foo(p1=123 p2={expr()})
                 advance(DECO);
                 advance(D_DEF);  // @
                 advance(A_NAME); // decorator ref
-                nd.ref = currentText();
+                nd.ref = expr(currentText());
                 if (lookup(EQ)) {
                     nd.hasDefaultPropValue = true;
                     advance(EQ); // =

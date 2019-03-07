@@ -167,14 +167,14 @@ function params(n: XjsFragment | XjsDecorator | XjsText, prefix = "", suffix = "
         res.push(buffer.join(" "));
     }
     if (n.decorators) {
-        let buffer: string[] = [];
+        let buffer: string[] = [], nm = "";
         for (let d of n.decorators) {
             if (d.isOrphan) {
-                buffer.push(`@${d.ref}`);
+                buffer.push(`@${d.ref.code}`);
             } else if (d.hasDefaultPropValue) {
-                buffer.push(`@${d.ref}=${getParamValue(d.defaultPropValue)}`);
+                buffer.push(`@${d.ref.code}=${getParamValue(d.defaultPropValue)}`);
             } else {
-                buffer.push(`@${d.ref}(${params(d)})`);
+                buffer.push(`@${d.ref.code}(${params(d)})`);
             }
         }
         res.push(buffer.join(" "));
@@ -192,7 +192,7 @@ function params(n: XjsFragment | XjsDecorator | XjsText, prefix = "", suffix = "
 function fragment(n: XjsFragment, lines: string[], prefix: string) {
     let nm = "!";
     if (n.kind === "#component") {
-        nm = "$" + n["ref"];
+        nm = "$" + n["ref"].code;
     } else if (n.kind === "#element" || n.kind === "#paramNode") {
         let exp = n["nameExpression"] as XjsExpression;
         if (exp) {
@@ -201,7 +201,7 @@ function fragment(n: XjsFragment, lines: string[], prefix: string) {
             nm = n["name"];
         }
     } else if (n.kind === "#decoratorNode") {
-        nm = "@" + n["ref"];
+        nm = "@" + n["ref"].code;
     }
     if (n.kind === "#paramNode") {
         nm = "." + nm;
