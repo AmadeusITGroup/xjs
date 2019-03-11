@@ -49,6 +49,7 @@ export const
     T_START = "punctuation.definition.tag.begin.js.xjs",
     TRUE = "constant.language.boolean.true.ts",
     TYPE_AN = "meta.type.annotation.ts",
+    TYPE_ENTITY = "entity.name.type.ts",
     TYPE_PRIMITIVE = "support.type.primitive.ts",
     TYPE_SEP = "keyword.operator.type.annotation.ts",
     TXT = "string.xjs.text.node.ts",
@@ -128,6 +129,7 @@ export const SCOPES = {
     "constant.language.boolean.true.ts": "TRUE",
 
     "meta.type.annotation.ts": "TYPE_AN",
+    "entity.name.type.ts": "TYPE_ENTITY",
     "keyword.operator.type.annotation.ts": "TYPE_SEP",
     "support.type.primitive.ts": "TYPE_PRIMITIVE",
 

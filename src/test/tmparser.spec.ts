@@ -703,6 +703,32 @@ describe('TextMate parser', () => {
                         B_DEF 2:8/2:9
             ` , "2");
 
+        assert.deepEqual(await parseAndSerialize(`($: MyParamClass) => {
+            # hello #
+        }`), `
+            S 0:0/2:9
+                ARROW_FUNCTION 0:0/2:9
+                    PARAM 0:0/0:17
+                        P_START 0:0/0:1
+                        P_VAR 0:1/0:2
+                        TYPE_AN 0:2/0:16
+                            TYPE_SEP 0:2/0:3
+                            CONTENT 0:3/0:4
+                            TYPE_ENTITY 0:4/0:16
+                        P_END 0:16/0:17
+                    CONTENT 0:17/0:18
+                    ARROW 0:18/0:20
+                    CONTENT 0:20/0:21
+                    BLOCK 0:21/2:9
+                        B_DEF 0:21/0:22
+                        TXT 1:0/1:21
+                            TXT_START 1:12/1:13
+                            CONTENT 1:13/1:20
+                            TXT_END 1:20/1:21
+                        CONTENT 2:0/2:8
+                        B_DEF 2:8/2:9
+            ` , "3");
+
         assert.deepEqual(await parseAndSerialize(`a => {
             # {a} #
         }`), `
@@ -725,7 +751,7 @@ describe('TextMate parser', () => {
                             TXT_END 1:18/1:19
                         CONTENT 2:0/2:8
                         B_DEF 2:8/2:9
-            ` , "3");
+            ` , "4");
     });
 
 });

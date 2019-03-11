@@ -16,9 +16,13 @@ describe('XJS parser', () => {
             #tplFunction(a:string, b:boolean)
         ` , '3');
 
+        assert.equal(await ast.template(`($: MyParamClass) => {}`), `
+            #tplFunction($:MyParamClass)
+        ` , '4');
+
         assert.equal(await ast.template(`a => {}`), `
             #tplFunction(a)
-        ` , '4');
+        ` , '5');
     });
 
     it("should parse the template function indentation", async function () {
