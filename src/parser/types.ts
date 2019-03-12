@@ -1,6 +1,7 @@
 
 export interface XjsNode {
-    kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#param" | "#property" | "#decorator" | "#reference" | "#expression" | "#number" | "#boolean" | "#string" | "#eventListener";
+    kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#param" | "#property" | "#decorator" | "#reference" | "#expression" | "#number" | "#boolean" | "#string" | "#eventListener" | "#tplArgument";
+    lineNumber: number;
 }
 
 export interface XjsError extends Error {
@@ -24,9 +25,11 @@ export interface XjsTplFunction extends XjsNode {
     indent: string;    // first line indentation (string composed of white spaces)
 }
 
-export interface XjsTplArgument {
+export interface XjsTplArgument extends XjsNode {
+    kind: "#tplArgument",
     name: string;                   // e.g. "msg"
     typeRef: string | undefined;    // e.g. "string"
+    lineNumber: number;
 }
 
 /**

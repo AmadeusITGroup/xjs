@@ -12,7 +12,7 @@ const RX_END_TAG = /^\s*\<\//,
     RX_ATT_NAME = /^[\$_a-zA-Z][\w\-]*$/,
     RX_INDENT = /(^\s+)/;
 
-export async function parse(tpl: string) {
+export async function parse(tpl: string, filePath = "", lineOffset = 0) {
     let nd: TmAstNode, lines: string[] = tpl.split("\n");
     nd = await tmParse(tpl);
 
@@ -22,7 +22,8 @@ export async function parse(tpl: string) {
         firstNodeFound = false,
         cursor: number[] = [0, 0],
         tNodes: TmAstNode[] = [nd, nd.children[0]],    // nodes corresponding to each cursor in the cursor stack
-        cNode: TmAstNode | null = nd.children[0],  // current node
+        cNode: TmAstNode | null = nd.children[0],      // current node
+        cLine = 1,                                     // current line number
         cNodeValidated = true,
         lastLine = nd.endLineIdx,
         context: string[] = [];   // error context - provides better error understanding
@@ -33,14 +34,17 @@ export async function parse(tpl: string) {
     return root;
 
     function error(msg: string) {
-        let ln = cNode ? cNode.startLineIdx : lastLine, c = context[context.length - 1];
+        let c = context[context.length - 1], fileInfo = "", lnNbr = cLine + lineOffset;
+        if (filePath) {
+            fileInfo = " in " + filePath;
+        }
 
         throw {
             kind: "#xjsError",
-            message: `Invalid ${c} - ${msg} at line ${ln + 1}`,
+            message: `Invalid ${c} - ${msg} at line #${lnNbr}${fileInfo}`,
             context: c,
             description: msg,
-            lineNumber: ln + 1
+            lineNumber: lnNbr
         } as XjsError;
     }
 
@@ -116,6 +120,9 @@ export async function parse(tpl: string) {
                 }
             }
         }
+        if (cNode) {
+            cLine = cNode.startLineIdx + 1; // startLineIdx is 0-based
+        }
     }
 
     // move cursor to next position and ignore white-space content
@@ -165,6 +172,7 @@ export async function parse(tpl: string) {
             arguments: undefined,
             content: undefined,
             indent: "",
+            lineNumber: cLine
         };
         context.push("template function");
         if (!cNode) {
@@ -178,8 +186,10 @@ export async function parse(tpl: string) {
             // we have one single param - e.g. a => {}
             advance(P_VAR);
             nd.arguments = [{
+                kind: "#tplArgument",
                 name: currentText(),
-                typeRef: undefined
+                typeRef: undefined,
+                lineNumber: cLine
             }];
         } else if (lookup(PARAM)) {
             // parens mode - e.g. () => {}
@@ -209,8 +219,10 @@ export async function parse(tpl: string) {
     function xjsTplArgument() {
         advance(P_VAR); // argument name
         let nd: XjsTplArgument = {
+            kind: "#tplArgument",
             name: currentText(),
-            typeRef: undefined
+            typeRef: undefined,
+            lineNumber: cLine
         }
         if (lookup(TYPE_AN)) {
             advance(TYPE_AN);  // type annotation
@@ -345,7 +357,8 @@ export async function parse(tpl: string) {
         context.pop();
         let jss: XjsJsStatements = {
             kind: "#jsStatements",
-            code: code.join("")
+            code: code.join(""),
+            lineNumber: cLine
         }
         if (isJsBlock) {
             return {
@@ -372,7 +385,8 @@ export async function parse(tpl: string) {
             decorators: undefined,
             references: undefined,
             textFragments: [], // e.g. [" Hello "] or [" Hello "," "]
-            expressions: undefined
+            expressions: undefined,
+            lineNumber: cLine
         }
 
         let buffer: string[] = [];
@@ -412,7 +426,8 @@ export async function parse(tpl: string) {
         let nd: XjsExpression = {
             kind: "#expression",
             oneTime: false,
-            code: ""
+            code: "",
+            lineNumber: cLine
         }
         if (lookup(EXP_MOD, false)) {
             nd.oneTime = true;
@@ -449,6 +464,10 @@ export async function parse(tpl: string) {
     function xjsFragment(): XjsFragment {
         context.push("tag");
         let cPos = context.length - 1;
+        let nm = "";
+        advance(TAG);
+        checkInitIndent()
+        advance(T_START, false);
         let nd: XjsFragment = {
             kind: "#fragment",
             params: undefined,
@@ -456,12 +475,9 @@ export async function parse(tpl: string) {
             properties: undefined,
             decorators: undefined,
             references: undefined,
-            content: undefined
+            content: undefined,
+            lineNumber: cLine
         }
-        let nm = "";
-        advance(TAG);
-        checkInitIndent()
-        advance(T_START, false);
 
         if (lookup(T_PREFIX)) {
             // paramNode with dynamic name - e.g. <.{expr()}/>
@@ -616,7 +632,8 @@ export async function parse(tpl: string) {
                 kind: "#param",
                 name: "",
                 isOrphan: false,
-                value: undefined
+                value: undefined,
+                lineNumber: cLine
             }, el: XjsEvtListener | undefined = undefined;
 
             if (lookup(ATT1)) {
@@ -636,7 +653,8 @@ export async function parse(tpl: string) {
                         kind: "#eventListener",
                         name: nm,
                         argumentNames: undefined,
-                        code: ""
+                        code: "",
+                        lineNumber: cLine
                     };
                     nd = undefined;
                     advance(PARAM);
@@ -693,7 +711,8 @@ export async function parse(tpl: string) {
                 let nd: XjsProperty = {
                     kind: "#property",
                     name: nm,
-                    value: v
+                    value: v,
+                    lineNumber: cLine
                 }
                 if (!f.properties) f.properties = [];
                 f.properties.push(nd);
@@ -712,7 +731,8 @@ export async function parse(tpl: string) {
                 kind: "#reference",
                 name: "",
                 isCollection: false,
-                colExpression: undefined
+                colExpression: undefined,
+                lineNumber: cLine
             }
             advance(REF);
             advance(R_DEF); // #
@@ -739,7 +759,8 @@ export async function parse(tpl: string) {
                 nd.colExpression = {
                     kind: "#expression",
                     oneTime: false,
-                    code: buffer.join("")
+                    code: buffer.join(""),
+                    lineNumber: cLine
                 }
             } else if (lookup(CONTENT, false) && currentText() !== '') {
                 error("Invalid content '" + currentText() + "'");
@@ -771,7 +792,8 @@ export async function parse(tpl: string) {
                 params: undefined,
                 decorators: undefined,
                 references: undefined,
-                defaultPropValue: undefined
+                defaultPropValue: undefined,
+                lineNumber: cLine
             }
             if (lookup(DECO1)) {
                 // e.g. @important
@@ -833,7 +855,8 @@ export async function parse(tpl: string) {
             advance(CONTENT, false);
             let nd: XjsString = {
                 kind: "#string",
-                value: currentText()
+                value: currentText(),
+                lineNumber: cLine
             };
             advance(S_END);
             return nd;
