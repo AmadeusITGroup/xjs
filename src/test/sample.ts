@@ -35,8 +35,8 @@ let foo = xx.template(`(state: MyStateType) => {
     <a-b
         // comment
     > </a-b>
-    <$foo> </>
-    <$foo.bar> </$foo.bar>
+    <*foo> </>
+    <*foo.bar> </*foo.bar>
     <.item> </.item>
     <@abc.def> </>
     <!></!> // fragment
@@ -74,7 +74,7 @@ let foo = xx.template(`(state: MyStateType) => {
 
     // sub-component with property nodes
     let className = "main";
-    <$b.tabBar @host(class={className} @foo)>
+    <*b.tabBar @host(class={className} @foo)>
        <.tab id="a">
            <.title @tooltip(position="top" text={getMainTooltip()})> 
                <div class="main_tab"> # Main tab (A) # </div> 
@@ -87,7 +87,7 @@ let foo = xx.template(`(state: MyStateType) => {
                # Tab B content here #
            </>
        }
-    </$b.tabBar>
+    </*b.tabBar>
 
     # (#myNode @i18n(ref=123 gender={getGender()})) Some string that depends 
      on gender (@foo -> invalid here: must at the beginning of the string) #
@@ -121,14 +121,14 @@ let foo = xx.template(`(state: MyStateType) => {
         important
     ) [className]={e()}/>
 
-    <$list>
+    <*list>
         <@tooltip position="top"> # Tooltip content as HTML {expr(1+2)} # </> // node decorator
         <.item key=1> #Item 1# </.item>
         <.item key=2> #Item 2# </>
         <.separator/>
         <.item key=3> #Item 3# </>
         <.itemTemplate @value={anotherTemplateRef} />
-    </$list>
+    </*list>
 
     // invalid case validation
     <div \important \bar=123 \[foo] \@decorator a.b \#foo />
@@ -136,7 +136,7 @@ let foo = xx.template(`(state: MyStateType) => {
 
 let sectionSample = xx.template(`() => {
     # Here is a section sample #
-    <$section open=true>
+    <*section open=true>
         <.title> <b> # The great section # </b> </.title>
         # Some content here #
     </>

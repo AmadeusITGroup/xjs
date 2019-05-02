@@ -71,7 +71,7 @@ function addStatement(g: any, name: string, json: any) {
 }
 
 function includeXjsTag(g: any) {
-    let tagName = "(\\!|((\\@|\\.|\\$)?[a-zA-Z][\\w\\-\\.]*))";
+    let tagName = "(\\!|((\\@|\\.|\\*)?[a-zA-Z][\\w\\-\\.]*))";
 
     addStatement(g, "xjs-tag-open", {
         "name": "meta.tag.js.xjs",
@@ -92,7 +92,7 @@ function includeXjsTag(g: any) {
 
     addStatement(g, "xjs-tag-open-expression", {
         "name": "meta.tag.js.xjs",
-        "begin": "\\s*(<)(\\.|\\$)?((?=\\{))",
+        "begin": "\\s*(<)(\\.|\\*)?((?=\\{))",
         "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.js.xjs" },
             "2": { "name": "entity.name.tag.prefix.js.xjs" }
@@ -114,7 +114,7 @@ function includeXjsTag(g: any) {
     includeRefAttributes(g);
     includeDecoratorAttributes(g);
     includePropertyAttributes(g);
-    includeFunctionAttributes(g);
+    includeEvtListenerAttributes(g);
     includeNormalAttributes(g);
 
     addStatement(g, "xjs-tag-close", {
@@ -333,7 +333,7 @@ function includeRefAttributes(g: any) {
     });
 }
 
-function includeFunctionAttributes(g: any) {
+function includeEvtListenerAttributes(g: any) {
     // function attributes - e.g. click(e)={doSomething(e);doSomethingElse();return false}
 
     addXjsTagAttributeType(g, "xjs-tag-attribute-function", {

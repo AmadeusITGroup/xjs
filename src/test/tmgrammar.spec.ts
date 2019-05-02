@@ -29,10 +29,10 @@ describe('TextMate grammar', () => {
         r = await tokenize('<a-bcd /* comment */ />');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:6/S/TAG/T_NAME  6:7/S/TAG  7:9/S/TAG/COMMENT/C_DEF  9:18/S/TAG/COMMENT  18:20/S/TAG/COMMENT/C_DEF  20:21/S/TAG  21:22/S/TAG/T_CLOSE  22:23/S/TAG/T_END", "with comment");
 
-        r = await tokenize('<$foo>');
+        r = await tokenize('<*foo>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:5/S/TAG/T_NAME  5:6/S/TAG/T_END", "<$foo>");
 
-        r = await tokenize('<$foo.bar />');
+        r = await tokenize('<*foo.bar />');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:9/S/TAG/T_NAME  9:10/S/TAG  10:11/S/TAG/T_CLOSE  11:12/S/TAG/T_END", "<$foo.bar />");
 
         r = await tokenize('<.item/>');
@@ -75,7 +75,7 @@ describe('TextMate grammar', () => {
         r = await tokenize('</>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_CLOSE  2:3/S/TAG/T_END", "</>");
 
-        r = await tokenize('</$a.b.c> ');
+        r = await tokenize('</*a.b.c> ');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_CLOSE  2:8/S/TAG/T_NAME  8:9/S/TAG/T_END  9:11/S", "</$a.b.c >"); // should be 9:10/S -> tm bug??
     });
 

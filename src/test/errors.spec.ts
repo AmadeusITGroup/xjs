@@ -79,7 +79,7 @@ describe('Parsing errors', () => {
 
         assert.equal(
             await err.template(`() => {
-                <$d.1d/>
+                <*d.1d/>
             }`),
             "Invalid component (d.1d) - Invalid name 'd.1d' at line #2",
             "2");

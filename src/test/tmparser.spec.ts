@@ -158,6 +158,14 @@ describe('TextMate parser', () => {
                     TXT_END 0:14/0:15
             ` , "1");
 
+        // assert.deepEqual(await parseAndSerialize('# \(xxx) #', true), `
+        //     S 0:0/0:15
+        //         TXT 0:0/0:15
+        //             TXT_START 0:0/0:1
+        //             CONTENT 0:1/0:14
+        //             TXT_END 0:14/0:15
+        //     ` , "1");
+
         assert.deepEqual(await parseAndSerialize('# (@abc=123 #foo)(a=1) Hello #'), `
             S 0:0/0:30
                 TXT 0:0/0:30

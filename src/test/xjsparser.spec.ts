@@ -224,13 +224,13 @@ describe('XJS parser', () => {
     it("should parse components", async function () {
         assert.equal(await ast.template(`() => {
             <div>
-                <$foo p1=123 @class(active={expr()})>
+                <*foo p1=123 @class(active={expr()})>
                     <div/>
                     # Some text #
-                </$foo>
-                <$bar blah/>
-                <$b.message>
-                    <$warning/>
+                </*foo>
+                <*bar blah/>
+                <*b.message>
+                    <*warning/>
                 </>
             </div>
         }`), `
@@ -264,7 +264,7 @@ describe('XJS parser', () => {
 
     it("should parse param nodes", async function () {
         assert.equal(await ast.template(`() => {
-            <$b.section>
+            <*b.section>
                 <.header class="big">
                     <b> # Rich header content # </b>
                     <.sidePanel>
@@ -321,7 +321,7 @@ describe('XJS parser', () => {
         ` , '2');
 
         assert.equal(await ast.template(`() => {
-            <$panel click( a,b , c)={foo()}/>
+            <*panel click( a,b , c)={foo()}/>
         }`), `
             #tplFunction()
                 #component <$panel click(a,b,c)={foo()}/>

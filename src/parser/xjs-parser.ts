@@ -10,7 +10,11 @@ const RX_END_TAG = /^\s*\<\//,
     RX_JS_REF_IDENTIFIER = /^([\$_[a-zA-Z]\w*)(\.[\$_[a-zA-Z]\w*)*$/,
     RX_ELT_NAME = /^[\w\$\_][\w\-]*$/,
     RX_ATT_NAME = /^[\$_a-zA-Z][\w\-]*$/,
-    RX_INDENT = /(^\s+)/;
+    RX_INDENT = /(^\s+)/,
+    PREFIX_CPT = "*",
+    PREFIX_DECORATOR = "@",
+    PREFIX_PARAM_NODE = ".",
+    FRAGMENT_NAME = "!";
 
 export async function parse(tpl: string, filePath = "", lineOffset = 0) {
     let nd: TmAstNode, lines: string[] = tpl.split("\n");
@@ -502,14 +506,14 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
             advance(T_NAME, false);
             nm2 = nm = currentText();
             char0 = nm.charAt(0);
-            if (char0 === ".") {
+            if (char0 === PREFIX_PARAM_NODE) {
                 nm2 = nm.slice(1);
                 context[cPos] = `param node (${nm2})`;
                 rx = RX_SIMPLE_JS_IDENTIFIER;
                 nd.kind = "#paramNode";
                 nd["name"] = nm2;
                 nd["nameExpression"] = undefined;
-            } else if (char0 === "$") {
+            } else if (char0 === PREFIX_CPT) {
                 nm2 = nm.slice(1);
                 context[cPos] = `component (${nm2})`;
                 rx = RX_JS_REF_IDENTIFIER;
@@ -519,7 +523,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
                     oneTime: false,
                     code: nm2
                 } as XjsExpression
-            } else if (char0 === "@") {
+            } else if (char0 === PREFIX_DECORATOR) {
                 nm2 = nm.slice(1);
                 context[cPos] = `decorator node (${nm2})`;
                 rx = RX_JS_REF_IDENTIFIER;
@@ -529,7 +533,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
                     oneTime: false,
                     code: nm2
                 } as XjsExpression
-            } else if (nm !== "!") {
+            } else if (nm !== FRAGMENT_NAME) {
                 context[cPos] = `element (${nm})`;
                 rx = RX_ELT_NAME;
                 nd.kind = "#element"
