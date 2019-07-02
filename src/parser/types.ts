@@ -23,6 +23,7 @@ export interface XjsTplFunction extends XjsNode {
     arguments: XjsTplArgument[] | undefined;
     content: XjsContentNode[] | undefined; // e.g. [<div>, # Hello #, </div>]
     indent: string;    // first line indentation (string composed of white spaces)
+    hasOptionalArguments?: boolean;
 }
 
 export interface XjsTplArgument extends XjsNode {
@@ -30,6 +31,7 @@ export interface XjsTplArgument extends XjsNode {
     name: string;                   // e.g. "msg"
     typeRef: string | undefined;    // e.g. "string"
     lineNumber: number;
+    optional?: boolean;
 }
 
 /**

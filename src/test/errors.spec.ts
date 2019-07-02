@@ -298,4 +298,13 @@ describe('Parsing errors', () => {
             "Invalid fragment - Invalid param content '!' at line #12 in my-file.ts",
             "2");
     });
+
+    it("should be raised for optional arguments in invalid order", async function () {
+        assert.equal(
+            await err.template(`(a:string, b?:boolean, c:number) => {
+                <div/>
+            }`, "my-file.ts", 10),
+            "Invalid template params - Optional arguments must be in last position at line #11 in my-file.ts",
+            "1");
+    });
 });

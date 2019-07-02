@@ -26,6 +26,7 @@ export const
     FALSE = "constant.language.boolean.false.ts",
     NUM = "constant.numeric.decimal.ts",
     PARAM = "meta.parameters.ts",
+    PARAM_OPTIONAL = "keyword.operator.optional.ts",
     PR = "tag.attribute.property.assignment",
     P_START = "punctuation.definition.parameters.begin.ts",
     P_VAR = "variable.parameter.ts",
@@ -60,6 +61,8 @@ export const SCOPES = {
     "tag.attribute": "ATT1",
     "tag.attribute.assignment": "ATT",
     "entity.other.attribute-name.js.xjs": "A_NAME",
+
+    "keyword.operator.optional.ts": "PARAM_OPTIONAL",
 
     "meta.arrow.ts": "ARROW_FUNCTION",
     "storage.type.function.arrow.ts": "ARROW",

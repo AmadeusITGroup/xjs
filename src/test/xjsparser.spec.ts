@@ -604,4 +604,30 @@ describe('XJS parser', () => {
                     }
         ` , '3');
     });
+
+    it("should support optional template arguments", async function () {
+        assert.equal(await ast.template(`(header?:IvContent) => {
+            if (header) {
+                <div class="header"/>
+            }
+        }`), `
+            #tplFunction(header?:IvContent)
+                #jsBlock
+                    if (header) {
+                        #element <div class="header"/>
+                    }
+        ` , '1');
+
+        assert.equal(await ast.template(`(foo:string, title?) => {
+            if (title) {
+                <div class="title"/>
+            }
+        }`), `
+            #tplFunction(foo:string, title?)
+                #jsBlock
+                    if (title) {
+                        #element <div class="title"/>
+                    }
+        ` , '2');
+    });
 });

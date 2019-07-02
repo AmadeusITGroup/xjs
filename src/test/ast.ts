@@ -60,10 +60,11 @@ function tplFunction(n: XjsTplFunction, lines: string[], prefix: string) {
     let args: string[] = [];
     if (n.arguments) {
         for (let arg of n.arguments) {
+            let optional = arg.optional ? "?" : "";
             if (arg.typeRef) {
-                args.push(arg.name + ":" + arg.typeRef);
+                args.push(arg.name + optional + ":" + arg.typeRef);
             } else {
-                args.push(arg.name);
+                args.push(arg.name + optional);
             }
         }
     }

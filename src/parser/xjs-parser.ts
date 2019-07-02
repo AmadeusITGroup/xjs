@@ -1,5 +1,5 @@
 import { TmAstNode, parse as tmParse } from './tm-parser';
-import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, REF, R_DEF, R_COL, R_COL_START, R_COL_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY } from './scopes';
+import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, REF, R_DEF, R_COL, R_COL_START, R_COL_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY, PARAM_OPTIONAL } from './scopes';
 import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsReference, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock, XjsError } from './types';
 
 const RX_END_TAG = /^\s*\<\//,
@@ -200,12 +200,12 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
             advance(PARAM);   // parameter block
             advance(P_START); // (
             if (lookup(P_VAR)) { // there are arguments
-                let arg = xjsTplArgument();
+                let arg = xjsTplArgument(nd);
                 nd.arguments = [arg];
                 while (lookup(SEP)) { // ,
                     // next arguments
                     advance(SEP);
-                    nd.arguments.push(xjsTplArgument());
+                    nd.arguments.push(xjsTplArgument(nd));
                 }
             }
             advance(P_END); // )
@@ -220,7 +220,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
     }
 
     // template function argument
-    function xjsTplArgument() {
+    function xjsTplArgument(tplFunc: XjsTplFunction) {
         advance(P_VAR); // argument name
         let nd: XjsTplArgument = {
             kind: "#tplArgument",
@@ -228,6 +228,15 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
             typeRef: undefined,
             lineNumber: cLine
         }
+
+        if (lookup(PARAM_OPTIONAL)) {
+            advance(PARAM_OPTIONAL);  // ?
+            nd.optional = true;
+            tplFunc.hasOptionalArguments = true;
+        } else if (tplFunc.hasOptionalArguments) {
+            error("Optional arguments must be in last position");
+        }
+
         if (lookup(TYPE_AN)) {
             advance(TYPE_AN);  // type annotation
             advance(TYPE_SEP); // :
