@@ -60,12 +60,16 @@ function tplFunction(n: XjsTplFunction, lines: string[], prefix: string) {
     let args: string[] = [];
     if (n.arguments) {
         for (let arg of n.arguments) {
-            let optional = arg.optional ? "?" : "";
+            let optional = arg.optional ? "?" : "", def = "";
             if (arg.typeRef) {
-                args.push(arg.name + optional + ":" + arg.typeRef);
+                def = arg.name + optional + ":" + arg.typeRef;
             } else {
-                args.push(arg.name + optional);
+                def = arg.name + optional;
             }
+            if (arg.defaultValue) {
+                def += "="+arg.defaultValue;
+            }
+            args.push(def);
         }
     }
     lines.push(`${prefix}#tplFunction(${args.join(', ')})`);

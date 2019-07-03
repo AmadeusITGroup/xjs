@@ -3,6 +3,7 @@ export const
     A_NAME = "entity.other.attribute-name.js.xjs",
     ARROW = "storage.type.function.arrow.ts",
     ARROW_FUNCTION = "meta.arrow.ts",
+    ASSIGNMENT = "keyword.operator.assignment.ts",
     ATT = "tag.attribute.assignment",
     ATT1 = "tag.attribute",
     BLOCK = "meta.block.ts",
@@ -16,6 +17,7 @@ export const
     CONTENT = "content",
     C_DEF = "punctuation.definition.comment.ts",
     C_WS = "punctuation.whitespace.comment.leading.ts",
+    DECIMAL_PERIOD = "meta.delimiter.decimal.period.ts",
     DECO = "tag.attribute.decorator.assignment",
     DECO1 = "entity.other.attribute.decorator.js.xjs",
     D_DEF = "punctuation.section.embedded.decorator.js.xjs",
@@ -23,6 +25,7 @@ export const
     D_START = "punctuation.section.embedded.decorator.begin.js.xjs",
     EQ = "keyword.operator.assignment.js.xjs",
     EXP_MOD = "punctuation.section.embedded.modifier.js.xjs",
+    F_CALL = "meta.function-call.ts",
     FALSE = "constant.language.boolean.false.ts",
     NUM = "constant.numeric.decimal.ts",
     PARAM = "meta.parameters.ts",
@@ -40,6 +43,7 @@ export const
     R_DEF = "punctuation.section.embedded.ref.js.xjs",
     SEP = "punctuation.separator.parameter.ts",
     STR_D = "string.quoted.double.ts",
+    STR_S = "string.quoted.single.ts",
     S_START = "punctuation.definition.string.begin.ts",
     S_END = "punctuation.definition.string.end.ts",
     TAG = "meta.tag.js.xjs",
@@ -63,8 +67,10 @@ export const SCOPES = {
     "entity.other.attribute-name.js.xjs": "A_NAME",
 
     "keyword.operator.optional.ts": "PARAM_OPTIONAL",
+    "keyword.operator.assignment.ts": "ASSIGNMENT",
 
     "meta.arrow.ts": "ARROW_FUNCTION",
+    "meta.delimiter.decimal.period.ts": "DECIMAL_PERIOD",
     "storage.type.function.arrow.ts": "ARROW",
 
     "meta.block.ts": "BLOCK",
@@ -116,6 +122,7 @@ export const SCOPES = {
 
     "source.ts": "S",
     "string.quoted.double.ts": "STR_D",
+    "string.quoted.single.ts": "STR_S",
     "punctuation.definition.string.begin.ts": "S_START",
     "punctuation.definition.string.end.ts": "S_END",
     "punctuation.separator.parameter.ts": "SEP",

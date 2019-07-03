@@ -289,7 +289,7 @@ describe('TextMate parser', () => {
                         meta.definition.variable.ts 2:20/2:21
                             V_RW 2:20/2:21
                         CONTENT 2:21/2:22
-                    keyword.operator.assignment.ts 2:22/2:23
+                    ASSIGNMENT 2:22/2:23
                     CONTENT 2:23/2:24
                     NUM 2:24/2:27
                 punctuation.terminator.statement.ts 2:27/2:28

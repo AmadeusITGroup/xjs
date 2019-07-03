@@ -32,6 +32,7 @@ export interface XjsTplArgument extends XjsNode {
     typeRef: string | undefined;    // e.g. "string"
     lineNumber: number;
     optional?: boolean;
+    defaultValue?: string;
 }
 
 /**
