@@ -11,6 +11,7 @@ export const
     B_DEF = "punctuation.definition.block.ts",
     B_START = "punctuation.section.embedded.begin.js.xjs",
     B_END = "punctuation.section.embedded.end.js.xjs",
+    BRACE_SQ = "meta.brace.square.ts",
     COMMA = "punctuation.separator.comma.ts",
     COMMENT = "comment.block.ts",
     COMMENT1 = "comment.line.double-slash.ts",
@@ -53,6 +54,7 @@ export const
     T_PREFIX = "entity.name.tag.prefix.js.xjs",
     T_START = "punctuation.definition.tag.begin.js.xjs",
     TRUE = "constant.language.boolean.true.ts",
+    TUPLE = "meta.type.tuple.ts",
     TYPE_AN = "meta.type.annotation.ts",
     TYPE_ENTITY = "entity.name.type.ts",
     TYPE_PRIMITIVE = "support.type.primitive.ts",
@@ -71,6 +73,8 @@ export const SCOPES = {
 
     "meta.arrow.ts": "ARROW_FUNCTION",
     "meta.delimiter.decimal.period.ts": "DECIMAL_PERIOD",
+    "meta.type.tuple.ts": "TUPLE",
+    "meta.brace.square.ts": "BRACE_SQ",
     "storage.type.function.arrow.ts": "ARROW",
 
     "meta.block.ts": "BLOCK",
