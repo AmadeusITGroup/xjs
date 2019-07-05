@@ -641,19 +641,26 @@ describe('XJS parser', () => {
     });
 
     it("should support default values for template parameters", async function () {
+        assert.equal(await ast.template(`(foo="") => {
+            # Hello #
+        }`), `
+            #tplFunction(foo="")
+                #textNode " Hello "
+        ` , '1');
+
         assert.equal(await ast.template(`(idx1 = 12.3, idx2:number =123, foo:string="bar", foo2= 'bar2', baz:boolean = false, blah:any=true) => {
             # Hello #
         }`), `
             #tplFunction(idx1=12.3, idx2:number=123, foo:string="bar", foo2='bar2', baz:boolean=false, blah:any=true)
                 #textNode " Hello "
-        ` , '1');
+        ` , '2');
 
         // assert.equal(await ast.template(`(foo = func("abc", 123), bar = new SuperBar(123) ) => {
         //     # Hello #
         // }`), `
         //     #tplFunction()
         //         #textNode " Hello "
-        // ` , '2');
+        // ` , '3');
     });
 
     // TODO: support function call and new initialization

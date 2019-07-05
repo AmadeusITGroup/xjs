@@ -284,7 +284,9 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
                 }
                 nd.defaultValue = currentText(false);
                 advance(S_START);
-                advance(CONTENT, false);
+                if (lookup(CONTENT)) {
+                    advance(CONTENT, false);
+                }
                 advance(S_END);
             } else if (lookup(TRUE)) {
                 advance(TRUE);
