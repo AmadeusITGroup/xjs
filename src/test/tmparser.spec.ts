@@ -755,4 +755,17 @@ describe('TextMate parser', () => {
             ` , "4");
     });
 
+    // it.only("text", async function () {
+    //     assert.deepEqual(await parseAndSerialize(`() => {
+    //         <div 
+    //             // foo
+    //                 foo="bar">
+    //             # Hello #
+    //         </div>
+    //     }`), `
+    //         xxx
+    //         ` , "1");
+    // });
+    //assert.equal(await ast.template(`($api:HelloAPI, name /* comment */) => {
+
 });

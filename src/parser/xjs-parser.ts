@@ -302,6 +302,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
                 error("Invalid parameter initialization");
             }
         }
+        comment();
         return nd;
     }
 
@@ -656,7 +657,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
 
         let stop = false;
         while (!stop) {
-            if (!comment(f)) {
+            if (!comment()) {
                 if (!attParam(f, acceptListeners)) {
                     if (!lblParam(f)) {
                         if (!decoParam(f)) {
@@ -675,7 +676,11 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
         context.pop();
     }
 
-    function comment(f: XjsFragment | XjsDecorator | XjsText) {
+    function comment() {
+        if (lookup(C_WS)) {
+            // white space in front of comment
+            advance(C_WS);
+        }
         let isMultiLine = lookup(COMMENT);
         if (lookup(COMMENT1) || isMultiLine) {
             context.push("comment");

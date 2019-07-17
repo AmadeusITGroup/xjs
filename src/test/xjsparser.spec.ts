@@ -665,5 +665,28 @@ describe('XJS parser', () => {
         // ` , '3');
     });
 
-    // TODO: support function call and new initialization
+    it("should support comments in template arguments", async function () {
+        assert.equal(await ast.template(`($api:HelloAPI, name /* comment */) => {
+            # Hello #
+        }`), `
+            #tplFunction($api:HelloAPI, name)
+                #textNode " Hello "
+        ` , '1');
+    });
+
+    it("should support comments in params", async function () {
+        assert.equal(await ast.template(`() => {
+            <div 
+                // comment
+                    foo="bar">
+                # Hello #
+            </div>
+        }`), `
+            #tplFunction()
+                #element <div foo="bar">
+                    #textNode " Hello "
+        ` , '1');
+    });
+
+    // TODO: support function call and new initialization in template args
 });
