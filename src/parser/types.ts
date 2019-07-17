@@ -1,6 +1,6 @@
 
 export interface XjsNode {
-    kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#param" | "#property" | "#decorator" | "#reference" | "#expression" | "#number" | "#boolean" | "#string" | "#eventListener" | "#tplArgument";
+    kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#param" | "#property" | "#decorator" | "#label" | "#expression" | "#number" | "#boolean" | "#string" | "#eventListener" | "#tplArgument";
     lineNumber: number;
 }
 
@@ -71,7 +71,7 @@ export interface XjsFragment extends XjsNode {
     listeners: XjsEvtListener[] | undefined;
     properties: XjsProperty[] | undefined;
     decorators: XjsDecorator[] | undefined;
-    references: XjsReference[] | undefined;
+    labels: XjsLabel[] | undefined;
     content: XjsContentNode[] | undefined;
 }
 
@@ -105,7 +105,7 @@ export interface XjsDecorator extends XjsNode {
     ref: XjsExpression; // e.g. code = "disabled" or "b.tooltip"
     params: XjsParam[] | undefined;
     decorators: XjsDecorator[] | undefined;
-    references: XjsReference[] | undefined;
+    labels: XjsLabel[] | undefined;
     hasDefaultPropValue: boolean; // true if value is defined
     isOrphan: boolean;            // true if no value and no attribute nor decorators are defined
     defaultPropValue: XjsNumber | XjsBoolean | XjsString | XjsExpression | undefined;
@@ -115,11 +115,11 @@ export interface XjsDecorator extends XjsNode {
  * Ref node - e.g.
  * #foo or #nodes[] or #nodes[{expr()}]
  */
-export interface XjsReference extends XjsNode {
-    kind: "#reference";
-    name: string;                             // e.g. "foo" or "nodes"
-    isCollection: boolean;                    // true if the [] form is used
-    colExpression: XjsExpression | undefined; // the collection expression
+export interface XjsLabel extends XjsNode {
+    kind: "#label";
+    name: string;           // e.g. "foo" or "nodes" in #foo or #nodes
+    fwdLabel: boolean;      // true if ##label -> query forward indicator
+    // expression: XjsExpression | undefined;
 }
 
 /**
@@ -210,7 +210,7 @@ export interface XjsText extends XjsNode {
     kind: "#textNode";
     params: XjsParam[] | undefined;
     decorators: XjsDecorator[] | undefined;
-    references: XjsReference[] | undefined;
+    labels: XjsLabel[] | undefined;
     textFragments: string[];                  // e.g. [" Hello "] or [" Hello "," "]
     expressions: XjsExpression[] | undefined; // first expression comes after first text fragment
 }

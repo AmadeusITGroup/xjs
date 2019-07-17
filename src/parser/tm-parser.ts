@@ -1,7 +1,7 @@
 
 import * as fs from 'fs';
 import * as vsTM from 'vscode-textmate';
-import { SCOPES, ATT, A_NAME, ATT1, COMMENT, C_DEF, DECO, DECO1, D_DEF, B_DEF, BLOCK, PR, PR_START, REF, R_DEF } from './scopes';
+import { SCOPES, ATT, A_NAME, ATT1, COMMENT, C_DEF, DECO, DECO1, D_DEF, B_DEF, BLOCK, PR, PR_START, LBL, LBL_DEF} from './scopes';
 
 const XJS_TM_GRAMMAR = 'syntaxes/xjs.tmLanguage.json';
 
@@ -156,8 +156,8 @@ function groupChildNodes(lineIdx: number, tokenIdx: number, scopeIdx: number, to
         if (scope === PR) {
             if (subScopeName === PR_START) return nd.countChildren(PR_START) === 0;
         }
-        if (scope === REF) {
-            if (subScopeName === R_DEF) return nd.countChildren(R_DEF) === 0;
+        if (scope === LBL) {
+            if (subScopeName === LBL_DEF) return nd.countChildren(LBL_DEF) === 0;
         }
         return true;
     }

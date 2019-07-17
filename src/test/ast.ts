@@ -67,7 +67,7 @@ function tplFunction(n: XjsTplFunction, lines: string[], prefix: string) {
                 def = arg.name + optional;
             }
             if (arg.defaultValue) {
-                def += "="+arg.defaultValue;
+                def += "=" + arg.defaultValue;
             }
             args.push(def);
         }
@@ -137,19 +137,10 @@ function expression(n: XjsExpression, lines: string[], prefix: string) {
 
 function params(n: XjsFragment | XjsDecorator | XjsText, prefix = "", suffix = "") {
     let res: string[] = []
-    if (n.references) {
+    if (n.labels) {
         let buffer: string[] = [], col: string;
-        for (let ref of n.references) {
-            if (ref.isCollection) {
-                if (ref.colExpression) {
-                    col = "[{" + ref.colExpression.code + "}]"
-                } else {
-                    col = "[]";
-                }
-            } else {
-                col = "";
-            }
-            buffer.push(`#${ref.name}${col}`);
+        for (let lbl of n.labels) {
+            buffer.push(`#${lbl.fwdLabel ? "#" : ""}${lbl.name}`);
         }
         res.push(buffer.join(" "));
     }

@@ -189,12 +189,14 @@ describe('XJS parser', () => {
         ` , '1');
     });
 
-    it("should parse references", async function () {
+    it("should parse labels", async function () {
         assert.equal(await ast.template(`() => {
-            <div #foo #bar[] #baz[{expr (i)}]/>
+            <div #foo #bar/>
+            <*cpt #baz ##blah/>
         }`), `
             #tplFunction()
-                #element <div #foo #bar[] #baz[{expr (i)}]/>
+                #element <div #foo #bar/>
+                #component <$cpt #baz ##blah/>
         ` , '1');
     });
 

@@ -50,7 +50,7 @@ describe('TextMate grammar', () => {
         let r: IToken[][];
         r = await tokenize('</div>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_CLOSE  2:5/S/TAG/T_NAME  5:6/S/TAG/T_END", "</div>");
-        
+
         r = await tokenize('</>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:2/S/TAG/T_CLOSE  2:3/S/TAG/T_END", "</div>");
 
@@ -140,13 +140,10 @@ describe('TextMate grammar', () => {
     it("should support ref attributes", async function () {
         let r: IToken[][];
         r = await tokenize('<div #name>');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:4/S/TAG/T_NAME  4:5/S/TAG/REF  5:6/S/TAG/REF/R_DEF  6:10/S/TAG/REF/A_NAME  10:11/S/TAG/T_END", "<div #name>");
+        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:4/S/TAG/T_NAME  4:5/S/TAG/LBL  5:6/S/TAG/LBL/LBL_DEF  6:10/S/TAG/LBL/A_NAME  10:11/S/TAG/T_END", "<div #name>");
 
-        r = await tokenize('<div #names[]>');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:4/S/TAG/T_NAME  4:5/S/TAG/REF  5:6/S/TAG/REF/R_DEF  6:11/S/TAG/REF/A_NAME  11:13/S/TAG/REF/R_COL  13:14/S/TAG/T_END", "<div #names[]>");
-
-        r = await tokenize('<div #names[{123}]>');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:4/S/TAG/T_NAME  4:5/S/TAG/REF  5:6/S/TAG/REF/R_DEF  6:11/S/TAG/REF/A_NAME  11:13/S/TAG/REF/R_COL_START  13:16/S/TAG/REF/NUM  16:18/S/TAG/REF/R_COL_END  18:19/S/TAG/T_END", "<div #names[123]>");
+        r = await tokenize('<div ##name>');
+        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:4/S/TAG/T_NAME  4:5/S/TAG/LBL  5:7/S/TAG/LBL/LBL_DEF  7:11/S/TAG/LBL/A_NAME  11:12/S/TAG/T_END", "<div ##name>");
     });
 
     it("should support decorators with values", async function () {

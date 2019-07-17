@@ -199,20 +199,27 @@ describe('Parsing errors', () => {
             "2");
     });
 
-    it("should be raised for invalid references", async function () {
+    it("should be raised for invalid labels", async function () {
         assert.equal(
             await err.template(`() => {
                 <div #d.d/>
             }`),
-            "Invalid reference - Invalid content '.d' at line #2",
+            "Invalid label - Invalid content '.d' at line #2",
             "1");
 
         assert.equal(
             await err.template(`() => {
-                <div #d[expr()]/>
+                <div #foo #bar[] #baz/>
             }`),
-            "Invalid reference - Invalid content '[' at line #2",
+            "Invalid label - Invalid content '[]' at line #2",
             "2");
+
+        assert.equal(
+            await err.template(`() => {
+                <div ##foo/>
+            }`),
+            "Invalid label - Forward labels (e.g. ##foo) can only be used on component calls at line #2",
+            "3");
     });
 
     it("should be raised for invalid tag closing", async function () {

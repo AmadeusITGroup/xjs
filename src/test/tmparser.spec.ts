@@ -178,8 +178,8 @@ describe('TextMate parser', () => {
                             EQ 0:7/0:8
                             NUM 0:8/0:11
                             CONTENT 0:11/0:12
-                        REF 0:12/0:16
-                            R_DEF 0:12/0:13
+                        LBL 0:12/0:16
+                            LBL_DEF 0:12/0:13
                             A_NAME 0:13/0:16
                         B_END 0:16/0:17
                     CONTENT 0:17/0:29
@@ -607,30 +607,23 @@ describe('TextMate parser', () => {
     });
 
     it("should parse references", async function () {
-        assert.deepEqual(await parseAndSerialize('<div #foo #bar[] #baz[{123}] #blah>'), `
-            S 0:0/0:35
-                TAG 0:0/0:35
+        assert.deepEqual(await parseAndSerialize('<div #foo #bar ##baz>'), `
+            S 0:0/0:21
+                TAG 0:0/0:21
                     T_START 0:0/0:1
                     T_NAME 0:1/0:4
-                    REF 0:4/0:10
-                        R_DEF 0:5/0:6
+                    LBL 0:4/0:10
+                        LBL_DEF 0:5/0:6
                         A_NAME 0:6/0:9
                         CONTENT 0:9/0:10
-                    REF 0:10/0:17
-                        R_DEF 0:10/0:11
+                    LBL 0:10/0:15
+                        LBL_DEF 0:10/0:11
                         A_NAME 0:11/0:14
-                        R_COL 0:14/0:16
-                        CONTENT 0:16/0:17
-                    REF 0:17/0:28
-                        R_DEF 0:17/0:18
-                        A_NAME 0:18/0:21
-                        R_COL_START 0:21/0:23
-                        NUM 0:23/0:26
-                        R_COL_END 0:26/0:28
-                    REF 0:28/0:34
-                        R_DEF 0:29/0:30
-                        A_NAME 0:30/0:34
-                    T_END 0:34/0:35
+                        CONTENT 0:14/0:15
+                    LBL 0:15/0:20
+                        LBL_DEF 0:15/0:17
+                        A_NAME 0:17/0:20
+                    T_END 0:20/0:21
             ` , "1");
 
         assert.deepEqual(await parseAndSerialize('<div #foo [bar] = {123}>'), `
@@ -638,8 +631,8 @@ describe('TextMate parser', () => {
                 TAG 0:0/0:24
                     T_START 0:0/0:1
                     T_NAME 0:1/0:4
-                    REF 0:4/0:9
-                        R_DEF 0:5/0:6
+                    LBL 0:4/0:9
+                        LBL_DEF 0:5/0:6
                         A_NAME 0:6/0:9
                     CONTENT 0:9/0:10
                     PR 0:10/0:23

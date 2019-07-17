@@ -1,6 +1,6 @@
 import { TmAstNode, parse as tmParse } from './tm-parser';
-import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, REF, R_DEF, R_COL, R_COL_START, R_COL_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY, PARAM_OPTIONAL, ASSIGNMENT, DECIMAL_PERIOD, STR_S, F_CALL, TUPLE, BRACE_SQ } from './scopes';
-import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsReference, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock, XjsError } from './types';
+import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY, PARAM_OPTIONAL, ASSIGNMENT, DECIMAL_PERIOD, STR_S, F_CALL, TUPLE, BRACE_SQ, LBL, LBL_DEF } from './scopes';
+import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock, XjsError, XjsLabel } from './types';
 
 const RX_END_TAG = /^\s*\<\//,
     RX_OPENING_BLOCK = /^\s*\{/,
@@ -451,7 +451,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
             kind: "#textNode",
             params: undefined,
             decorators: undefined,
-            references: undefined,
+            labels: undefined,
             textFragments: [], // e.g. [" Hello "] or [" Hello "," "]
             expressions: undefined,
             lineNumber: cLine
@@ -542,7 +542,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
             listeners: undefined,
             properties: undefined,
             decorators: undefined,
-            references: undefined,
+            labels: undefined,
             content: undefined,
             lineNumber: cLine
         }
@@ -658,7 +658,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
         while (!stop) {
             if (!comment(f)) {
                 if (!attParam(f, acceptListeners)) {
-                    if (!refParam(f)) {
+                    if (!lblParam(f)) {
                         if (!decoParam(f)) {
                             if (acceptProperties) {
                                 if (!propParam(f as XjsFragment)) {
@@ -791,50 +791,33 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
         return false;
     }
 
-    function refParam(f: XjsFragment | XjsDecorator | XjsText) {
-        if (lookup(REF)) {
-            context.push("reference");
-            // e.g. #foo or #bar[] or #baz[{expr()}]
-            let nd: XjsReference = {
-                kind: "#reference",
+    function lblParam(f: XjsFragment | XjsDecorator | XjsText) {
+        if (lookup(LBL)) {
+            context.push("label");
+            // e.g. #foo or ##bar
+            let nd: XjsLabel = {
+                kind: "#label",
                 name: "",
-                isCollection: false,
-                colExpression: undefined,
+                fwdLabel: false,
                 lineNumber: cLine
             }
-            advance(REF);
-            advance(R_DEF); // #
+            advance(LBL);
+            advance(LBL_DEF); // # or ##
+            if (currentText() === "##") {
+                nd.fwdLabel = true;
+            }
             advance(A_NAME);
             nd.name = currentText();
-            if (lookup(R_COL)) {
-                nd.isCollection = true;
-                advance(R_COL); // []
-            } else if (lookup(R_COL_START)) {
-                nd.isCollection = true;
-                advance(R_COL_START); // [{
 
-                if (lookup(EXP_MOD, false)) { // ::
-                    // invalid in this case
-                    error("One-time modifier cannot be used in reference expressions");
-                }
-                let buffer: string[] = [];
-                while (!lookup(R_COL_END, false)) {
-                    buffer.push(currentText(true, false));
-                    cNodeValidated = true;
-                }
-                advance(R_COL_END);   // }]
+            if (nd.fwdLabel && f.kind !== "#component") {
+                error("Forward labels (e.g. ##" + currentText() + ") can only be used on component calls");
+            }
 
-                nd.colExpression = {
-                    kind: "#expression",
-                    oneTime: false,
-                    code: buffer.join(""),
-                    lineNumber: cLine
-                }
-            } else if (lookup(CONTENT, false) && currentText() !== '') {
+            if (lookup(CONTENT, false) && currentText() !== '') {
                 error("Invalid content '" + currentText() + "'");
             }
-            if (!f.references) f.references = [];
-            f.references.push(nd);
+            if (!f.labels) f.labels = [];
+            f.labels.push(nd);
             context.pop();
             return true;
         }
@@ -859,7 +842,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
                 isOrphan: false,
                 params: undefined,
                 decorators: undefined,
-                references: undefined,
+                labels: undefined,
                 defaultPropValue: undefined,
                 lineNumber: cLine
             }

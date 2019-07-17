@@ -66,7 +66,8 @@ let foo = xx.template(`(state: MyStateType) => {
     // properties
     <div [foo]=123 [baz]={expr()}/>
     // ref attributes
-    <div #foo[{expr()}] #bar2[{123}] #baz3 #blah[]/>
+    <div #foo #baz3 #blah/>
+    <*cpt ##bar2/>
     // decorators
     <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>
     <div @class(foo={isTrue()} bar={!isTrue()} @disabled={123} abc) disabled />

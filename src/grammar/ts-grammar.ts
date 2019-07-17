@@ -111,7 +111,7 @@ function includeXjsTag(g: any) {
     //includeNameExpressionBlock(g);
 
     // attributes: order matters -> most selective first:
-    includeRefAttributes(g);
+    includeLabelAttributes(g);
     includeDecoratorAttributes(g);
     includePropertyAttributes(g);
     includeEvtListenerAttributes(g);
@@ -302,33 +302,32 @@ function includeDecoratorAttributes(g: any) {
     });
 }
 
-function includeRefAttributes(g: any) {
+function includeLabelAttributes(g: any) {
     // ref attribute with expression - e.g. <div #foo[{expr()}]/>
-    addXjsTagAttributeType(g, "xjs-tag-attribute-ref", {
-        "name": "entity.other.attribute.ref.js.xjs",
-        "begin": "\\s*" + attributeSeparator() + "(\\#)(" + attributeName() + ")(\\[\\{)",
-        "beginCaptures": {
-            "1": { "name": "punctuation.section.embedded.ref.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" },
-            "3": { "name": "punctuation.section.embedded.ref.collection.start.js.xjs" }
-        },
-        "end": "\\s*\\}\\]",
-        "endCaptures": {
-            "0": { "name": "punctuation.section.embedded.ref.collection.end.js.xjs" }
-        },
-        "patterns": [
-            { "include": "#expression" }
-        ]
-    });
+    // addXjsTagAttributeType(g, "xjs-tag-attribute-ref", {
+    //     "name": "entity.other.attribute.ref.js.xjs",
+    //     "begin": "\\s*" + attributeSeparator() + "(\\#\\#?)(" + attributeName() + ")(\\[\\{)",
+    //     "beginCaptures": {
+    //         "1": { "name": "punctuation.section.embedded.ref.js.xjs" },
+    //         "2": { "name": "entity.other.attribute-name.js.xjs" },
+    //         "3": { "name": "punctuation.section.embedded.ref.collection.start.js.xjs" }
+    //     },
+    //     "end": "\\s*\\}\\]",
+    //     "endCaptures": {
+    //         "0": { "name": "punctuation.section.embedded.ref.collection.end.js.xjs" }
+    //     },
+    //     "patterns": [
+    //         { "include": "#expression" }
+    //     ]
+    // });
 
-    // ref attribute w/o expressions - e.g. <div #foo #bar[]/>
-    addXjsTagAttributeType(g, "xjs-tag-attribute-ref-no-expr", {
-        "name": "entity.other.attribute.ref.js.xjs",
-        "match": "\\s*" + attributeSeparator() + "(\\#)(" + attributeName() + ")(\\[\\s*\\])?",
+    // label attribute w/o expressions - e.g. <div #foo #bar/>
+    addXjsTagAttributeType(g, "xjs-tag-attribute-label-no-expr", {
+        "name": "entity.other.attribute.label.js.xjs",
+        "match": "\\s*" + attributeSeparator() + "(\\#\\#?)(" + attributeName() + ")",
         "captures": {
-            "1": { "name": "punctuation.section.embedded.ref.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" },
-            "3": { "name": "punctuation.section.embedded.ref.collection.js.xjs" }
+            "1": { "name": "punctuation.section.embedded.label.js.xjs" },
+            "2": { "name": "entity.other.attribute-name.js.xjs" }
         }
     });
 }
