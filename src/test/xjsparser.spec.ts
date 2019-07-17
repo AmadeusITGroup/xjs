@@ -634,10 +634,10 @@ describe('XJS parser', () => {
     });
 
     it("should support type arrays in template params", async function () {
-        assert.equal(await ast.template(`(foo: FooClass, bar: BarClass[], baz: BazClass[][]) => {
+        assert.equal(await ast.template(`(foo: FooClass, bar: BarClass[], baz: x.BazClass[][]) => {
             # Hello #
         }`), `
-            #tplFunction(foo:FooClass, bar:BarClass[], baz:BazClass[][])
+            #tplFunction(foo:FooClass, bar:BarClass[], baz:x.BazClass[][])
                 #textNode " Hello "
         ` , '1');
     });

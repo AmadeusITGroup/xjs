@@ -755,17 +755,44 @@ describe('TextMate parser', () => {
             ` , "4");
     });
 
+    it("should support module prefixes in argument classes", async function () {
+        assert.deepEqual(await parseAndSerialize(`(foo: x.y.FooClass) => {
+            # Hello #
+        }`), `
+            S 0:0/2:9
+                ARROW_FUNCTION 0:0/2:9
+                    PARAM 0:0/0:19
+                        P_START 0:0/0:1
+                        P_VAR 0:1/0:4
+                        TYPE_AN 0:4/0:18
+                            TYPE_SEP 0:4/0:5
+                            CONTENT 0:5/0:6
+                            MOD 0:6/0:7
+                            V_ACC 0:7/0:8
+                            MOD 0:8/0:9
+                            V_ACC 0:9/0:10
+                            TYPE_ENTITY 0:10/0:18
+                        P_END 0:18/0:19
+                    CONTENT 0:19/0:20
+                    ARROW 0:20/0:22
+                    CONTENT 0:22/0:23
+                    BLOCK 0:23/2:9
+                        B_DEF 0:23/0:24
+                        TXT 1:0/1:21
+                            TXT_START 1:12/1:13
+                            CONTENT 1:13/1:20
+                            TXT_END 1:20/1:21
+                        CONTENT 2:0/2:8
+                        B_DEF 2:8/2:9
+            ` , "1");
+    });
+
     // it.only("text", async function () {
-    //     assert.deepEqual(await parseAndSerialize(`() => {
-    //         <div 
-    //             // foo
-    //                 foo="bar">
-    //             # Hello #
-    //         </div>
+    //     assert.deepEqual(await parseAndSerialize(`(baz: x.y.BazClass) => {
+    //         # Hello #
     //     }`), `
     //         xxx
     //         ` , "1");
     // });
-    //assert.equal(await ast.template(`($api:HelloAPI, name /* comment */) => {
 
 });

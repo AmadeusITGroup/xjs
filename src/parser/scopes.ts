@@ -28,6 +28,8 @@ export const
     EXP_MOD = "punctuation.section.embedded.modifier.js.xjs",
     F_CALL = "meta.function-call.ts",
     FALSE = "constant.language.boolean.false.ts",
+    MOD = "entity.name.type.module.ts",
+    V_ACC = "punctuation.accessor.ts",
     NUM = "constant.numeric.decimal.ts",
     PARAM = "meta.parameters.ts",
     PARAM_OPTIONAL = "keyword.operator.optional.ts",
@@ -103,6 +105,7 @@ export const SCOPES = {
     "entity.name.function.ts": "F_NAME",
 
     "constant.numeric.decimal.ts": "NUM",
+    "entity.name.type.module.ts": "MOD",
 
     "keyword.operator.arithmetic.ts": "OP",
 
