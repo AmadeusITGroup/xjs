@@ -119,7 +119,8 @@ export interface XjsLabel extends XjsNode {
     kind: "#label";
     name: string;           // e.g. "foo" or "nodes" in #foo or #nodes
     fwdLabel: boolean;      // true if ##label -> query forward indicator
-    // expression: XjsExpression | undefined;
+    isOrphan: boolean;      // true if no value is defined
+    value: XjsNumber | XjsBoolean | XjsString | XjsExpression | undefined;
 }
 
 /**

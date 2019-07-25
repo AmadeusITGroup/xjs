@@ -812,6 +812,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
                 kind: "#label",
                 name: "",
                 fwdLabel: false,
+                isOrphan: true,
+                value: undefined,
                 lineNumber: cLine
             }
             advance(LBL);
@@ -829,6 +831,13 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
             if (lookup(CONTENT, false) && currentText() !== '') {
                 error("Invalid content '" + currentText() + "'");
             }
+
+            if (lookup(EQ)) {
+                advance(EQ); // =
+                nd.isOrphan = false;
+                nd.value = paramValue();
+            }
+
             if (!f.labels) f.labels = [];
             f.labels.push(nd);
             context.pop();

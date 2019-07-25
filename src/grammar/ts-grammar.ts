@@ -303,23 +303,18 @@ function includeDecoratorAttributes(g: any) {
 }
 
 function includeLabelAttributes(g: any) {
-    // ref attribute with expression - e.g. <div #foo[{expr()}]/>
-    // addXjsTagAttributeType(g, "xjs-tag-attribute-ref", {
-    //     "name": "entity.other.attribute.ref.js.xjs",
-    //     "begin": "\\s*" + attributeSeparator() + "(\\#\\#?)(" + attributeName() + ")(\\[\\{)",
-    //     "beginCaptures": {
-    //         "1": { "name": "punctuation.section.embedded.ref.js.xjs" },
-    //         "2": { "name": "entity.other.attribute-name.js.xjs" },
-    //         "3": { "name": "punctuation.section.embedded.ref.collection.start.js.xjs" }
-    //     },
-    //     "end": "\\s*\\}\\]",
-    //     "endCaptures": {
-    //         "0": { "name": "punctuation.section.embedded.ref.collection.end.js.xjs" }
-    //     },
-    //     "patterns": [
-    //         { "include": "#expression" }
-    //     ]
-    // });
+    // label attributes w/ expression - e.g. #foo={bar()}
+    addXjsTagAttributeType(g, "xjs-tag-attribute-label", {
+        "name": "entity.other.attribute.label.js.xjs",
+        "begin": "\\s*(" + attributeSeparator() + "\\#\\#?)(" + attributeName(true) + ")\\s*(\\=)\\s*",
+        "beginCaptures": {
+            "1": { "name": "punctuation.section.embedded.label.js.xjs" },
+            "2": { "name": "entity.other.attribute-name.js.xjs" },
+            "3": { "name": "keyword.operator.assignment.js.xjs" }
+        },
+        "end": " |(?=>)|(?=/)|(?=\\))",
+        "patterns": attributeValues()
+    });
 
     // label attribute w/o expressions - e.g. <div #foo #bar/>
     addXjsTagAttributeType(g, "xjs-tag-attribute-label-no-expr", {

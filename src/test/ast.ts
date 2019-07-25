@@ -140,7 +140,11 @@ function params(n: XjsFragment | XjsDecorator | XjsText, prefix = "", suffix = "
     if (n.labels) {
         let buffer: string[] = [], col: string;
         for (let lbl of n.labels) {
-            buffer.push(`#${lbl.fwdLabel ? "#" : ""}${lbl.name}`);
+            if (!lbl.isOrphan) {
+                buffer.push(`#${lbl.fwdLabel ? "#" : ""}${lbl.name}=${getParamValue(lbl.value)}`);
+            } else {
+                buffer.push(`#${lbl.fwdLabel ? "#" : ""}${lbl.name}`);
+            }
         }
         res.push(buffer.join(" "));
     }

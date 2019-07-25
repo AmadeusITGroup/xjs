@@ -65,8 +65,9 @@ let foo = xx.template(`(state: MyStateType) => {
     <div important disabled foo=123 />
     // properties
     <div [foo]=123 [baz]={expr()}/>
-    // ref attributes
+    // label attributes
     <div #foo #baz3 #blah/>
+    <span #foo={bar()} ##fwd="abc"/>
     <*cpt ##bar2/>
     // decorators
     <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>

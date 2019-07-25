@@ -198,6 +198,15 @@ describe('XJS parser', () => {
                 #element <div #foo #bar/>
                 #component <$cpt #baz ##blah/>
         ` , '1');
+
+        assert.equal(await ast.template(`() => {
+            <div #foo=123 #bar="abc"/>
+            <*cpt #baz={expr()} ##blah={expr2()}/>
+        }`), `
+            #tplFunction()
+                #element <div #foo=123 #bar="abc"/>
+                #component <$cpt #baz={expr()} ##blah={expr2()}/>
+        ` , '1');
     });
 
     it("should parse decorator params", async function () {
