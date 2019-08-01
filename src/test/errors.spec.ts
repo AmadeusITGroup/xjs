@@ -24,7 +24,7 @@ describe('Parsing errors', () => {
                         let ls = "\n            ";
                         return `${ls}    ${e.message}`
                             + `${ls}    File: ${e.file} - Line ${e.line} / Col ${e.column}`
-                            + `${ls}    Extract: >> ${e.lineExtract}<<`
+                            + `${ls}    Extract: >> ${e.lineExtract} <<`
                             + `${ls}`;
                     }
                 }
@@ -292,6 +292,7 @@ describe('Parsing errors', () => {
             "Invalid end of element ({expr()}) - Unexpected token '{expr()}' at line #4",
             "5");
 
+        fullErrorMode = true;
         assert.equal(
             await err.template(`() => {
                 if (test()) {
@@ -299,19 +300,20 @@ describe('Parsing errors', () => {
                     // comment here
                 }
                 </div>
-            }`),
-            "Invalid end of element (div) - Unexpected token '}' at line #5",
-            "6");
+            }`, "myFile"), `
+                Invalid end of element (div) - Unexpected token '}'
+                File: myFile - Line 5 / Col 17
+                Extract: >> } <<
+            `, "6");
 
-        fullErrorMode = true;
         assert.equal(
             await err.template(`() => {
                 </div>
             }`, "myFile"), `
                 Invalid tag - Unexpected token '/'
                 File: myFile - Line 2 / Col 18
-                Extract: >>                 </div><<
-            `, "8");
+                Extract: >> </div> <<
+            `, "7");
     });
 
     it("should be raised with line offset and file name", async function () {
@@ -340,7 +342,7 @@ describe('Parsing errors', () => {
             }`, "my-file.ts", 10, 32), `
                 Invalid template params - Optional arguments must be in last position
                 File: my-file.ts - Line 11 / Col 57
-                Extract: >> (a:string, b?:boolean, c:number) => {<<
+                Extract: >> (a:string, b?:boolean, c:number) => { <<
             `, "1");
     });
 });

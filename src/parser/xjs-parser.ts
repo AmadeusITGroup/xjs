@@ -25,7 +25,7 @@ const RX_END_TAG = /^\s*\<\//,
  * @param columnOffset column offset of the first template character
  */
 export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOffset = 0): Promise<XjsTplFunction> {
-    let nd: TmAstNode, lines: string[] = tpl.split("\n");
+    let nd: TmAstNode, lines: string[] = tpl.split(CR);
     nd = await tmParse(tpl);
 
     // position of current cursor
@@ -47,7 +47,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
     return root;
 
     function error(msg: string) {
-        let c = context[context.length - 1], lnNbr = cLine + lineOffset, lines = tpl.split(CR);
+        let c = context[context.length - 1], lnNbr = cLine + lineOffset;
 
         throw {
             kind: "#Error",
@@ -55,7 +55,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             message: `Invalid ${c} - ${msg}`,
             line: lnNbr,
             column: cCol,
-            lineExtract: "" + lines[cLine - 1],
+            lineExtract: ("" + lines[cLine - 1]).trim(),
             file: filePath
         } as XjsError;
     }
@@ -134,7 +134,11 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         }
         if (cNode) {
             cLine = cNode.startLineIdx + 1; // startLineIdx is 0-based
-            cCol = cNode.startPosition + 1 + (cLine === 1 ? columnOffset : 0);
+            let ln = lines[cNode.startLineIdx].substring(cNode.startPosition), spaces = 0;
+            if (ln.match(/^(\s+)/)) {
+                spaces = RegExp.$1.length;
+            }
+            cCol = 1 + cNode.startPosition + spaces + (cLine === 1 ? columnOffset : 0);
         }
     }
 
