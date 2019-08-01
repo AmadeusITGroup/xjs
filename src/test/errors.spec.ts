@@ -3,15 +3,30 @@ import { parse } from '../parser/xjs-parser';
 import { XjsError } from '../parser/types';
 
 describe('Parsing errors', () => {
+    let fullErrorMode = true;
+
+    beforeEach(() => {
+        fullErrorMode = true;
+    });
 
     let err = {
         // this api allows to trigger the vs-code text mate completion
-        async template(tpl: string, filePath = "", lineOffset = 0) {
+        async template(tpl: string, filePath = "", lineOffset = 0, colOffset = 32) {
             try {
-                await parse(tpl, filePath, lineOffset);
+                await parse(tpl, filePath, lineOffset, colOffset);
             } catch (err) {
-                if (err.kind === "#xjsError") {
-                    return err.message;
+                let e = err as XjsError;
+                if (e.kind === "#Error") {
+                    if (!fullErrorMode) {
+                        let fileInfo = e.fileName ? " in " + e.fileName : "";
+                        return `${e.message} at line #${e.line}${fileInfo}`;
+                    } else {
+                        let ls = "\n            ";
+                        return `${ls}    ${e.message}`
+                            + `${ls}    File: ${e.fileName} - Line ${e.line} / Col ${e.column}`
+                            + `${ls}    Extract: >> ${e.lineExtract}<<`
+                            + `${ls}`;
+                    }
                 }
                 return "Non-xjs error: " + err.message;
             }
@@ -22,6 +37,7 @@ describe('Parsing errors', () => {
     err.template2 = err.template; // to avoid highlighting for wrong templates
 
     it("should be raised for invalid template functions", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template(``),
             "Invalid template function - Empty template at line #1",
@@ -70,6 +86,7 @@ describe('Parsing errors', () => {
     });
 
     it("should be raised for invalid node names", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template(`() => {
                 <d.d/>
@@ -107,6 +124,7 @@ describe('Parsing errors', () => {
     });
 
     it("should be raised for invalid expression nodes", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template2(`() => {
                 <{foo(/> <div>
@@ -130,6 +148,7 @@ describe('Parsing errors', () => {
     });
 
     it("should be raised for text nodes", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template2(`() => {
                 # Hello {exp #
@@ -154,6 +173,7 @@ describe('Parsing errors', () => {
     });
 
     it("should be raised for invalid params", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template(`() => {
                 <div adf.w=123/>
@@ -184,6 +204,7 @@ describe('Parsing errors', () => {
     });
 
     it("should be raised for invalid decorator params", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template(`() => {
                 <div @1deprecated/>
@@ -200,6 +221,7 @@ describe('Parsing errors', () => {
     });
 
     it("should be raised for invalid labels", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template(`() => {
                 <div #d.d/>
@@ -223,6 +245,7 @@ describe('Parsing errors', () => {
     });
 
     it("should be raised for invalid tag closing", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template(`() => {
                 <div>
@@ -280,15 +303,19 @@ describe('Parsing errors', () => {
             "Invalid end of element (div) - Unexpected token '}' at line #5",
             "6");
 
+        fullErrorMode = true;
         assert.equal(
             await err.template(`() => {
                 </div>
-            }`),
-            "Invalid tag - Unexpected token '/' at line #2",
-            "8");
+            }`, "myFile"), `
+                Invalid tag - Unexpected token '/'
+                File: myFile - Line 2 / Col 18
+                Extract: >>                 </div><<
+            `, "8");
     });
 
     it("should be raised with line offset and file name", async function () {
+        fullErrorMode = false;
         assert.equal(
             await err.template(`() => {
                 <div>
@@ -310,8 +337,10 @@ describe('Parsing errors', () => {
         assert.equal(
             await err.template(`(a:string, b?:boolean, c:number) => {
                 <div/>
-            }`, "my-file.ts", 10),
-            "Invalid template params - Optional arguments must be in last position at line #11 in my-file.ts",
-            "1");
+            }`, "my-file.ts", 10, 32), `
+                Invalid template params - Optional arguments must be in last position
+                File: my-file.ts - Line 11 / Col 57
+                Extract: >> (a:string, b?:boolean, c:number) => {<<
+            `, "1");
     });
 });

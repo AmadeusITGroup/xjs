@@ -14,9 +14,17 @@ const RX_END_TAG = /^\s*\<\//,
     PREFIX_CPT = "*",
     PREFIX_DECORATOR = "@",
     PREFIX_PARAM_NODE = ".",
-    FRAGMENT_NAME = "!";
+    FRAGMENT_NAME = "!",
+    CR = "\n";
 
-export async function parse(tpl: string, filePath = "", lineOffset = 0) {
+/**
+ * Parse a template string and return an AST tree
+ * @param tpl the template string
+ * @param filePath file path - e.g. a/b/c/foo.ts
+ * @param lineOffset line number of the first template line
+ * @param columnOffset column offset of the first template character
+ */
+export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOffset = 0): Promise<XjsTplFunction> {
     let nd: TmAstNode, lines: string[] = tpl.split("\n");
     nd = await tmParse(tpl);
 
@@ -38,17 +46,17 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0) {
     return root;
 
     function error(msg: string) {
-        let c = context[context.length - 1], fileInfo = "", lnNbr = cLine + lineOffset;
-        if (filePath) {
-            fileInfo = " in " + filePath;
-        }
+        let c = context[context.length - 1], lnNbr = cLine + lineOffset, lines = tpl.split(CR),
+            colOffset = (cLine === 1) ? columnOffset : 0;
 
         throw {
-            kind: "#xjsError",
-            message: `Invalid ${c} - ${msg} at line #${lnNbr}${fileInfo}`,
-            context: c,
-            description: msg,
-            lineNumber: lnNbr
+            kind: "#Error",
+            origin: "XJS",
+            message: `Invalid ${c} - ${msg}`,
+            line: lnNbr,
+            column: cNode ? cNode.startPosition + 1 + colOffset : 0,
+            lineExtract: "" + lines[cLine - 1],
+            fileName: filePath
         } as XjsError;
     }
 

@@ -5,11 +5,13 @@ export interface XjsNode {
 }
 
 export interface XjsError extends Error {
-    kind: "#xjsError";
-    message: string;      // shortcut to `Invalid ${e.context} - ${e.message} at line ${e.lineNumber}`
-    description: string;
-    context: string;
-    lineNumber: number;
+    kind: "#Error";
+    origin: "XJS";
+    message: string;
+    line: number;
+    column: number;
+    lineExtract: string;
+    fileName: string;
 }
 
 /**
