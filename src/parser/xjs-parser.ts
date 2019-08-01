@@ -56,7 +56,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             line: lnNbr,
             column: cNode ? cNode.startPosition + 1 + colOffset : 0,
             lineExtract: "" + lines[cLine - 1],
-            fileName: filePath
+            file: filePath
         } as XjsError;
     }
 

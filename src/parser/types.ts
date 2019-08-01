@@ -11,7 +11,7 @@ export interface XjsError extends Error {
     line: number;
     column: number;
     lineExtract: string;
-    fileName: string;
+    file: string;
 }
 
 /**

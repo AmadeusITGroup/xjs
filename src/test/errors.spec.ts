@@ -18,12 +18,12 @@ describe('Parsing errors', () => {
                 let e = err as XjsError;
                 if (e.kind === "#Error") {
                     if (!fullErrorMode) {
-                        let fileInfo = e.fileName ? " in " + e.fileName : "";
+                        let fileInfo = e.file ? " in " + e.file : "";
                         return `${e.message} at line #${e.line}${fileInfo}`;
                     } else {
                         let ls = "\n            ";
                         return `${ls}    ${e.message}`
-                            + `${ls}    File: ${e.fileName} - Line ${e.line} / Col ${e.column}`
+                            + `${ls}    File: ${e.file} - Line ${e.line} / Col ${e.column}`
                             + `${ls}    Extract: >> ${e.lineExtract}<<`
                             + `${ls}`;
                     }
