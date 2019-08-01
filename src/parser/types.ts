@@ -2,6 +2,7 @@
 export interface XjsNode {
     kind: "#tplFunction" | "#jsStatements" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#param" | "#property" | "#decorator" | "#label" | "#expression" | "#number" | "#boolean" | "#string" | "#eventListener" | "#tplArgument";
     lineNumber: number;
+    colNumber: number;
 }
 
 export interface XjsError extends Error {

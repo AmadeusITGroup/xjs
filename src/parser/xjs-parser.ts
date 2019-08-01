@@ -36,6 +36,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         tNodes: TmAstNode[] = [nd, nd.children[0]],    // nodes corresponding to each cursor in the cursor stack
         cNode: TmAstNode | null = nd.children[0],      // current node
         cLine = 1,                                     // current line number
+        cCol = 0,                                      // current column number
         cNodeValidated = true,
         lastLine = nd.endLineIdx,
         context: string[] = [];   // error context - provides better error understanding
@@ -46,15 +47,14 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
     return root;
 
     function error(msg: string) {
-        let c = context[context.length - 1], lnNbr = cLine + lineOffset, lines = tpl.split(CR),
-            colOffset = (cLine === 1) ? columnOffset : 0;
+        let c = context[context.length - 1], lnNbr = cLine + lineOffset, lines = tpl.split(CR);
 
         throw {
             kind: "#Error",
             origin: "XJS",
             message: `Invalid ${c} - ${msg}`,
             line: lnNbr,
-            column: cNode ? cNode.startPosition + 1 + colOffset : 0,
+            column: cCol,
             lineExtract: "" + lines[cLine - 1],
             file: filePath
         } as XjsError;
@@ -134,6 +134,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         }
         if (cNode) {
             cLine = cNode.startLineIdx + 1; // startLineIdx is 0-based
+            cCol = cNode.startPosition + 1 + (cLine === 1 ? columnOffset : 0);
         }
     }
 
@@ -185,7 +186,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             arguments: undefined,
             content: undefined,
             indent: "",
-            lineNumber: cLine
+            lineNumber: cLine,
+            colNumber: cCol
         };
         context.push("template function");
         if (!cNode) {
@@ -202,7 +204,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 kind: "#tplArgument",
                 name: currentText(),
                 typeRef: undefined,
-                lineNumber: cLine
+                lineNumber: cLine,
+                colNumber: cCol
             }];
         } else if (lookup(PARAM)) {
             // parens mode - e.g. () => {}
@@ -235,7 +238,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             kind: "#tplArgument",
             name: currentText(),
             typeRef: undefined,
-            lineNumber: cLine
+            lineNumber: cLine,
+            colNumber: cCol
         }
 
         if (lookup(PARAM_OPTIONAL)) {
@@ -443,7 +447,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         let jss: XjsJsStatements = {
             kind: "#jsStatements",
             code: code.join(""),
-            lineNumber: cLine
+            lineNumber: cLine,
+            colNumber: cCol
         }
         if (isJsBlock) {
             return {
@@ -471,7 +476,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             labels: undefined,
             textFragments: [], // e.g. [" Hello "] or [" Hello "," "]
             expressions: undefined,
-            lineNumber: cLine
+            lineNumber: cLine,
+            colNumber: cCol
         }
 
         let buffer: string[] = [];
@@ -512,7 +518,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             kind: "#expression",
             oneTime: false,
             code: "",
-            lineNumber: cLine
+            lineNumber: cLine,
+            colNumber: cCol
         }
         if (lookup(EXP_MOD, false)) {
             nd.oneTime = true;
@@ -561,7 +568,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             decorators: undefined,
             labels: undefined,
             content: undefined,
-            lineNumber: cLine
+            lineNumber: cLine,
+            colNumber: cCol
         }
 
         if (lookup(T_PREFIX)) {
@@ -722,7 +730,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 name: "",
                 isOrphan: false,
                 value: undefined,
-                lineNumber: cLine
+                lineNumber: cLine,
+                colNumber: cCol
             }, el: XjsEvtListener | undefined = undefined;
 
             if (lookup(ATT1)) {
@@ -743,7 +752,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                         name: nm,
                         argumentNames: undefined,
                         code: "",
-                        lineNumber: cLine
+                        lineNumber: cLine,
+                        colNumber: cCol
                     };
                     nd = undefined;
                     advance(PARAM);
@@ -801,7 +811,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                     kind: "#property",
                     name: nm,
                     value: v,
-                    lineNumber: cLine
+                    lineNumber: cLine,
+                    colNumber: cCol
                 }
                 if (!f.properties) f.properties = [];
                 f.properties.push(nd);
@@ -822,7 +833,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 fwdLabel: false,
                 isOrphan: true,
                 value: undefined,
-                lineNumber: cLine
+                lineNumber: cLine,
+                colNumber: cCol
             }
             advance(LBL);
             advance(LBL_DEF); // # or ##
@@ -874,7 +886,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 decorators: undefined,
                 labels: undefined,
                 defaultPropValue: undefined,
-                lineNumber: cLine
+                lineNumber: cLine,
+                colNumber: cCol
             }
             if (lookup(DECO1)) {
                 // e.g. @important
@@ -937,7 +950,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             let nd: XjsString = {
                 kind: "#string",
                 value: currentText(),
-                lineNumber: cLine
+                lineNumber: cLine,
+                colNumber: cCol
             };
             advance(S_END);
             return nd;
