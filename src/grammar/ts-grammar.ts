@@ -114,6 +114,7 @@ function includeXjsTag(g: any) {
     includeLabelAttributes(g);
     includeDecoratorAttributes(g);
     includePropertyAttributes(g);
+    includeBindingShortcuts(g);
     includeNormalAttributes(g);
 
     addStatement(g, "xjs-tag-close", {
@@ -322,6 +323,31 @@ function includeLabelAttributes(g: any) {
         "captures": {
             "1": { "name": "punctuation.section.embedded.label.js.xjs" },
             "2": { "name": "entity.other.attribute-name.js.xjs" }
+        }
+    });
+}
+
+function includeBindingShortcuts(g: any) {
+    addXjsTagAttributeType(g, "xjs-tag-attribute-binding-property", {
+        "name": "entity.other.attribute.property.shortcut.js.xjs",
+        "match": "\\s*" + attributeSeparator() + "(\\{)(\\:\\:)?(\\[)\\s*(" + attributeName() + ")\\s*(\\]})",
+        "captures": {
+            "1": { "name": "punctuation.section.embedded.begin.js.xjs" },
+            "2": { "name": "punctuation.section.embedded.modifier.js.xjs" },
+            "3": { "name": "punctuation.section.embedded.property.begin.js.xjs" },
+            "4": { "name": "variable.other.readwrite.ts" },
+            "5": { "name": "punctuation.section.embedded.end.js.xjs" }
+        }
+    });
+
+    addXjsTagAttributeType(g, "xjs-tag-attribute-binding-param", {
+        "name": "entity.other.attribute.param.shortcut.js.xjs",
+        "match": "\\s*" + attributeSeparator() + "(\\{)(\\:\\:)?\\s*(" + attributeName() + ")\\s*(\\})",
+        "captures": {
+            "1": { "name": "punctuation.section.embedded.begin.js.xjs" },
+            "2": { "name": "punctuation.section.embedded.modifier.js.xjs" },
+            "3": { "name": "variable.other.readwrite.ts" },
+            "4": { "name": "punctuation.section.embedded.end.js.xjs" }
         }
     });
 }

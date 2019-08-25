@@ -6,6 +6,7 @@ export const
     ASSIGNMENT = "keyword.operator.assignment.ts",
     ATT = "tag.attribute.assignment",
     ATT1 = "tag.attribute",
+    ATT_EXPR = "entity.other.attribute.param.shortcut.js.xjs",
     BLOCK = "meta.block.ts",
     BLOCK_ATT = "meta.block.attributes.ts",
     B_DEF = "punctuation.definition.block.ts",
@@ -39,6 +40,7 @@ export const
     P_END = "punctuation.definition.parameters.end.ts",
     PR_END = "punctuation.section.embedded.property.end.js.xjs",
     PR_START = "punctuation.section.embedded.property.begin.js.xjs",
+    PR_EXPR = "entity.other.attribute.property.shortcut.js.xjs",
     LBL = "entity.other.attribute.label.js.xjs",
     LBL_DEF = "punctuation.section.embedded.label.js.xjs",
     SEP = "punctuation.separator.parameter.ts",
@@ -60,12 +62,14 @@ export const
     TYPE_SEP = "keyword.operator.type.annotation.ts",
     TXT = "string.xjs.text.node.ts",
     TXT_START = "punctuation.definition.string.begin.js.xjs",
-    TXT_END = "punctuation.definition.string.end.js.xjs";
+    TXT_END = "punctuation.definition.string.end.js.xjs",
+    V_RW = "variable.other.readwrite.ts";
 
 export const SCOPES = {
     "tag.attribute": "ATT1",
     "tag.attribute.assignment": "ATT",
     "entity.other.attribute-name.js.xjs": "A_NAME",
+    "entity.other.attribute.param.shortcut.js.xjs": "ATT_EXPR",
 
     "keyword.operator.optional.ts": "PARAM_OPTIONAL",
     "keyword.operator.assignment.ts": "ASSIGNMENT",
@@ -117,7 +121,7 @@ export const SCOPES = {
     "tag.attribute.property.assignment": "PR",
     "punctuation.section.embedded.property.begin.js.xjs": "PR_START",
     "punctuation.section.embedded.property.end.js.xjs": "PR_END",
-
+    "entity.other.attribute.property.shortcut.js.xjs": "PR_EXPR",
 
     "entity.other.attribute.label.js.xjs": "LBL",
     "punctuation.section.embedded.label.js.xjs": "LBL_DEF",

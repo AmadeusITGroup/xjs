@@ -179,13 +179,6 @@ function params(n: XjsFragment | XjsDecorator | XjsText, prefix = "", suffix = "
         }
         res.push(buffer.join(" "));
     }
-    if ((n as XjsFragment).listeners) {
-        let buffer: string[] = [];
-        for (let lsn of (n as XjsFragment).listeners!) {
-            buffer.push(`${lsn.name}(${lsn.argumentNames ? lsn.argumentNames.join(",") : ""})={${lsn.code}}`);
-        }
-        res.push(buffer.join(" "));
-    }
     return res.length ? prefix + res.join(" ") + suffix : "";
 }
 

@@ -58,12 +58,9 @@ let foo = xx.template(`(state: MyStateType) => {
     />
     <span foo={a*2+123} bar="abc" aria-label="some label"/>
     <section title={::getTitle()} /> // one-time binding expression
-    // TODO remove below:
-    <foo click(e) = {doSomething(e); doSomethingElse(); return false} mouseMove={myFunc} mouseOver={() => {}} />
     <foo @onclick(listener={e=>doSomething(e)} options={{passive:true}})
         @onmousemove={e=>$ctl.doSomething(e)}
         @onkeypress={=>foo()} // TODO: support this shortcut
-
         />
 
     // no values attributes
@@ -74,6 +71,9 @@ let foo = xx.template(`(state: MyStateType) => {
     <div #foo #baz3 #blah/>
     <span #foo={bar()} ##fwd="abc"/>
     <*cpt ##bar2/>
+    // binding shortcuts
+    <span {title} {::title} {:: title} {[className ]} {::[className]}/>
+
     // decorators
     <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>
     <div @class(foo={isTrue()} bar={!isTrue()} @disabled={123} abc) disabled />

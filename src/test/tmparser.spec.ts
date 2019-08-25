@@ -531,6 +531,89 @@ describe('TextMate parser', () => {
             ` , "2");
     });
 
+    it("should parse binding shortcuts", async function () {
+        assert.deepEqual(await parseAndSerialize('<div {title}>'), `
+            S 0:0/0:13
+                TAG 0:0/0:13
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT_EXPR 0:4/0:12
+                        B_START 0:5/0:6
+                        V_RW 0:6/0:11
+                        B_END 0:11/0:12
+                    T_END 0:12/0:13
+            ` , "1");
+
+        assert.deepEqual(await parseAndSerialize('<div {::title}>'), `
+            S 0:0/0:15
+                TAG 0:0/0:15
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT_EXPR 0:4/0:14
+                        B_START 0:5/0:6
+                        EXP_MOD 0:6/0:8
+                        V_RW 0:8/0:13
+                        B_END 0:13/0:14
+                    T_END 0:14/0:15
+            ` , "2");
+
+        assert.deepEqual(await parseAndSerialize('<div { title  }>'), `
+            S 0:0/0:16
+                TAG 0:0/0:16
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT_EXPR 0:4/0:15
+                        B_START 0:5/0:6
+                        CONTENT 0:6/0:7
+                        V_RW 0:7/0:12
+                        CONTENT 0:12/0:14
+                        B_END 0:14/0:15
+                    T_END 0:15/0:16
+            ` , "3");
+
+        assert.deepEqual(await parseAndSerialize('<div {[title]}>'), `
+            S 0:0/0:15
+                TAG 0:0/0:15
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    PR_EXPR 0:4/0:14
+                        B_START 0:5/0:6
+                        PR_START 0:6/0:7
+                        V_RW 0:7/0:12
+                        B_END 0:12/0:14
+                    T_END 0:14/0:15
+            ` , "4");
+
+        assert.deepEqual(await parseAndSerialize('<div {::[title]}>'), `
+            S 0:0/0:17
+                TAG 0:0/0:17
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    PR_EXPR 0:4/0:16
+                        B_START 0:5/0:6
+                        EXP_MOD 0:6/0:8
+                        PR_START 0:8/0:9
+                        V_RW 0:9/0:14
+                        B_END 0:14/0:16
+                    T_END 0:16/0:17
+            ` , "5");
+
+        assert.deepEqual(await parseAndSerialize('<div {[ title   ]}>'), `
+            S 0:0/0:19
+                TAG 0:0/0:19
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    PR_EXPR 0:4/0:18
+                        B_START 0:5/0:6
+                        PR_START 0:6/0:7
+                        CONTENT 0:7/0:8
+                        V_RW 0:8/0:13
+                        CONTENT 0:13/0:16
+                        B_END 0:16/0:18
+                    T_END 0:18/0:19
+            ` , "6");
+    });
+
     it("should parse references", async function () {
         assert.deepEqual(await parseAndSerialize('<div #foo #bar ##baz>'), `
             S 0:0/0:21
@@ -711,13 +794,5 @@ describe('TextMate parser', () => {
                         B_DEF 2:8/2:9
             ` , "1");
     });
-
-    // it.only("text", async function () {
-    //     assert.deepEqual(await parseAndSerialize(`(baz: x.y.BazClass) => {
-    //         # Hello #
-    //     }`), `
-    //         xxx
-    //         ` , "1");
-    // });
 
 });

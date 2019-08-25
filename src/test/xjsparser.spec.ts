@@ -156,6 +156,50 @@ describe('XJS parser', () => {
         ` , '4');
     });
 
+    it("should parse binding shortcuts", async function () {
+        assert.equal(await ast.template(`() => {
+            <div {title}/>
+        }`), `
+            #tplFunction()
+                #element <div title={title}/>
+        ` , '1');
+
+        assert.equal(await ast.template(`() => {
+            <div { title  }/>
+        }`), `
+            #tplFunction()
+                #element <div title={title}/>
+        ` , '2');
+
+        assert.equal(await ast.template(`() => {
+            <div {::title  }/>
+        }`), `
+            #tplFunction()
+                #element <div title={::title}/>
+        ` , '3');
+
+        assert.equal(await ast.template(`() => {
+            <div {[className]}/>
+        }`), `
+            #tplFunction()
+                #element <div [className]={className}/>
+        ` , '4');
+        
+        assert.equal(await ast.template(`() => {
+            <div {[ className  ]}/>
+        }`), `
+            #tplFunction()
+                #element <div [className]={className}/>
+        ` , '5');
+
+        assert.equal(await ast.template(`() => {
+            <div {::[ className  ]}/>
+        }`), `
+            #tplFunction()
+                #element <div [className]={::className}/>
+        ` , '6');
+    });
+
     it("should parse comments in params", async function () {
         assert.equal(await ast.template(`() => {
             <div a=123 /* comment 1 */ b = "abc" 

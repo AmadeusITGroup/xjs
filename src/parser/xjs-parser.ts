@@ -1,6 +1,6 @@
 import { TmAstNode, parse as tmParse } from './tm-parser';
-import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY, PARAM_OPTIONAL, ASSIGNMENT, DECIMAL_PERIOD, STR_S, F_CALL, TUPLE, BRACE_SQ, LBL, LBL_DEF, MOD, V_ACC } from './scopes';
-import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsDecorator, XjsEvtListener, XjsJsStatements, XjsJsBlock, XjsError, XjsLabel } from './types';
+import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY, PARAM_OPTIONAL, ASSIGNMENT, DECIMAL_PERIOD, STR_S, F_CALL, TUPLE, BRACE_SQ, LBL, LBL_DEF, MOD, V_ACC, ATT_EXPR, PR_EXPR, V_RW } from './scopes';
+import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsDecorator, XjsJsStatements, XjsJsBlock, XjsError, XjsLabel } from './types';
 
 const RX_END_TAG = /^\s*\<\//,
     RX_OPENING_BLOCK = /^\s*\{/,
@@ -490,7 +490,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 context.push("text param");
                 advance(BLOCK_ATT);
                 advance(B_START); // (
-                params(nd, false, false);
+                params(nd, false);
                 advance(B_END); // )
                 context.pop();
             } else if (lookup(BLOCK, false)) {
@@ -567,7 +567,6 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         let nd: XjsFragment = {
             kind: "#fragment",
             params: undefined,
-            listeners: undefined,
             properties: undefined,
             decorators: undefined,
             labels: undefined,
@@ -680,13 +679,13 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         return nd;
     }
 
-    function params(f: XjsFragment | XjsDecorator | XjsText, acceptProperties = true, acceptListeners = true) {
+    function params(f: XjsFragment | XjsDecorator | XjsText, acceptProperties = true) {
         context.push("param");
 
         let stop = false;
         while (!stop) {
             if (!comment()) {
-                if (!attParam(f, acceptListeners)) {
+                if (!attParam(f)) {
                     if (!lblParam(f)) {
                         if (!decoParam(f)) {
                             if (acceptProperties) {
@@ -726,7 +725,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         return false;
     }
 
-    function attParam(f: XjsFragment | XjsDecorator | XjsText, acceptListeners = true) {
+    function attParam(f: XjsFragment | XjsDecorator | XjsText) {
         if (lookup(ATT) || lookup(ATT1)) {
             // e.g. disabled or title={expr()}
             let nd: XjsParam | undefined = {
@@ -736,7 +735,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 value: undefined,
                 lineNumber: cLine,
                 colNumber: cCol
-            }, el: XjsEvtListener | undefined = undefined;
+            };
 
             if (lookup(ATT1)) {
                 // orphan attribute - e.g. disabled
@@ -749,52 +748,51 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 advance(ATT);
                 advance(A_NAME); // attribute name
                 let nm = currentText();
-                if (acceptListeners && lookup(PARAM)) {
-                    // this attribute is an event listener
-                    el = {
-                        kind: "#eventListener",
-                        name: nm,
-                        argumentNames: undefined,
-                        code: "",
-                        lineNumber: cLine,
-                        colNumber: cCol
-                    };
-                    nd = undefined;
-                    advance(PARAM);
-                    advance(P_START);
-
-                    // extract listener arguments
-                    let argNames: string[] = [];
-                    while (!lookup(P_END)) {
-                        advance(P_VAR)
-                        argNames.push(currentText());
-                        if (lookup(SEP)) cNodeValidated = true; // eat comma separator
-                    }
-                    if (argNames.length) el.argumentNames = argNames;
-
-                    advance(P_END);
-                }
                 advance(EQ); // =
-                if (el) {
-                    let exp = xjsExpression();
-                    el.code = exp.code;
-                } else {
-                    nd!.name = nm;
-                    nd!.value = paramValue();
-                }
+                nd!.name = nm;
+                nd!.value = paramValue();
             }
             if (nd) {
                 checkName(nd.name, RX_ATT_NAME);
             }
-            if (el) {
-                let ff = f as XjsFragment;
-                if (!ff.listeners) ff.listeners = [];
-                ff.listeners.push(el);
-            } else {
-                if (!f.params) f.params = [];
-                f.params.push(nd!);
-            }
+            if (!f.params) f.params = [];
+            f.params.push(nd!);
             return true;
+        } else if (lookup(ATT_EXPR)) {
+            // e.g. {title}
+            context.push("param binding shortcut");
+            advance(ATT_EXPR);
+            let nd: XjsParam | undefined = {
+                kind: "#param",
+                name: "",
+                isOrphan: false,
+                value: undefined,
+                lineNumber: cLine,
+                colNumber: cCol
+            }, varName = "", oneTime = false;
+
+            advance(B_START);
+            if (lookup(EXP_MOD)) {
+                // ::
+                advance(EXP_MOD);
+                oneTime = true;
+            }
+            advance(V_RW);
+            nd.name = varName = currentText();
+
+            let exp: XjsExpression = {
+                kind: "#expression",
+                oneTime: oneTime,
+                code: varName,
+                lineNumber: cLine,
+                colNumber: cCol
+            }
+            nd.value = exp;
+
+            advance(B_END);
+            if (!f.params) f.params = [];
+            f.params.push(nd!);
+            context.pop();
         }
         return false;
     }
@@ -803,6 +801,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         if (lookup(PR)) {
             context.push("property");
             advance(PR);
+            let line1 = cLine, col1 = cCol;
             advance(PR_START); // [
             advance(A_NAME);
             let nm = currentText();
@@ -815,14 +814,49 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                     kind: "#property",
                     name: nm,
                     value: v,
-                    lineNumber: cLine,
-                    colNumber: cCol
+                    lineNumber: line1,
+                    colNumber: col1
                 }
                 if (!f.properties) f.properties = [];
                 f.properties.push(nd);
             }
             context.pop();
             return true;
+        } else if (lookup(PR_EXPR)) {
+            // e.g. {[className]}
+            advance(PR_EXPR);
+
+            let oneTime = false, varName = "", line1 = cLine, col1 = cCol;
+            context.push("property binding shortcut");
+
+            advance(B_START);
+            if (lookup(EXP_MOD)) {
+                // ::
+                advance(EXP_MOD);
+                oneTime = true;
+            }
+            advance(PR_START);
+            advance(V_RW);
+            varName = currentText();
+
+            let exp: XjsExpression = {
+                kind: "#expression",
+                oneTime: oneTime,
+                code: varName,
+                lineNumber: cLine,
+                colNumber: cCol
+            }
+
+            let nd: XjsProperty = {
+                kind: "#property",
+                name: varName,
+                value: exp,
+                lineNumber: line1,
+                colNumber: col1
+            };
+            advance(B_END);
+            if (!f.properties) f.properties = [];
+            f.properties.push(nd as any);
         }
         return false;
     }
