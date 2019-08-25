@@ -174,6 +174,24 @@ function includeTextNode(g: any) {
 }
 
 function includeExpressionBlock(g: any) {
+    // e.g. {=>doSomething();doSomethingElse()}
+    g.repository["xjs-expression-function-block"] = {
+        "name": "meta.block.ts",
+        "begin": "(?!\\\\)(\\{)(\\=\\>)",
+        "beginCaptures": {
+            "1": { "name": "punctuation.section.embedded.begin.js.xjs" },
+            "2": { "name": "punctuation.section.embedded.modifier.js.xjs" }
+        },
+        "end": "\\}",
+        "endCaptures": {
+            "0": { "name": "punctuation.section.embedded.end.js.xjs" }
+        },
+        "patterns": [
+            { "include": "#decl-block" },
+            { "include": "#expression" }
+        ]
+    }
+
     // e.g. {foo()} or {::bar()} or {=a.b.c}
     g.repository["xjs-expression-block"] = {
         "name": "meta.block.ts",
@@ -218,6 +236,7 @@ function attributeValues() {
         { "include": "#numeric-literal" },
         { "include": "#boolean-literal" },
         { "include": "#string" },
+        { "include": "#xjs-expression-function-block" },
         { "include": "#xjs-expression-block" }
     ]
 }

@@ -292,7 +292,7 @@ describe('TextMate parser', () => {
                     ASSIGNMENT 2:22/2:23
                     CONTENT 2:23/2:24
                     NUM 2:24/2:27
-                punctuation.terminator.statement.ts 2:27/2:28
+                TERM 2:27/2:28
                 TAG 3:0/3:18
                     T_START 3:12/3:13
                     T_CLOSE 3:13/3:14
@@ -387,7 +387,26 @@ describe('TextMate parser', () => {
                         NUM 0:28/0:31
                     T_END 0:31/0:32
             ` , "2");
-    })
+
+        assert.deepEqual(await parseAndSerialize('<div someFunc={=>abc()}>'), `
+            S 0:0/0:24
+                TAG 0:0/0:24
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT 0:4/0:23
+                        A_NAME 0:5/0:13
+                        EQ 0:13/0:14
+                        BLOCK 0:14/0:23
+                            B_START 0:14/0:15
+                            EXP_MOD 0:15/0:17
+                            F_CALL 0:17/0:20
+                                F_NAME 0:17/0:20
+                            BRACE_R 0:20/0:22
+                                CONTENT 0:21/0:22
+                            B_END 0:22/0:23
+                    T_END 0:23/0:24
+            ` , "2");
+    });
 
     it("should parse decorators", async function () {
         assert.deepEqual(await parseAndSerialize('<div @foo @bar>'), `

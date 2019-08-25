@@ -137,6 +137,7 @@ export const SCOPES = {
     "punctuation.definition.string.begin.ts": "S_START",
     "punctuation.definition.string.end.ts": "S_END",
     "punctuation.separator.parameter.ts": "SEP",
+    "punctuation.terminator.statement.ts": "TERM",
 
     "meta.tag.js.xjs": "TAG",
     "entity.name.tag.js.xjs": "T_NAME",

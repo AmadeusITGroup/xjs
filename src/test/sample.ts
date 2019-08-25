@@ -55,12 +55,13 @@ let foo = xx.template(`(state: MyStateType) => {
     <span foo=123 bar=true baz="xyz" 
         // comment
         foo2 = 123.42 bar2 = false 
+        someFunction={=>{doSomething();doSomethingElse();return 42}}
     />
     <span foo={a*2+123} bar="abc" aria-label="some label"/>
     <section title={::getTitle()} /> // one-time binding expression
     <foo @onclick(listener={e=>doSomething(e)} options={{passive:true}})
         @onmousemove={e=>$ctl.doSomething(e)}
-        @onkeypress={=>foo()} // TODO: support this shortcut
+        @onkeypress={=>foo()}
         />
 
     // no values attributes
@@ -73,6 +74,8 @@ let foo = xx.template(`(state: MyStateType) => {
     <*cpt ##bar2/>
     // binding shortcuts
     <span {title} {::title} {:: title} {[className ]} {::[className]}/>
+    // bi-directional binding
+    <span @model={=abc}/> // TODO: only valid with a.b[a][2].c
 
     // decorators
     <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>

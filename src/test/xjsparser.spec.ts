@@ -156,6 +156,36 @@ describe('XJS parser', () => {
         ` , '4');
     });
 
+    it("should parse function params", async function () {
+        assert.equal(await ast.template(`() => {
+            <div f={()=>{abc();def();return 42}}/>
+        }`), `
+            #tplFunction()
+                #element <div f={()=>{abc();def();return 42}}/>
+        ` , '1');
+
+        assert.equal(await ast.template(`() => {
+            <div f={=>abc()}/>
+        }`), `
+            #tplFunction()
+                #element <div f={()=>abc()}/>
+        ` , '2');
+
+        assert.equal(await ast.template(`() => {
+            <div f={e=>abc(e)}/>
+        }`), `
+            #tplFunction()
+                #element <div f={e=>abc(e)}/>
+        ` , '3');
+
+        assert.equal(await ast.template(`() => {
+            <div f={(a,b)=>{abc(a,b); return 9;}}/>
+        }`), `
+            #tplFunction()
+                #element <div f={(a,b)=>{abc(a,b); return 9;}}/>
+        ` , '4');
+    });
+
     it("should parse binding shortcuts", async function () {
         assert.equal(await ast.template(`() => {
             <div {title}/>
