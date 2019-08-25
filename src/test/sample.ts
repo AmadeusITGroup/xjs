@@ -58,8 +58,13 @@ let foo = xx.template(`(state: MyStateType) => {
     />
     <span foo={a*2+123} bar="abc" aria-label="some label"/>
     <section title={::getTitle()} /> // one-time binding expression
+    // TODO remove below:
     <foo click(e) = {doSomething(e); doSomethingElse(); return false} mouseMove={myFunc} mouseOver={() => {}} />
-    <foo @on(click(e)={doSomething(e)})/>
+    <foo @onclick(listener={e=>doSomething(e)} options={{passive:true}})
+        @onmousemove={e=>$ctl.doSomething(e)}
+        @onkeypress={=>foo()} // TODO: support this shortcut
+
+        />
 
     // no values attributes
     <div important disabled foo=123 />
@@ -105,6 +110,7 @@ let foo = xx.template(`(state: MyStateType) => {
 
     // Dynamic nodes
     <{getName()} class="foo"> # Content # </>
+    <{dynamicElt}/>
     <.{someNameRef}/>
     <div @content={getContent()}/> // Dynamic content as VDOM or HTML string (will be parsed)
     <div [innerHTML]={getHTML()}/>  // Dynamic content as string (will be parsed)

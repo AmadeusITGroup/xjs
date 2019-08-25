@@ -114,9 +114,6 @@ describe('TextMate grammar', () => {
 
         r = await tokenize('<div title={=abc.def}>');
         assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:4/S/TAG/T_NAME  4:5/S/TAG/ATT  5:10/S/TAG/ATT/A_NAME  10:11/S/TAG/ATT/EQ  11:12/S/TAG/ATT/BLOCK/B_START  12:13/S/TAG/ATT/BLOCK/EXP_MOD  13:16/S/TAG/ATT/BLOCK/VAR  16:17/S/TAG/ATT/BLOCK/V_ACC  17:20/S/TAG/ATT/BLOCK/PROP  20:21/S/TAG/ATT/BLOCK/B_END  21:22/S/TAG/T_END", "<div title={=abc.def}>");
-
-        r = await tokenize('<div click(e)={abc()}>');
-        assert.equal(lineInfo(r[0]), "0:1/S/TAG/T_START  1:4/S/TAG/T_NAME  4:5/S/TAG/ATT  5:10/S/TAG/ATT/A_NAME  10:11/S/TAG/ATT/PARAM/P_START  11:12/S/TAG/ATT/PARAM/P_VAR  12:13/S/TAG/ATT/PARAM/P_END  13:14/S/TAG/ATT/EQ  14:15/S/TAG/ATT/BLOCK/B_START  15:18/S/TAG/ATT/BLOCK/F_CALL/F_NAME  18:19/S/TAG/ATT/BLOCK/BRACE_R  19:20/S/TAG/ATT/BLOCK/BRACE_R  20:21/S/TAG/ATT/BLOCK/B_END  21:22/S/TAG/T_END", "<div click(e)={abc()}>");
     });
 
     it("should support no-values attributes & decorators", async function () {

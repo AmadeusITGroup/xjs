@@ -316,43 +316,6 @@ describe('XJS parser', () => {
         ` , '2');
     });
 
-    it("should parse event listeners", async function () {
-        assert.equal(await ast.template(`() => {
-            <div click(e) = {doSomething(); doSthElse(); return false;}/>
-        }`), `
-            #tplFunction()
-                #element <div click(e)={doSomething(); doSthElse(); return false;}/>
-        ` , '1');
-
-        assert.equal(await ast.template(`() => {
-            <div @deco( mouseover()={foo()} )/>
-        }`), `
-            #tplFunction()
-                #element <div @deco(mouseover()={foo()})/>
-        ` , '2');
-
-        assert.equal(await ast.template(`() => {
-            <*panel click( a,b , c)={foo()}/>
-        }`), `
-            #tplFunction()
-                #component <$panel click(a,b,c)={foo()}/>
-        ` , '3');
-
-        assert.equal(await ast.template(`() => {
-            <.placeholder selection(  )={foo()}/>
-        }`), `
-            #tplFunction()
-                #paramNode <.placeholder selection()={foo()}/>
-        ` , '4');
-
-        assert.equal(await ast.template(`() => {
-            <@tooltip selection(  )={foo()}/>
-        }`), `
-            #tplFunction()
-                #decoratorNode <@tooltip selection()={foo()}/>
-        ` , '5');
-    });
-
     it("should parse js statements", async function () {
         assert.equal(await ast.template(`() => {
             let x = 123;

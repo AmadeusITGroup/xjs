@@ -114,7 +114,6 @@ function includeXjsTag(g: any) {
     includeLabelAttributes(g);
     includeDecoratorAttributes(g);
     includePropertyAttributes(g);
-    includeEvtListenerAttributes(g);
     includeNormalAttributes(g);
 
     addStatement(g, "xjs-tag-close", {
@@ -325,36 +324,4 @@ function includeLabelAttributes(g: any) {
             "2": { "name": "entity.other.attribute-name.js.xjs" }
         }
     });
-}
-
-function includeEvtListenerAttributes(g: any) {
-    // function attributes - e.g. click(e)={doSomething(e);doSomethingElse();return false}
-
-    addXjsTagAttributeType(g, "xjs-tag-attribute-function", {
-        "name": "tag.attribute.assignment",
-        "begin": "\\s*(" + attributeName(true) + ")(?=(\\())",
-        "beginCaptures": {
-            "1": { "name": "entity.other.attribute-name.js.xjs" }
-        },
-        "end": " (?!(\\s*\\=))|(?=>)|(?=/)|(?=\\))",
-        "patterns": [
-            { "include": "#function-parameters" },
-            { "name": "keyword.operator.assignment.js.xjs", "match": "\\s*(\\=)\\s*" },
-            {
-                "name": "meta.block.ts",
-                "begin": "\\s*(\\{)",
-                "beginCaptures": {
-                    "1": { "name": "punctuation.section.embedded.begin.js.xjs" } // change default name to get same highlighting as other expression blocks
-                },
-                "end": "\\s*(\\})",
-                "endCaptures": {
-                    "1": { "name": "punctuation.section.embedded.end.js.xjs" }
-                },
-                "patterns": [
-                    { "include": "#statements" }
-                ]
-            }
-        ]
-    });
-
 }

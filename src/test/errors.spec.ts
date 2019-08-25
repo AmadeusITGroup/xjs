@@ -203,6 +203,16 @@ describe('Parsing errors', () => {
             "4");
     });
 
+    it("should be raised for invalid event listener", async function () {
+        fullErrorMode = false;
+        assert.equal(
+            await err.template(`() => {
+                <div click(e)={doSomething()}/>
+            }`),
+            "Invalid element (div) - Invalid param content 'click(' at line #2",
+            "1");
+    });
+
     it("should be raised for invalid decorator params", async function () {
         fullErrorMode = false;
         assert.equal(
