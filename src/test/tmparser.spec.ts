@@ -633,7 +633,62 @@ describe('TextMate parser', () => {
             ` , "6");
     });
 
-    it("should parse references", async function () {
+    it("should parse spread attributes", async function () {
+        assert.deepEqual(await parseAndSerialize('<div {...expr()}>'), `
+            S 0:0/0:17
+                TAG 0:0/0:17
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT_SPREAD 0:4/0:16
+                        B_START 0:5/0:6
+                        EXP_MOD 0:6/0:9
+                        F_CALL 0:9/0:13
+                            F_NAME 0:9/0:13
+                        BRACE_R 0:13/0:15
+                            CONTENT 0:14/0:15
+                        B_END 0:15/0:16
+                    T_END 0:16/0:17
+            ` , "1");
+
+        assert.deepEqual(await parseAndSerialize('<div {... expr()   }>'), `
+            S 0:0/0:21
+                TAG 0:0/0:21
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    ATT_SPREAD 0:4/0:20
+                        B_START 0:5/0:6
+                        EXP_MOD 0:6/0:9
+                        CONTENT 0:9/0:10
+                        F_CALL 0:10/0:14
+                            F_NAME 0:10/0:14
+                        BRACE_R 0:14/0:16
+                            CONTENT 0:15/0:16
+                        CONTENT 0:16/0:19
+                        B_END 0:19/0:20
+                    T_END 0:20/0:21
+            ` , "2");
+        
+        assert.deepEqual(await parseAndSerialize('<div {...[ expr() ]}>'), `
+            S 0:0/0:21
+                TAG 0:0/0:21
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    PR_SPREAD 0:4/0:20
+                        B_START 0:5/0:6
+                        EXP_MOD 0:6/0:9
+                        PR_START 0:9/0:10
+                        CONTENT 0:10/0:11
+                        F_CALL 0:11/0:15
+                            F_NAME 0:11/0:15
+                        BRACE_R 0:15/0:17
+                            CONTENT 0:16/0:17
+                        CONTENT 0:17/0:18
+                        B_END 0:18/0:20
+                    T_END 0:20/0:21
+            ` , "3");
+    });
+
+    it("should parse labels", async function () {
         assert.deepEqual(await parseAndSerialize('<div #foo #bar ##baz>'), `
             S 0:0/0:21
                 TAG 0:0/0:21

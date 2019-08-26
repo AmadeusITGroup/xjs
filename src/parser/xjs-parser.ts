@@ -1,5 +1,5 @@
 import { TmAstNode, parse as tmParse } from './tm-parser';
-import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY, PARAM_OPTIONAL, ASSIGNMENT, DECIMAL_PERIOD, STR_S, TUPLE, BRACE_SQ, LBL, LBL_DEF, MOD, V_ACC, ATT_EXPR, PR_EXPR, V_RW } from './scopes';
+import { ARROW_FUNCTION, PARAM, BLOCK, P_START, P_END, ARROW, CONTENT, P_VAR, TYPE_AN, TYPE_SEP, TYPE_PRIMITIVE, SEP, B_DEF, TXT, TXT_END, TXT_START, BLOCK_ATT, B_START, B_END, EXP_MOD, TAG, T_START, T_NAME, T_CLOSE, T_END, ATT, A_NAME, EQ, NUM, TRUE, FALSE, STR_D, S_START, S_END, ATT1, PR, PR_START, PR_END, DECO1, D_DEF, DECO, D_START, D_END, COMMENT, C_DEF, COMMENT1, C_WS, T_PREFIX, TYPE_ENTITY, PARAM_OPTIONAL, ASSIGNMENT, DECIMAL_PERIOD, STR_S, TUPLE, BRACE_SQ, LBL, LBL_DEF, MOD, V_ACC, ATT_EXPR, PR_EXPR, V_RW, ATT_SPREAD, PR_SPREAD } from './scopes';
 import { XjsTplFunction, XjsTplArgument, XjsContentNode, XjsText, XjsExpression, XjsFragment, XjsParam, XjsNumber, XjsBoolean, XjsString, XjsProperty, XjsDecorator, XjsJsStatements, XjsJsBlock, XjsError, XjsLabel } from './types';
 
 const RX_END_TAG = /^\s*\<\//,
@@ -535,6 +535,18 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 isFunctionShortcut = true;
             }
         }
+        let code = xjsExpressionCode();
+        if (isFunctionShortcut) {
+            nd.code = "()=>" + code;
+        } else {
+            nd.code = code;
+        }
+        advance(B_END);
+        context.pop()
+        return nd;
+    }
+
+    function xjsExpressionCode() {
         let buffer: string[] = [], nm = "";
         while (!lookup(B_END, false)) {
             buffer.push(currentText(true, false));
@@ -547,14 +559,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             }
             cNodeValidated = true;
         }
-        if (isFunctionShortcut) {
-            nd.code = "()=>" + buffer.join("");
-        } else {
-            nd.code = buffer.join("");
-        }
-        advance(B_END);
-        context.pop()
-        return nd;
+        return buffer.join("");
     }
 
     function checkInitIndent() {
@@ -680,7 +685,12 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             context.pop()
         } else {
             if (cNode) {
-                error(`Invalid param content '${currentText()}'`);
+                let ct = currentText();
+                if (ct.length) {
+                    error(`Invalid param content '${currentText()}'`);
+                } else {
+                    error(`Invalid param content`);
+                }
             } else {
                 error('Unexpected end of template');
             }
@@ -738,14 +748,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
     function attParam(f: XjsFragment | XjsDecorator | XjsText) {
         if (lookup(ATT) || lookup(ATT1)) {
             // e.g. disabled or title={expr()}
-            let nd: XjsParam | undefined = {
-                kind: "#param",
-                name: "",
-                isOrphan: false,
-                value: undefined,
-                lineNumber: cLine,
-                colNumber: cCol
-            };
+            let nd: XjsParam | undefined = createParamNode();
 
             if (lookup(ATT1)) {
                 // orphan attribute - e.g. disabled
@@ -760,28 +763,20 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 let nm = currentText();
                 advance(EQ); // =
                 nd!.name = nm;
-                nd!.value = paramValue();
+                nd!.value = expressionValue();
             }
             if (nd) {
                 checkName(nd.name, RX_ATT_NAME);
             }
-            if (!f.params) f.params = [];
-            f.params.push(nd!);
+            addParamNode(nd);
             return true;
         } else if (lookup(ATT_EXPR)) {
             // e.g. {title}
             context.push("param binding shortcut");
             advance(ATT_EXPR);
-            let nd: XjsParam | undefined = {
-                kind: "#param",
-                name: "",
-                isOrphan: false,
-                value: undefined,
-                lineNumber: cLine,
-                colNumber: cCol
-            }, varName = "", oneTime = false;
+            let nd = createParamNode(), varName = "", oneTime = false;
 
-            advance(B_START);
+            advance(B_START); // {
             if (lookup(EXP_MOD)) {
                 // ::
                 advance(EXP_MOD);
@@ -799,12 +794,49 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             }
             nd.value = exp;
 
-            advance(B_END);
-            if (!f.params) f.params = [];
-            f.params.push(nd!);
+            advance(B_END); // }
+            addParamNode(nd);
+            context.pop();
+        } else if (lookup(ATT_SPREAD)) {
+            context.push("param spread");
+            advance(ATT_SPREAD);
+            let nd = createParamNode();
+            nd.name = "#spread";
+            nd.isSpread = true;
+            advance(B_START); // {
+            advance(EXP_MOD); // ...
+
+            let exp: XjsExpression = {
+                kind: "#expression",
+                oneTime: false,
+                lineNumber: cLine,
+                colNumber: cCol,
+                code: xjsExpressionCode()
+            }
+            nd.value = exp;
+
+            advance(B_END); // }
+            addParamNode(nd);
             context.pop();
         }
         return false;
+
+        function createParamNode(): XjsParam {
+            return {
+                kind: "#param",
+                name: "",
+                isOrphan: false,
+                isSpread: false,
+                value: undefined,
+                lineNumber: cLine,
+                colNumber: cCol
+            };
+        }
+
+        function addParamNode(nd: XjsParam) {
+            if (!f.params) f.params = [];
+            f.params.push(nd!);
+        }
     }
 
     function propParam(f: XjsFragment) {
@@ -818,24 +850,16 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             checkName(nm, RX_SIMPLE_JS_IDENTIFIER);
             advance(PR_END);   // ]
             advance(EQ);       // =
-            let v = paramValue();
+            let v = expressionValue();
             if (v) {
-                let nd: XjsProperty = {
-                    kind: "#property",
-                    name: nm,
-                    value: v,
-                    lineNumber: line1,
-                    colNumber: col1
-                }
-                if (!f.properties) f.properties = [];
-                f.properties.push(nd);
+                let nd = createPropNode(nm, v, line1, col1);
+                addProperty(nd);
             }
             context.pop();
             return true;
         } else if (lookup(PR_EXPR)) {
             // e.g. {[className]}
             advance(PR_EXPR);
-
             let oneTime = false, varName = "", line1 = cLine, col1 = cCol;
             context.push("property binding shortcut");
 
@@ -857,18 +881,49 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 colNumber: cCol
             }
 
-            let nd: XjsProperty = {
-                kind: "#property",
-                name: varName,
-                value: exp,
-                lineNumber: line1,
-                colNumber: col1
-            };
+            let nd = createPropNode(varName, exp, line1, col1);
             advance(B_END);
-            if (!f.properties) f.properties = [];
-            f.properties.push(nd as any);
+            addProperty(nd);
+            context.pop();
+        } else if (lookup(PR_SPREAD)) {
+            advance(PR_SPREAD);
+            let line1 = cLine, col1 = cCol;
+            context.push("property spread");
+            advance(B_START); // {
+            advance(EXP_MOD); // ...
+            advance(PR_START); // [
+
+            let exp: XjsExpression = {
+                kind: "#expression",
+                oneTime: false,
+                lineNumber: cLine,
+                colNumber: cCol,
+                code: xjsExpressionCode()
+            }
+            let nd = createPropNode("#spread", exp, line1, col1);
+            nd.isSpread = true;
+
+            advance(B_END); // ]}
+            addProperty(nd);
+            context.pop();
         }
         return false;
+
+        function createPropNode(name: string, value: any, ln = 0, col = 0): XjsProperty {
+            return {
+                kind: "#property",
+                name: name,
+                value: value,
+                isSpread: false,
+                lineNumber: ln ? ln : cLine,
+                colNumber: col ? col : cCol
+            }
+        }
+
+        function addProperty(prop: XjsProperty) {
+            if (!f.properties) f.properties = [];
+            f.properties.push(prop);
+        }
     }
 
     function lblParam(f: XjsFragment | XjsDecorator | XjsText) {
@@ -903,7 +958,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             if (lookup(EQ)) {
                 advance(EQ); // =
                 nd.isOrphan = false;
-                nd.value = paramValue();
+                nd.value = expressionValue();
             }
 
             if (!f.labels) f.labels = [];
@@ -954,7 +1009,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 if (lookup(EQ)) {
                     nd.hasDefaultPropValue = true;
                     advance(EQ); // =
-                    nd.defaultPropValue = paramValue();
+                    nd.defaultPropValue = expressionValue();
                 } else if (lookup(D_START)) {
                     advance(D_START);
                     params(nd, false);
@@ -972,7 +1027,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
     }
 
     // extract the value of a param / attribute / property
-    function paramValue() {
+    function expressionValue() {
         if (lookup(NUM)) {
             advance(NUM);
             return <XjsNumber>{

@@ -151,7 +151,9 @@ function params(n: XjsFragment | XjsDecorator | XjsText, prefix = "", suffix = "
     if (n.params) {
         let buffer: string[] = [];
         for (let p of n.params) {
-            if (p.isOrphan || !p.value) {
+            if (p.isSpread) {
+                buffer.push(`{...${(p.value as XjsExpression).code}}`);
+            } else if (p.isOrphan || !p.value) {
                 buffer.push(p.name);
             } else {
                 buffer.push(`${p.name}=${getParamValue(p.value)}`);
@@ -162,7 +164,11 @@ function params(n: XjsFragment | XjsDecorator | XjsText, prefix = "", suffix = "
     if ((n as XjsFragment).properties) {
         let buffer: string[] = [];
         for (let prop of (n as XjsFragment).properties!) {
-            buffer.push(`[${prop.name}]=${getParamValue(prop.value)}`);
+            if (prop.isSpread) {
+                buffer.push(`{...[${(prop.value as XjsExpression).code}]}`);
+            } else {
+                buffer.push(`[${prop.name}]=${getParamValue(prop.value)}`);
+            }
         }
         res.push(buffer.join(" "));
     }

@@ -76,6 +76,8 @@ let foo = xx.template(`(state: MyStateType) => {
     <span {title} {::title} {:: title} {[className ]} {::[className]}/>
     // bi-directional binding
     <span @model={=abc}/> // TODO: only valid with a.b[a][2].c
+    // param spread
+    <span {...expr()} {...[ expr() ]} {...{a:213, b:234}}/>
 
     // decorators
     <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>

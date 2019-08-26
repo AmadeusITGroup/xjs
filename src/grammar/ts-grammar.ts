@@ -115,6 +115,7 @@ function includeXjsTag(g: any) {
     includeDecoratorAttributes(g);
     includePropertyAttributes(g);
     includeBindingShortcuts(g);
+    includeSpreadOperators(g);
     includeNormalAttributes(g);
 
     addStatement(g, "xjs-tag-close", {
@@ -347,6 +348,7 @@ function includeLabelAttributes(g: any) {
 }
 
 function includeBindingShortcuts(g: any) {
+    // e.g. {[name]} or {::[name]}
     addXjsTagAttributeType(g, "xjs-tag-attribute-binding-property", {
         "name": "entity.other.attribute.property.shortcut.js.xjs",
         "match": "\\s*" + attributeSeparator() + "(\\{)(\\:\\:)?(\\[)\\s*(" + attributeName() + ")\\s*(\\]})",
@@ -359,6 +361,7 @@ function includeBindingShortcuts(g: any) {
         }
     });
 
+    // e.g. {name} or {::name}
     addXjsTagAttributeType(g, "xjs-tag-attribute-binding-param", {
         "name": "entity.other.attribute.param.shortcut.js.xjs",
         "match": "\\s*" + attributeSeparator() + "(\\{)(\\:\\:)?\\s*(" + attributeName() + ")\\s*(\\})",
@@ -368,5 +371,42 @@ function includeBindingShortcuts(g: any) {
             "3": { "name": "variable.other.readwrite.ts" },
             "4": { "name": "punctuation.section.embedded.end.js.xjs" }
         }
+    });
+}
+
+function includeSpreadOperators(g: any) {
+    // e.g. {...[expr()]}
+    addXjsTagAttributeType(g, "xjs-tag-attribute-spread-property", {
+        "name": "entity.other.attribute.property.spread.js.xjs",
+        "begin": "\\s*" + attributeSeparator() + "(\\{)(\\.\\.\\.)(\\[)\\s*",
+        "beginCaptures": {
+            "1": { "name": "punctuation.section.embedded.begin.js.xjs" },
+            "2": { "name": "punctuation.section.embedded.modifier.js.xjs" },
+            "3": { "name": "punctuation.section.embedded.property.begin.js.xjs" }
+        },
+        "end": "\\s*(\\]\\})",
+        "endCaptures": {
+            "1": { "name": "punctuation.section.embedded.end.js.xjs" }
+        },
+        "patterns": [
+            { "include": "#expression" }
+        ]
+    });
+
+    // e.g. {...expr()}
+    addXjsTagAttributeType(g, "xjs-tag-attribute-spread-param", {
+        "name": "entity.other.attribute.param.spread.js.xjs",
+        "begin": "\\s*" + attributeSeparator() + "(\\{)(\\.\\.\\.)\\s*",
+        "beginCaptures": {
+            "1": { "name": "punctuation.section.embedded.begin.js.xjs" },
+            "2": { "name": "punctuation.section.embedded.modifier.js.xjs" }
+        },
+        "end": "\\s*(\\})",
+        "endCaptures": {
+            "1": { "name": "punctuation.section.embedded.end.js.xjs" }
+        },
+        "patterns": [
+            { "include": "#expression" }
+        ]
     });
 }

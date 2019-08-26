@@ -214,7 +214,7 @@ describe('XJS parser', () => {
             #tplFunction()
                 #element <div [className]={className}/>
         ` , '4');
-        
+
         assert.equal(await ast.template(`() => {
             <div {[ className  ]}/>
         }`), `
@@ -228,6 +228,22 @@ describe('XJS parser', () => {
             #tplFunction()
                 #element <div [className]={::className}/>
         ` , '6');
+    });
+
+    it("should parse spread expressions", async function () {
+        assert.equal(await ast.template(`() => {
+            <div {... expr(123)   }/>
+        }`), `
+            #tplFunction()
+                #element <div {... expr(123)   }/>
+        ` , '1');
+
+        assert.equal(await ast.template(`() => {
+            <div {...[ expr(123)   ]}/>
+        }`), `
+            #tplFunction()
+                #element <div {...[ expr(123)   ]}/>
+        ` , '2');
     });
 
     it("should parse comments in params", async function () {

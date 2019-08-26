@@ -85,6 +85,7 @@ export interface XjsParam extends XjsNode {
     kind: "#param";
     name: string;      // e.g. "title" or "disabled"
     isOrphan: boolean; // true if no value is defined
+    isSpread: boolean; // true if is spread operator (in this case name will be "#spread")
     value: XjsNumber | XjsBoolean | XjsString | XjsExpression | undefined;
 }
 
@@ -95,6 +96,7 @@ export interface XjsParam extends XjsNode {
 export interface XjsProperty extends XjsNode {
     kind: "#property";
     name: string;
+    isSpread:boolean; // true if is spread operator 
     value: XjsNumber | XjsBoolean | XjsString | XjsExpression;
 }
 
