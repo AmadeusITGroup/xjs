@@ -521,6 +521,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
         let nd: XjsExpression = {
             kind: "#expression",
             oneTime: false,
+            isBinding: false,
             code: "",
             lineNumber: cLine,
             colNumber: cCol
@@ -533,6 +534,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 nd.oneTime = true;
             } else if (modText === "=>") {
                 isFunctionShortcut = true;
+            } else if (modText === "=") {
+                nd.isBinding = true;
             }
         }
         let code = xjsExpressionCode();
@@ -788,6 +791,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             let exp: XjsExpression = {
                 kind: "#expression",
                 oneTime: oneTime,
+                isBinding: false,
                 code: varName,
                 lineNumber: cLine,
                 colNumber: cCol
@@ -809,6 +813,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             let exp: XjsExpression = {
                 kind: "#expression",
                 oneTime: false,
+                isBinding: false,
                 lineNumber: cLine,
                 colNumber: cCol,
                 code: xjsExpressionCode()
@@ -876,6 +881,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             let exp: XjsExpression = {
                 kind: "#expression",
                 oneTime: oneTime,
+                isBinding: false,
                 code: varName,
                 lineNumber: cLine,
                 colNumber: cCol
@@ -896,6 +902,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             let exp: XjsExpression = {
                 kind: "#expression",
                 oneTime: false,
+                isBinding: false,
                 lineNumber: cLine,
                 colNumber: cCol,
                 code: xjsExpressionCode()

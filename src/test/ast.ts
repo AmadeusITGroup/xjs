@@ -221,10 +221,10 @@ function getParamValue(value) {
         case "#number":
             return "" + value.value;
         case "#string":
-            return '"' + value.value + '"'; ``
+            return '"' + value.value + '"';
         case "#expression":
             let exp = value;
-            return '{' + (exp.oneTime ? "::" : "") + exp.code + '}';
+            return '{' + (exp.oneTime ? "::" : "") + (exp.isBinding ? "=" : "") + exp.code + '}';
     }
     return "INVALID";
 }

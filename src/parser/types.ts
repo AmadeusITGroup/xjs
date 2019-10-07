@@ -158,6 +158,7 @@ export interface XjsString extends XjsNode {
 export interface XjsExpression extends XjsNode {
     kind: "#expression";
     oneTime: boolean;  // true if "::" is used in the expression
+    isBinding: boolean;// true if "=" is used as expression modifier - e.g. foo={=a.b}
     code: string;      // e.g. "getSomeValue()*3"
 }
 

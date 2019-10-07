@@ -750,5 +750,14 @@ describe('XJS parser', () => {
         ` , '1');
     });
 
+    it("should support 2-way binding expressions", async function () {
+        assert.equal(await ast.template(`() => {
+            <*cpt foo={=a.b.c}/>
+        }`), `
+            #tplFunction()
+                #component <$cpt foo={=a.b.c}/>
+        ` , '1');
+    });
+
     // TODO: support function call and new initialization in template args
 });

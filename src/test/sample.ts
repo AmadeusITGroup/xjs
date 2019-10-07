@@ -75,13 +75,13 @@ let foo = xx.template(`(state: MyStateType) => {
     // binding shortcuts
     <span {title} {::title} {:: title} {[className ]} {::[className]}/>
     // bi-directional binding
-    <span @model={=abc}/> // TODO: only valid with a.b[a][2].c
+    <span @model={=a.b.c}/> // TODO: only valid with a.b[a][2].c
     // param spread
     <span {...expr()} {...[ expr() ]} {...{a:213, b:234}}/>
 
     // decorators
-    <div @class="foo" @defer @foo.bar={expr()} @bar.baz/>
-    <div @class(foo={isTrue()} bar={!isTrue()} @disabled={123} abc) disabled />
+    <div @class={{foo:isTrue(), bar:!isTrue(), baz:1}} @defer @foo.bar={expr()} @bar.baz/>
+    <div @disabled={123} abc) disabled />
     <! @foo=123> </>
 
     // sub-component with property nodes
