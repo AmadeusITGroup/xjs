@@ -58,6 +58,7 @@ let foo = xx.template(`(state: MyStateType) => {
         someFunction={=>{doSomething();doSomethingElse();return 42}}
     />
     <span foo={a*2+123} bar="abc" aria-label="some label"/>
+    <span bar='abc' aria-label='some label' [title]='single-quote value'/>
     <section title={::getTitle()} /> // one-time binding expression
     <foo @onclick(listener={e=>doSomething(e)} options={{passive:true}})
         @onmousemove={e=>$ctl.doSomething(e)}

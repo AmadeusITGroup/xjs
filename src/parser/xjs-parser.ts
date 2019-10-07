@@ -301,11 +301,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 nd.defaultValue = num;
             } else if (lookup(STR_S) || lookup(STR_D)) {
                 // string with single or double quotes
-                if (lookup(STR_S)) {
-                    advance(STR_S);
-                } else {
-                    advance(STR_D);
-                }
+                lookup(STR_S) ? advance(STR_S) : advance(STR_D);
                 nd.defaultValue = currentText(false);
                 advance(S_START);
                 if (lookup(CONTENT)) {
@@ -1053,8 +1049,8 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
                 kind: "#boolean",
                 value: false
             };
-        } else if (lookup(STR_D)) {
-            advance(STR_D);
+        } else if (lookup(STR_S) || lookup(STR_D)) {
+            lookup(STR_D) ? advance(STR_D) : advance(STR_S);
             advance(S_START);
             advance(CONTENT, false);
             let nd: XjsString = {

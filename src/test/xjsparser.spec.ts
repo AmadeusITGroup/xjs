@@ -759,5 +759,31 @@ describe('XJS parser', () => {
         ` , '1');
     });
 
+    it("should support single quote for string values", async function () {
+        assert.equal(await ast.template(`() => {
+            <div class='abc' [title]='def'>
+                <*b.section title='hello'>
+                    <.header class='big'>
+                        <b> # Rich header content # </b>
+                        <.sidePanel>
+                            <button class='cool'/>
+                        </>
+                    </>
+                    # Section content #
+                </>
+            </div>
+        }`), `
+            #tplFunction()
+                #element <div class="abc" [title]="def">
+                    #component <$b.section title="hello">
+                        #paramNode <.header class="big">
+                            #element <b>
+                                #textNode " Rich header content "
+                            #paramNode <.sidePanel>
+                                #element <button class="cool"/>
+                        #textNode " Section content "
+        ` , '1');
+    });
+
     // TODO: support function call and new initialization in template args
 });
