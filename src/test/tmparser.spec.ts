@@ -631,6 +631,24 @@ describe('TextMate parser', () => {
                         B_END 0:16/0:18
                     T_END 0:18/0:19
             ` , "6");
+
+        assert.deepEqual(await parseAndSerialize('<div @deco({data})/>'), `
+            S 0:0/0:20
+                TAG 0:0/0:20
+                    T_START 0:0/0:1
+                    T_NAME 0:1/0:4
+                    DECO 0:4/0:18
+                        D_DEF 0:5/0:6
+                        A_NAME 0:6/0:10
+                        D_START 0:10/0:11
+                        ATT_EXPR 0:11/0:17
+                            B_START 0:11/0:12
+                            V_RW 0:12/0:16
+                            B_END 0:16/0:17
+                        D_END 0:17/0:18
+                    T_CLOSE 0:18/0:19
+                    T_END 0:19/0:20
+            ` , "7");
     });
 
     it("should parse spread attributes", async function () {

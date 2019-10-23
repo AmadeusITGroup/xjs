@@ -228,6 +228,36 @@ describe('XJS parser', () => {
             #tplFunction()
                 #element <div [className]={::className}/>
         ` , '6');
+
+        assert.equal(await ast.template(`() => {
+            <*cpt {title}/>
+        }`), `
+            #tplFunction()
+                #component <$cpt title={title}/>
+        ` , '7');
+        assert.equal(await ast.template(`() => {
+            <*cpt>
+                <.param {title}/>
+            </>
+        }`), `
+            #tplFunction()
+                #component <$cpt>
+                    #paramNode <.param title={title}/>
+        ` , '8');
+
+        assert.equal(await ast.template(`() => {
+            <div {title} {foo}/>
+        }`), `
+            #tplFunction()
+                #element <div title={title} foo={foo}/>
+        ` , '9');
+
+        assert.equal(await ast.template(`() => {
+            <div @foo(data="x" {title} {foo})/>
+        }`), `
+            #tplFunction()
+                #element <div @foo(data="x" title={title} foo={foo})/>
+        ` , '10');
     });
 
     it("should parse spread expressions", async function () {

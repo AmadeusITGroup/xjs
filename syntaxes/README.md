@@ -6,6 +6,14 @@ The grammar can be built tested through the following command:
     yarn test
 ```
 
+
+## Updating the TypeScript grammar
+
+ To generate a new grammar version:
+ - update the syntaxes/TypeScript.tmLanguage.json file from
+   https://github.com/Microsoft/vscode/blob/master/extensions/typescript-basics/syntaxes/TypeScript.tmLanguage.json
+ - and run "yarn generate"
+
 ## Validating the grammar in VS Code
 
 Testing the syntax highlighting in VS Code requires 2 steps:

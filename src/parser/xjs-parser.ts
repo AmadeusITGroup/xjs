@@ -797,6 +797,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             advance(B_END); // }
             addParamNode(nd);
             context.pop();
+            return true;
         } else if (lookup(ATT_SPREAD)) {
             context.push("param spread");
             advance(ATT_SPREAD);
@@ -819,6 +820,7 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             advance(B_END); // }
             addParamNode(nd);
             context.pop();
+            return true;
         }
         return false;
 
