@@ -1,0 +1,71 @@
+XSD file sample
+
+Some text // Single line comment
+
+Special characters:
+- carriage return: \n
+- non-breakable space: \s
+- backslash: \\ 
+- angle brackets: \< \>
+
+// simple cdata fragment
+<!cdata>
+    // raw data 
+    // unescaped text here - except for \</!cdata>
+    </!cdata > -> this works as well because of the space
+    > Self closing tags {ref}: // comment
+    \n 
+</!cdata>
+// empty cdata
+<!cdata></!cdata> 
+// cdata with attributes and pre-processor instructions
+<!cdata @@foo.bar="baz" @@baz foo=123>
+    // this is cdata content
+    <div></div>
+    \<!cdata> -> escaped
+</!cdata>
+
+<div/>
+<!/>
+<*cpt/>
+with labels: <a #foo #bar={abc.drew} #bar2=123 #bar3=true ##baz/>
+with attributes: <*cpt class="abcd" foo=123 blah={abc}
+bar=false 
+baz/>
+with properties: <div [className]="abc" [def]=123 [ghi]=false/>
+with decorators: <*section.bar @foo.bar=123 @xyz(a="b" z={abc} @foo) @blah={abc}>/>
+
+/*
+    Multi line comment
+*/
+<div /* tr */ a="b"
+    // another comment
+title="abc"> html text </div>
+
+<foo // some comment
+    [property]=123 bar=1 [baz]=2
+    /* multi-line
+    comment */
+    bar=true
+/>
+
+<@foo bar=123>
+
+</@foo>
+
+<*cpt>
+
+</*cpt>
+
+// With pre-processor instructions 
+<! @@import="">
+
+<! @@json.path="foo.bar">
+    <*b.textfield @value={=x.y.z}>
+    Some text here
+    <! @@inject="file.ts#abc"/>
+</!>
+
+<! @@json.path="bar.baz" /* comments */>
+
+</>

@@ -1,0 +1,530 @@
+{
+    "scopeName": "source.xdf",
+    "patterns": [
+        {
+            "include": "#xdf-cdata"
+        },
+        {
+            "include": "#xjs-tag-open"
+        },
+        {
+            "include": "#xjs-tag-close"
+        },
+        {
+            "include": "#comment"
+        },
+        {
+            "include": "#string-character-escape"
+        }
+    ],
+    "repository": {
+        "comment": {
+            "patterns": [
+                {
+                    "name": "comment.block.ts",
+                    "begin": "(/\\*)",
+                    "beginCaptures": {
+                        "1": {
+                            "name": "punctuation.definition.comment.ts"
+                        }
+                    },
+                    "end": "\\*/",
+                    "endCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.comment.ts"
+                        }
+                    }
+                },
+                {
+                    "begin": "(^[ \\t]+)?(//)",
+                    "beginCaptures": {
+                        "1": {
+                            "name": "punctuation.whitespace.comment.leading.ts"
+                        },
+                        "2": {
+                            "name": "comment.line.double-slash.ts"
+                        }
+                    },
+                    "end": "(?=$)",
+                    "contentName": "comment.line.double-slash.ts"
+                }
+            ]
+        },
+        "string-character-escape": {
+            "name": "constant.character.escape.ts",
+            "match": "\\\\(n|s|\\\\|\\<|\\>)"
+        },
+        "xjs-tag-open": {
+            "name": "meta.tag.js.xjs",
+            "begin": "(<(?![/\\s\\d]))(\\!|((\\@|\\.|\\*)?[a-zA-Z][\\w\\-\\.]*))",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.definition.tag.begin.js.xjs"
+                },
+                "2": {
+                    "name": "entity.name.tag.js.xjs"
+                }
+            },
+            "end": "(\\/?)(\\>)",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.tag.close.js.xjs"
+                },
+                "2": {
+                    "name": "punctuation.definition.tag.end.js.xjs"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#xdf-attributes"
+                }
+            ]
+        },
+        "xjs-tag-close": {
+			"name": "meta.tag.js.xjs",
+			"begin": "(<)(/)(\\!|((\\@|\\.|\\*)?[a-zA-Z][\\w\\-\\.]*))?",
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.definition.tag.begin.js.xjs"
+				},
+				"2": {
+					"name": "punctuation.definition.tag.close.js.xjs"
+				},
+				"3": {
+					"name": "entity.name.tag.js.xjs"
+				}
+			},
+			"end": ">",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.tag.end.js.xjs"
+				}
+			}
+		},
+        "xdf-cdata": {
+            "name": "meta.tag.js.xjs",
+            "begin": "(<)(\\!cdata)",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.definition.tag.begin.js.xjs"
+                },
+                "2": {
+                    "name": "entity.name.tag.js.xjs"
+                }
+            },
+            "end": "(<\\/)(\\!cdata)(>)",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.tag.begin.js.xjs"
+                },
+                "2": {
+                    "name": "entity.name.tag.js.xjs"
+                },
+                "3": {
+                    "name": "punctuation.definition.tag.end.js.xjs"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#xdf-attributes"
+                },
+                {
+                    "include": "#xdf-cdata-content"
+                }
+            ]
+        },
+        "xdf-cdata-content": {
+            "name": "cdata.content.xdf",
+            "begin": "\\s*(>)",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.definition.tag.end.js.xjs"
+                }
+            },
+            "end": "(?=</\\!cdata>)",
+            "patterns": [
+                {
+                    "include": "#xdf-cdata-string"
+                },
+                {
+                    "include": "#xdf-cdata-string-end"
+                }
+            ]
+        },
+        "xdf-cdata-string": {
+            "name": "string.cdata.content.xdf",
+            "match": "((\\\\</\\!cdata>)|(.(?!</\\!cdata>)))+"
+        },
+        "xdf-cdata-string-end": {
+            "name": "string.cdata.content.xdf",
+            "match": ".(?=</\\!cdata>)"
+        },
+        "xdf-attributes": {
+            "patterns": [
+                {
+                    "include": "#comment"
+                },
+                {
+                    "include": "#xjs-tag-attribute-label"
+                },
+                {
+                    "include": "#xjs-tag-attribute-label-no-expr"
+                },
+                {
+                    "include": "#xjs-tag-attribute-decorator"
+                },
+                {
+                    "include": "#xjs-tag-attribute-decorator-with-attributes"
+                },
+                {
+                    "include": "#xjs-tag-attribute-decorator-no-values"
+                },
+                {
+                    "include": "#xjs-tag-property"
+                },
+                {
+                    "include": "#xjs-tag-attribute"
+                },
+                {
+                    "include": "#xjs-tag-attribute-no-values"
+                }
+            ]
+        },
+        "xdf-attributes-values": {
+            "name": "entity.other.attribute.value",
+            "patterns": [
+                {
+                    "include": "#numeric-literal"
+                },
+                {
+                    "include": "#boolean-literal"
+                },
+                {
+                    "include": "#string"
+                },
+                {
+                    "include": "#xdf-expression-block"
+                }
+            ]
+        },
+        "xjs-tag-attribute-decorator": {
+            "name": "entity.other.attribute.decorator.assignment",
+            "begin": "\\s*((?<= |\\(|^)\\@{1,2})([\\$\\w][\\w\\.]*)\\s*(\\=)\\s*",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.section.embedded.decorator.js.xjs"
+                },
+                "2": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                },
+                "3": {
+                    "name": "keyword.operator.assignment.js.xjs"
+                }
+            },
+            "end": " |(?=>)|(?=/)|(?=\\))",
+            "patterns": [
+                {
+                    "include": "#xdf-attributes-values"
+                }
+            ]
+        },
+        "xjs-tag-attribute-decorator-with-attributes": {
+            "name": "entity.other.attribute.decorator.assignment",
+            "begin": "\\s*((?<= |\\(|^)\\@{1,2})([\\$\\w][\\w\\.]*)\\s*(\\()\\s*",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.section.embedded.decorator.js.xjs"
+                },
+                "2": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                },
+                "3": {
+                    "name": "punctuation.section.embedded.decorator.begin.js.xjs"
+                }
+            },
+            "end": "\\)",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.section.embedded.decorator.end.js.xjs"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#xdf-attributes"
+                }
+            ]
+        },
+        "xjs-tag-attribute-decorator-no-values": {
+            "name": "entity.other.attribute.decorator.js.xjs",
+            "match": "\\s*(?<= |\\(|^)(\\@{1,2})([\\$\\w][\\w\\.]*)(?=(\\s|/|>|\\)))",
+            "captures": {
+                "1": {
+                    "name": "punctuation.section.embedded.decorator.js.xjs"
+                },
+                "2": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                }
+            }
+        },
+        "xdf-ref": {
+            "name": "punctuation.accessor.ts",
+            "match": "a-z[a-zA-Z0-9_]*"
+        },
+        "xdf-expression-block": {
+            "name": "meta.block.expression.js.xdf",
+            "begin": "(?!\\\\)(\\{)((\\:\\:)|(\\=))?",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.section.embedded.begin.js.xjs"
+                },
+                "2": {
+                    "name": "punctuation.section.embedded.modifier.js.xjs"
+                }
+            },
+            "end": "\\}",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.section.embedded.end.js.xjs"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#xdf-ref"
+                }
+            ]
+        },
+        "xjs-tag-property": {
+            "name": "entity.other.attribute.property.assignment",
+            "begin": "((?<= |\\(|^)\\[)([\\$\\w]\\w*)(\\])\\s*(=)\\s*",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.section.embedded.property.begin.js.xjs"
+                },
+                "2": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                },
+                "3": {
+                    "name": "punctuation.section.embedded.property.end.js.xjs"
+                },
+                "4": {
+                    "name": "keyword.operator.assignment.js.xjs"
+                }
+            },
+            "end": " |(?=>)|(?=/)|(?=\\))",
+            "patterns": [
+                {
+                    "include": "#xdf-attributes-values"
+                }
+            ]
+        },
+        "xjs-tag-attribute": {
+            "name": "entity.other.attribute.assignment",
+            "begin": "\\s*((?<= |\\(|^)[\\$\\w][\\w\\-]*)\\s*(=)\\s*",
+            "beginCaptures": {
+                "1": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                },
+                "2": {
+                    "name": "keyword.operator.assignment.js.xjs"
+                }
+            },
+            "end": " |(?=>)|(?=/)|(?=\\))",
+            "patterns": [
+                {
+                    "include": "#xdf-attributes-values"
+                }
+            ]
+        },
+        "xjs-tag-attribute-no-values": {
+            "name": "entity.other.attribute.orphan",
+            "match": "\\s*((?<= |\\(|^)[\\$\\w][\\w\\-]*)(?=(\\s|/|>|\\)))",
+            "captures": {
+                "1": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                }
+            }
+        },
+        "xjs-tag-attribute-label": {
+            "name": "entity.other.attribute.label.js.xjs",
+            "begin": "\\s*((?<= |\\(|^)\\#\\#?)([\\$\\w][\\w\\.]*)\\s*(\\=)\\s*",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.section.embedded.label.js.xjs"
+                },
+                "2": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                },
+                "3": {
+                    "name": "keyword.operator.assignment.js.xjs"
+                }
+            },
+            "end": " |(?=>)|(?=/)|(?=\\))",
+            "patterns": [
+                {
+                    "include": "#xdf-attributes-values"
+                }
+            ]
+        },
+        "xjs-tag-attribute-label-no-expr": {
+            "name": "entity.other.attribute.label.js.xjs",
+            "match": "\\s*(?<= |\\(|^)(\\#\\#?)([\\$\\w]\\w*)",
+            "captures": {
+                "1": {
+                    "name": "punctuation.section.embedded.label.js.xjs"
+                },
+                "2": {
+                    "name": "entity.other.attribute-name.js.xjs"
+                }
+            }
+        },
+        "numeric-literal": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.hex.ts",
+                    "match": "\\b(?<!\\$)0(?:x|X)[0-9a-fA-F][0-9a-fA-F_]*(n)?\\b(?!\\$)",
+                    "captures": {
+                        "1": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        }
+                    }
+                },
+                {
+                    "name": "constant.numeric.binary.ts",
+                    "match": "\\b(?<!\\$)0(?:b|B)[01][01_]*(n)?\\b(?!\\$)",
+                    "captures": {
+                        "1": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        }
+                    }
+                },
+                {
+                    "name": "constant.numeric.octal.ts",
+                    "match": "\\b(?<!\\$)0(?:o|O)?[0-7][0-7_]*(n)?\\b(?!\\$)",
+                    "captures": {
+                        "1": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        }
+                    }
+                },
+                {
+                    "match": "(?x)\n(?<!\\$)(?:\n  (?:\\b[0-9][0-9_]*(\\.)[0-9][0-9_]*[eE][+-]?[0-9][0-9_]*(n)?\\b)| # 1.1E+3\n  (?:\\b[0-9][0-9_]*(\\.)[eE][+-]?[0-9][0-9_]*(n)?\\b)|             # 1.E+3\n  (?:\\B(\\.)[0-9][0-9_]*[eE][+-]?[0-9][0-9_]*(n)?\\b)|             # .1E+3\n  (?:\\b[0-9][0-9_]*[eE][+-]?[0-9][0-9_]*(n)?\\b)|                 # 1E+3\n  (?:\\b[0-9][0-9_]*(\\.)[0-9][0-9_]*(n)?\\b)|                      # 1.1\n  (?:\\b[0-9][0-9_]*(\\.)(n)?\\B)|                                  # 1.\n  (?:\\B(\\.)[0-9][0-9_]*(n)?\\b)|                                  # .1\n  (?:\\b[0-9][0-9_]*(n)?\\b(?!\\.))                                 # 1\n)(?!\\$)",
+                    "captures": {
+                        "0": {
+                            "name": "constant.numeric.decimal.ts"
+                        },
+                        "1": {
+                            "name": "meta.delimiter.decimal.period.ts"
+                        },
+                        "2": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        },
+                        "3": {
+                            "name": "meta.delimiter.decimal.period.ts"
+                        },
+                        "4": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        },
+                        "5": {
+                            "name": "meta.delimiter.decimal.period.ts"
+                        },
+                        "6": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        },
+                        "7": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        },
+                        "8": {
+                            "name": "meta.delimiter.decimal.period.ts"
+                        },
+                        "9": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        },
+                        "10": {
+                            "name": "meta.delimiter.decimal.period.ts"
+                        },
+                        "11": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        },
+                        "12": {
+                            "name": "meta.delimiter.decimal.period.ts"
+                        },
+                        "13": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        },
+                        "14": {
+                            "name": "storage.type.numeric.bigint.ts"
+                        }
+                    }
+                }
+            ]
+        },
+        "boolean-literal": {
+            "patterns": [
+                {
+                    "name": "constant.language.boolean.true.ts",
+                    "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))true(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
+                },
+                {
+                    "name": "constant.language.boolean.false.ts",
+                    "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))false(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
+                }
+            ]
+        },
+        "string": {
+            "patterns": [
+                {
+                    "include": "#qstring-single"
+                },
+                {
+                    "include": "#qstring-double"
+                }
+            ]
+        },
+        "qstring-double": {
+            "name": "string.quoted.double.ts",
+            "begin": "\"",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.ts"
+                }
+            },
+            "end": "(\")|((?:[^\\\\\\n])$)",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.string.end.ts"
+                },
+                "2": {
+                    "name": "invalid.illegal.newline.ts"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#string-character-escape"
+                }
+            ]
+        },
+        "qstring-single": {
+            "name": "string.quoted.single.ts",
+            "begin": "'",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.ts"
+                }
+            },
+            "end": "(\\')|((?:[^\\\\\\n])$)",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.string.end.ts"
+                },
+                "2": {
+                    "name": "invalid.illegal.newline.ts"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#string-character-escape"
+                }
+            ]
+        }
+    }
+}

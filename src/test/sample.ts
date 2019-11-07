@@ -82,7 +82,7 @@ let foo = xx.template(`(state: MyStateType) => {
 
     // decorators
     <div @class={{foo:isTrue(), bar:!isTrue(), baz:1}} @defer @foo.bar={expr()} @bar.baz/>
-    <div @disabled={123} abc) disabled />
+    <div @disabled(foo={123} abc) disabled />
     <! @foo=123> </>
 
     // sub-component with property nodes

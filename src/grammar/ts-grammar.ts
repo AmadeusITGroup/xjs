@@ -222,7 +222,7 @@ function addXjsTagAttributeType(g: any, name: string, json: any) {
 }
 
 function attributeSeparator() {
-    return "(?<= |\\()";
+    return "(?<= |\\(|^)";
 }
 
 function attributeName(withDots = false, withDashes = false) {

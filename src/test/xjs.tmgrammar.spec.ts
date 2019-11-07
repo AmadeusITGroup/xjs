@@ -3,7 +3,7 @@ import { tokenize } from '../parser/tm-parser';
 import { IToken } from 'vscode-textmate';
 import { SCOPES } from '../parser/scopes';
 
-describe('TextMate grammar', () => {
+describe('XJS TextMate grammar', () => {
 
     function lineInfo(tokens: IToken[]) {
         let r: string[] = [], len = tokens.length, t: IToken, scope: string[], tmp: string;

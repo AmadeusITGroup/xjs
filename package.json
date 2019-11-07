@@ -21,6 +21,14 @@
         "Programming Languages"
     ],
     "contributes": {
+        "languages": [
+            {
+                "id": "xdf",
+                "extensions": [
+                    ".xdf"
+                ]
+            }
+        ],
         "grammars": [
             {
                 "scopeName": "template.xjs",
@@ -28,6 +36,11 @@
                 "injectTo": [
                     "source.ts"
                 ]
+            },
+            {
+                "language": "xdf",
+                "scopeName": "source.xdf",
+                "path": "./syntaxes/xdf.tmLanguage.json"
             }
         ]
     },
