@@ -1,6 +1,6 @@
-import { XjsTplFunction, XjsText, XjsExpression, XjsFragment, XjsJsBlock, XjsDecorator, XjsJsStatements } from './../parser/types';
-import { parse } from '../parser/xjs-parser';
-import { XjsNode } from '../parser/types';
+import { XjsTplFunction, XjsText, XjsExpression, XjsFragment, XjsJsBlock, XjsDecorator, XjsJsStatements } from '../xjs/types';
+import { parse } from '../xjs/parser';
+import { XjsNode } from '../xjs/types';
 
 export let ast = {
     rootPrefix: "        ",

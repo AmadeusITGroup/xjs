@@ -1,6 +1,6 @@
-import { SCOPES } from '../parser/scopes';
+import { SCOPES } from '../xjs/scopes';
 import * as assert from 'assert';
-import { parse, TmAstNode } from '../parser/tm-parser';
+import { parse, TmAstNode } from '../xjs/tm-parser';
 
 
 describe('TextMate parser', () => {

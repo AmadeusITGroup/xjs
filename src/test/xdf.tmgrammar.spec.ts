@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { tokenizeXdf } from '../parser/tm-parser';
+import { tokenizeXdf } from '../xjs/tm-parser';
 import { IToken } from 'vscode-textmate';
 
 describe('XJS TextMate grammar', () => {

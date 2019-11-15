@@ -1,7 +1,7 @@
 import * as assert from 'assert';
-import { tokenize } from '../parser/tm-parser';
+import { tokenize } from '../xjs/tm-parser';
 import { IToken } from 'vscode-textmate';
-import { SCOPES } from '../parser/scopes';
+import { SCOPES } from '../xjs/scopes';
 
 describe('XJS TextMate grammar', () => {
 

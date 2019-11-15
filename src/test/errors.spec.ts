@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { parse } from '../parser/xjs-parser';
-import { XjsError } from '../parser/types';
+import { parse } from '../xjs/parser';
+import { XjsError } from '../xjs/types';
 
 describe('Parsing errors', () => {
     let fullErrorMode = true;
