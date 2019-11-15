@@ -146,7 +146,7 @@ describe('XDF', () => {
     describe('Parser', () => {
         it("should parse simple text nodes", function () {
             assert.equal(str(parse('Hello  World\n(!)')), `
-                Hello  World
+                Hello World
                 (!)
                 `, "1")
 
@@ -155,12 +155,12 @@ describe('XDF', () => {
             assert.equal(str(parse(`\
                 \\                     Special chars\\nNew line
 
-                \\s
+                \\sx
                 `)), `
-                                      Special chars
+                  Special chars
                 New line
                 
-                                  
+                 x 
                 `, "2")
         });
 
@@ -178,13 +178,54 @@ describe('XDF', () => {
             `)), `
                 <div>
                   <span> Hello World </span>
-                  <*foo>ABC DEF    G</*foo>
+                  <*foo>ABC DEF G</*foo>
                   <*bar>
                     <.header/>
                      Hello again 
                   </>
                 </>
                 `, "1")
+        });
+
+        it("should parse comments", function () {
+            assert.equal(str(parse(`
+                <div>
+                    // first comment
+                    some text
+                    /* second
+                    comment */
+                    <span> Hello World     </span>
+                    // <*foo // another comment
+                </>
+            `)), `
+                <div>
+                   some text 
+                  <span> Hello World </span>
+                </>
+                `, "1");
+
+            assert.equal(str(parse(`
+                <div // comment
+                  class="foo">
+                  <span /* another 
+                  comment */> Hello World </span>
+                </>
+            `)), `
+                <div class='foo'>
+                  <span> Hello World </span>
+                </>
+                `, "2");
+
+            assert.equal(str(parse(`
+                <div @class(// comment
+                  value=123 /* comment */)>
+                  <span/*xyz*/class="abc"> Hello World </span>
+                </>
+            `)), `
+                <div @class(value=123)>
+                  <span class='abc'> Hello World </span>
+                </>
+                `, "3");
         });
 
         it("should parse child fragments", function () {
@@ -207,7 +248,7 @@ describe('XDF', () => {
                 <div>
                   <span> Hello World </span>
                   <! @foo @bar='baz'>
-                    <*foo>ABC DEF    G</*foo>
+                    <*foo>ABC DEF G</*foo>
                     <*bar>
                       <.header/>
                        Hello again 

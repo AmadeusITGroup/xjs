@@ -5,7 +5,7 @@ const U = undefined, NO_VALUE: XdfRef = { kind: "#ref", identifier: "" };
 
 export interface XdfFragment {
     kind: "#fragment";
-    children: (XdfFragment | XdfElement | XdfText | XdfCData)[];
+    children: XdfChildElement[];
     ref(value: string): XdfRef;
     refs: XdfRef[];
     params?: XdfParam[];
@@ -23,7 +23,7 @@ export interface XdfElement {
     name?: string;
     nameRef?: string;
     params?: XdfParam[];
-    children?: (XdfFragment | XdfElement | XdfText | XdfCData)[];
+    children?: XdfChildElement[];
 }
 
 export interface XdfText {
@@ -62,8 +62,10 @@ export interface XdfPreProcessorCtxt {
     preProcessors: { [name: string]: XdfPreProcessor };
 }
 
+export type XdfChildElement = XdfFragment | XdfElement | XdfText | XdfCData;
+
 // -------------------------------------------------------------------------------------
-// Tree API to dynamically create an XTML tree and bypass the XTML parser
+// Tree API to dynamically create an XDF tree and bypass the XDF parser
 
 export function createXdfFragment(root = true): XdfFragment {
     return new XFragment(root);
@@ -176,7 +178,7 @@ const PREFIXES = {
     "#label": ""
 }
 
-function serialize(nodes: (XdfFragment | XdfElement | XdfText | XdfCData)[], startIndent: string, indent: string, multiline: boolean) {
+function serialize(nodes: XdfChildElement[], startIndent: string, indent: string, multiline: boolean) {
     if (!nodes.length) return "";
     let buf: string[] = [], start: string;
     for (let node of nodes) {

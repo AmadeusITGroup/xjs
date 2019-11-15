@@ -123,7 +123,9 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
             if (spacesFound) {
                 charCodes[0] = CHAR_SPACE; // leading spaces are transformed in a single space
             }
+            let lastIsSpace = spacesFound;
             while (cc !== CHAR_LT && cc !== CHAR_EOS) {
+                eatComments();
                 // capture string
                 if (cc === CHAR_BSLA) {
                     cc = eat(CHAR_BSLA); // \
@@ -131,14 +133,21 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                         // transform into non-breaking space
                         moveNext();
                         charCodes.push(CHAR_NBSP);
+                        lastIsSpace = true;
                     } else if (cc == CHAR_n) {
                         // \n new line
                         moveNext();
                         charCodes.push(CHAR_NL);
+                        lastIsSpace = true;
                     }
                 } else {
-                    charCodes.push(cc);
-                    moveNext();
+                    if (lastIsSpace && isSpace(cc) && cc !== CHAR_NL) {
+                        moveNext(); // keep only one space but keep new lines
+                    } else {
+                        lastIsSpace = isSpace(cc);
+                        charCodes.push(cc);
+                        moveNext();
+                    }
                 }
             }
             addText(parent, String.fromCharCode.apply(null, charCodes).replace(RX_TRAILING_SPACES, " "));
@@ -150,19 +159,56 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         // eat spaces (white spaces or carriage return, tabs, etc.) 
         // return true if spaces have been found
         if (cc === CHAR_EOS) return false;
-        let startPos = pos;
+        let startPos = pos, processing = true;
 
+        while (processing) {
+            if (isSpace(cc)) {
+                // white spaces
+                moveNext();
+                eatComments();
+            } else if (!eatComments()) {
+                processing = false;
+            }
+        }
+        return pos !== startPos;
+    }
+
+    function isSpace(c: number) {
         // CHAR_BACK = 8,   // \b backspace
         // CHAR_TAB = 9,    // \t tab
         // CHAR_NL = 10,    // \n new line
         // CHAR_VTAB = 11,  // \v vertical tab
         // CHAR_FEED = 12,  // \f form feed
         // CHAR_CR = 13,    // \r carriage return
-        while (cc === CHAR_SPACE || (cc > 7 && cc < 14)) {
-            // white spaces
-            moveNext();
+        return c === CHAR_SPACE || (c > 7 && c < 14);
+    }
+
+    function eatComments(): boolean {
+        if (cc !== CHAR_FSLA) return false;
+        let nc = nextCharCode();
+        if (nc === CHAR_FSLA) {
+            // double-slash comment
+            eat(CHAR_FSLA);
+            eat(CHAR_FSLA);
+            while (CHAR_NL !== cc as any && CHAR_EOS !== cc as any) {
+                moveNext();
+            }
+            moveNext(); // to eat last new line
+            return true;
+        } else if (nc === CHAR_STAR) {
+            eat(CHAR_FSLA);
+            eat(CHAR_STAR);
+            let processing = true;
+            while (processing) {
+                if (CHAR_EOS === cc as any || (CHAR_STAR === cc as any && nextCharCode() === CHAR_FSLA)) {
+                    moveNext();
+                    processing = false;
+                }
+                moveNext();
+            }
+            return true;
         }
-        return pos !== startPos;
+        return false;
     }
 
     function xdfElement(parent: XdfFragment | XdfElement): boolean {
