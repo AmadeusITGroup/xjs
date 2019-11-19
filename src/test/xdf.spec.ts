@@ -268,7 +268,7 @@ describe('XDF', () => {
                     <span #foo   #bar = 'xxx'>
                         <div _foo=123  bar=12.345 ba_z = +123 blah=-42/>
                         <div #xyz = {blah}  @required/>
-                        <div @title @foo={ xyz }  @bar(a="b" c=123) @blah(  a=123  @abc   )  @baz(   )   />
+                        <div @title @foo={ xyz }  @bar(a="b" c=123) @blah(  a=123  @abc   )  @baz(@foo)   />
                     </span>
                 </>
             `)), `
@@ -278,7 +278,7 @@ describe('XDF', () => {
                   <span #foo #bar='xxx'>
                     <div _foo=123 bar=12.345 ba_z=123 blah=-42/>
                     <div #xyz={blah} @required/>
-                    <div @title @foo={xyz} @bar(a='b' c=123) @blah(a=123 @abc) @baz/>
+                    <div @title @foo={xyz} @bar(a='b' c=123) @blah(a=123 @abc) @baz(@foo)/>
                   </>
                 </>
                 `, "1")
