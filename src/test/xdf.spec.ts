@@ -264,19 +264,21 @@ describe('XDF', () => {
                 <div foo="bar" disabled baz='abc'>
                     <span baz='a b \\'c\\' d' x=true   
                         y  =  false/>
+                    <span @title> Hello </span>
                     <span #foo   #bar = 'xxx'>
                         <div _foo=123  bar=12.345 ba_z = +123 blah=-42/>
                         <div #xyz = {blah}  @required/>
-                        <div @foo={ xyz }  @bar(a="b" c=123) @blah(  a=123  @abc   )  @baz(   )   />
+                        <div @title @foo={ xyz }  @bar(a="b" c=123) @blah(  a=123  @abc   )  @baz(   )   />
                     </span>
                 </>
             `)), `
                 <div foo='bar' disabled baz='abc'>
                   <span baz='a b \\'c\\' d' x=true y=false/>
+                  <span @title> Hello </span>
                   <span #foo #bar='xxx'>
                     <div _foo=123 bar=12.345 ba_z=123 blah=-42/>
-                    <div #xyz={blah}/>
-                    <div @foo={xyz} @bar(a='b' c=123) @blah(a=123 @abc) @baz/>
+                    <div #xyz={blah} @required/>
+                    <div @title @foo={xyz} @bar(a='b' c=123) @blah(a=123 @abc) @baz/>
                   </>
                 </>
                 `, "1")

@@ -474,7 +474,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                 if (r != null && ppData === null) {
                     callPreProcessors(r, d, grandParent as any);
                 }
-            } else if (spacesFound) {
+            } else if (spacesFound || cc === CHAR_GT || cc === CHAR_FSLA) {
                 // orphan attribute
                 if (ppData === null) {
                     registerParam(name, ppData);
