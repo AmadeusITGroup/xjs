@@ -1,5 +1,5 @@
 import { XdfParserContext } from './../xdf/parser';
-import { XdfPreProcessorCtxt, addParam, createXdfText } from './../xdf/ast';
+import { XdfPreProcessorCtxt, addParam, createXdfText, XdfParamDictionary } from './../xdf/ast';
 import * as assert from 'assert';
 import { XdfFragment, XdfParam, XdfParamHost } from '../xdf/ast'
 import { parse } from '../xdf/parser';
@@ -14,79 +14,98 @@ describe('XDF pre-processors', () => {
 
     // simple pre-processor to add a new param
     // supports 2 parameters: name and value: @@newParam(name="x" value="y")
-    function newParam(target: XdfParamHost, params: XdfParam[], ctxt: XdfPreProcessorCtxt) {
-        let name = "", value: any = undefined;
-        for (let p of params) {
-            if (p.name === "name") {
-                name = p.value || "";
-            } else if (p.name === "value") {
-                value = p.value;
+    function newParam() {
+        return {
+            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+                let name = params.name ? params.name.value || "" : "", value: any = params.value ? params.value.value : undefined;
+
+                if (name === "") {
+                    ctxt.error("name is mandatory");
+                } else if (value === undefined) {
+                    throw "value is mandatory";
+                }
+                addParam(target, name, value);
             }
-        }
-        if (name === "") {
-            ctxt.error("name is mandatory");
-        } else if (value === undefined) {
-            throw "value is mandatory";
-        }
-        addParam(target, name, value);
-        if (params.length !== 2) {
-            ctxt.error("Invalid number of parameters: " + params.length);
         }
     }
 
     // inject 2 text nodes before and after - no args (orphan)
-    function surround(target: XdfParamHost, params: XdfParam[], ctxt: XdfPreProcessorCtxt) {
-        let p = ctxt.parent;
-        if (p.kind === "#element" || p.kind === "#fragment") {
-            let ch = p.children!, targetIndex = ch.indexOf(target as any);
-            let t1 = createXdfText("BEFORE"), t2 = createXdfText("AFTER");
-            ch.splice(targetIndex, 1, t1, target as any, t2);
-            if (params.length === 0) {
-                addParam(target, "noSurroundParams");
+    function surround() {
+        return {
+            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+                let p = ctxt.parent;
+                if (p && (p.kind === "#element" || p.kind === "#fragment")) {
+                    let ch = p.children!, targetIndex = ch.indexOf(target as any);
+                    let t1 = createXdfText("BEFORE"), t2 = createXdfText("AFTER");
+                    ch.splice(targetIndex, 1, t1, target as any, t2);
+                    if (params.value === undefined) {
+                        addParam(target, "noSurroundParams");
+                    }
+                }
             }
         }
     }
 
     // add a param with the nbr of siblings - suffix can be passed as default value
-    function siblings(target: XdfParamHost, params: XdfParam[], ctxt: XdfPreProcessorCtxt) {
-        let suffix = "", count = 0;
-        for (let p of params) {
-            if (p.name === "value") {
-                suffix = p.value || suffix;
+    function siblings() {
+        return {
+            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+                let suffix = params.value ? params.value.value || "" : "", count = 0;
+
+                let p = ctxt.parent;
+                if (p && (p.kind === "#element" || p.kind === "#fragment")) {
+                    count = p.children ? p.children.length : 0;
+                }
+                if (target.kind === "#element") {
+                    suffix = ":" + target.name + suffix;
+                }
+
+                addParam(target, "siblings" + (params.value ? 1 : 0) + ":" + count + suffix);
             }
         }
-
-        let p = ctxt.parent;
-        if (p.kind === "#element" || p.kind === "#fragment") {
-            count = p.children ? p.children.length : 0;
-        }
-        if (target.kind === "#element") {
-            suffix = ":" + target.name + suffix;
-        }
-
-        addParam(target, "siblings" + params.length + ":" + count + suffix);
     }
 
     // add parser context information as params
-    function ctxt(target: XdfParamHost, params: XdfParam[], ctxt: XdfPreProcessorCtxt) {
-        addParam(target, "fileName", ctxt.fileName);
-        addParam(target, "filePath", ctxt.filePath);
+    function ctxt() {
+        return {
+            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+                addParam(target, "fileId", ctxt.fileId);
+            }
+        }
     }
 
     // add a reference to @@newSurround
-    function addRef(target: XdfParamHost, params: XdfParam[], ctxt: XdfPreProcessorCtxt) {
-        ctxt.preProcessors["@@newSurround"] = surround;
+    function addRef() {
+        return {
+            setup(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+                ctxt.preProcessors["@@newSurround"] = surround;
+            }
+        }
+    }
+
+    // traces
+    let TRACE_LOG: string[] = [];
+    function trace() {
+        return {
+            setup(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+                TRACE_LOG.push("@@trace setup: " + target.params![0].value + "/" + params.value.value);
+            },
+
+            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+                TRACE_LOG.push("@@trace process: " + target.params![0].value + "/" + params.value.value);
+            }
+        }
     }
 
     const context: XdfParserContext = {
-        fileName: "xdf.preprocessors.spec.ts",
-        filePath: "src/test/xdf.preprocessors.spec.ts",
+        fileId: "src/test/xdf.preprocessors.spec.ts",
         preProcessors: {
             "@@newParam": newParam,
             "@@surround": surround,
             "@@siblings": siblings,
             "@@ctxt": ctxt,
-            "@@addRef": addRef
+            "@@addRef": addRef,
+            "@@trace": trace
         }
     }
 
@@ -217,10 +236,30 @@ describe('XDF pre-processors', () => {
         assert.equal(str(parse(`
             <div @@ctxt> Hello </div>
         `, context)), `
-            <div fileName='xdf.preprocessors.spec.ts' filePath='src/test/xdf.preprocessors.spec.ts'>
+            <div fileId='src/test/xdf.preprocessors.spec.ts'>
                Hello 
             </>
             `, "1");
+    });
+
+    it("should support setup() and process()", function () {
+        TRACE_LOG = [];
+        parse(`
+            <div @@trace="a" id="div1"> 
+                <div @@trace="b" id="div2"> 
+                    Hello
+                </div>
+            </div>
+            <div @@trace="c" id="div3"/> 
+        `, context);
+        assert.deepEqual(TRACE_LOG, [
+            "@@trace setup: div1/a",
+            "@@trace setup: div2/b",
+            "@@trace process: div2/b",
+            "@@trace process: div1/a",
+            "@@trace setup: div3/c",
+            "@@trace process: div3/c"
+        ], "1");
     });
 
     it("should be able to raise errors for invalid params", function () {
@@ -229,14 +268,16 @@ describe('XDF pre-processors', () => {
             `), `
                 XDF: @@newParam: name is mandatory
                 Line 2 / Col 23
+                File: src/test/xdf.preprocessors.spec.ts
                 Extract: >> <*cpt @@newParam(foo='bar')/> <<
                 `, "1");
 
         assert.equal(error(`
                 <*cpt @@newParam(name='bar')/>
             `), `
-                XDF: Error in @@newParam execution: value is mandatory
+                XDF: Error in @@newParam process() execution: value is mandatory
                 Line 2 / Col 23
+                File: src/test/xdf.preprocessors.spec.ts
                 Extract: >> <*cpt @@newParam(name='bar')/> <<
                 `, "2");
     });
@@ -247,6 +288,7 @@ describe('XDF pre-processors', () => {
             `), `
                 XDF: Undefined pre-processor '@@foo'
                 Line 2 / Col 20
+                File: src/test/xdf.preprocessors.spec.ts
                 Extract: >> <! @@foo/> <<
                 `, "1");
     });
@@ -257,6 +299,7 @@ describe('XDF pre-processors', () => {
             `), `
                 XDF: Labels cannot be used on pre-processors
                 Line 2 / Col 23
+                File: src/test/xdf.preprocessors.spec.ts
                 Extract: >> <*cpt @@newParam(name='foo' value="bar" #blah)/> <<
                 `, "1");
     });
@@ -267,6 +310,7 @@ describe('XDF pre-processors', () => {
             `), `
                 XDF: Pre-processors cannot be used on pre-processors: check @@surround
                 Line 2 / Col 47
+                File: src/test/xdf.preprocessors.spec.ts
                 Extract: >> <.title @@newParam(name='foo' @@surround value="bar")/> <<
                 `, "1");
     });

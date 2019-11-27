@@ -239,8 +239,8 @@ describe('XDF', () => {
                             <.header  />
                             Hello again
                         </>
-                    </>
-                </>
+                    </!>
+                </div>
                 <!>
                     text
                 </>

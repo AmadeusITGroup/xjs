@@ -58,14 +58,30 @@ title="abc"> html text </div>
 </*cpt>
 
 // With pre-processor instructions 
-<! @@import="">
+<! @@json(export="default" target="a.b.overview")>
 
-<! @@json.path="foo.bar">
-    <*b.textfield @value={=x.y.z}>
-    Some text here
-    <! @@inject="file.ts#abc"/>
-</!>
+    // by default this should go to 'content' (but here will be in a.b.overview)
+    <div class='abc'>
 
-<! @@json.path="bar.baz" /* comments */>
+    </div>
+    // Main page
+
+    <! @@reference(id="mycpt" src="urlOrPath") />
+
+    <! @@insert="a/b/file.ts#sectionA" @@highlight @@json=".foo"/>
+
+    <! @@json="foo.bar."> // the last dot means that bar is an object and not a string
+        [ This will go in the foo.bar.content field ]
+
+        <! @@json=".baz">
+            This will go in the foo.bar.baz
+        </>
+        <! @@json=".col[]">
+            This will go in foo.bar.col[0]
+        </>
+        <! @@json=".col[]">
+            This will go in foo.bar.col[1]
+        </>
+    </>
 
 </>

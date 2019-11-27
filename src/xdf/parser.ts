@@ -1,6 +1,7 @@
-import { XdfFragment, createXdfFragment, XdfElement, addText, addElement, addComponent, addParamNode, XdfParam, addParam, addDecorator, addLabel, addFragment, addCData, XdfCData, XdfPreProcessor, XdfParamHost, XdfPreProcessorCtxt } from './ast';
+import { XdfFragment, createXdfFragment, XdfElement, addText, addElement, addComponent, addParamNode, XdfParam, addParam, addDecorator, addLabel, addFragment, addCData, XdfCData, XdfPreProcessorFactory, XdfParamHost, XdfPreProcessorCtxt, XdfPreProcessor, XdfParamDictionary } from './ast';
 
-const CDATA = "cdata",
+const U = undefined,
+    CDATA = "cdata",
     CDATA_LENGTH = CDATA.length,
     CDATA_END = "</!cdata>",
     CDATA_END_LENGTH = CDATA_END.length,
@@ -41,7 +42,7 @@ const CDATA = "cdata",
     RX_TRAILING_SPACES = /[ \t\r\f\n]+$/;
 
 interface XdfPreProcessorDictionary {
-    [name: string]: XdfPreProcessor;
+    [name: string]: XdfPreProcessorFactory;
 }
 
 interface XdfPreProcessorData {
@@ -49,12 +50,13 @@ interface XdfPreProcessorData {
     name: string; // pre-processor name with @@ prefix
     pos: number;
     params?: XdfParam[];
+    paramsDict?: { [name: string]: XdfParam };
 }
 
 export interface XdfParserContext {
     preProcessors?: XdfPreProcessorDictionary;
-    fileName?: string;
-    filePath?: string;
+    fileId?: string; // e.g. /a/b/c/myfile.xdf
+    globalPreProcessors?: string[]; // e.g. ["@@json"]
 }
 
 // parse generates an XdfFragment (XDF tree)
@@ -66,10 +68,30 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         ppContext: XdfPreProcessorCtxt | undefined,
         currentPpName = "",
         currentPpPos = 0,
-        preProcessors = context ? context.preProcessors || {} : {};
+        globalPreProcessors = context ? context.globalPreProcessors : U,
+        ppFactories = context ? context.preProcessors || {} : {},
+        preProcessors = {}; // dictionary of pre-processor instances
     if (posEOS > 0) {
         cc = xdf.charCodeAt(0);
+
+        let ppDataList: XdfPreProcessorData[] | undefined;
+
+        if (globalPreProcessors !== U) {
+            ppDataList = [];
+            for (let pp of globalPreProcessors) {
+                ppDataList.push({
+                    kind: "#preprocessorData",
+                    name: pp, // e.g. "@@json"
+                    pos: 0
+                })
+            }
+            callPreProcessors(ppDataList, xf, null, "setup");
+        }
         xdfContent(xf);
+        if (ppDataList !== U) {
+            callPreProcessors(ppDataList, xf, null, "process");
+        }
+
         if (cc !== CHAR_EOS) {
             error();
         }
@@ -117,7 +139,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
     function xdfText(parent: XdfFragment | XdfElement): boolean {
         // return true if blank spaces or text characters have been found
         if (cc === CHAR_LT || cc === CHAR_EOS) return false;
-        let spacesFound = xdfSpaces();
+        let spacesFound = xdfSpaces(), startPos = pos;
         if (cc !== CHAR_LT && cc !== CHAR_EOS) {
             let charCodes: number[] = [];
             if (spacesFound) {
@@ -150,7 +172,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                     }
                 }
             }
-            addText(parent, String.fromCharCode.apply(null, charCodes).replace(RX_TRAILING_SPACES, " "));
+            addText(parent, String.fromCharCode.apply(null, charCodes).replace(RX_TRAILING_SPACES, " "), startPos);
         }
         return true;
     }
@@ -224,7 +246,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
             if (xdfCData(parent)) {
                 return true;
             }
-            eltOrFragment = addFragment(parent);
+            eltOrFragment = addFragment(parent, pos);
         } else {
             name = xdfIdentifier(true, prefix === 0);
             eltOrFragment = createElement();
@@ -235,6 +257,9 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         if (xdfSpaces()) {
             // spaces have been found: parse params
             ppDataList = xdfParams(eltOrFragment, parent, endParamReached);
+            if (ppDataList !== null) {
+                callPreProcessors(ppDataList, eltOrFragment, parent, "setup");
+            }
         }
         if (cc === CHAR_FSLA) {
             // end of element
@@ -249,7 +274,9 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
             eat(CHAR_FSLA); // /
             let endPos = pos;
             let p1 = prefix, p2 = eatPrefix(), name2 = xdfIdentifier(false);
-            if (name2 !== "" || p2 !== 0) {
+            if (name2 === "" && p2 === 0 && CHAR_BANG === cc as any) {
+                eat(CHAR_BANG); // end of fragment !
+            } else if (name2 !== "" || p2 !== 0) {
                 // end tag name is provided
                 if (p1 !== p2 || (name2 !== "" && name2 !== name)) {
                     error('End tag </' + eltName(p2, name2) + '> doesn\'t match <' + eltName(p1, name) + '>', endPos);
@@ -262,7 +289,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         }
 
         if (ppDataList !== null) {
-            callPreProcessors(ppDataList, eltOrFragment, parent);
+            callPreProcessors(ppDataList, eltOrFragment, parent, "process");
         }
 
         return true;
@@ -278,14 +305,14 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
 
         function createElement(): XdfElement {
             if (prefix === CHAR_STAR) { // *
-                return addComponent(parent, xf.ref(name));
+                return addComponent(parent, xf.ref(name), pos);
             } else if (prefix === CHAR_DOT) { // .
-                return addParamNode(parent, name);
+                return addParamNode(parent, name, pos);
             } else if (prefix === CHAR_AT) { // @
                 // decorator node
                 error("Decorator node are not supported yet");
             }
-            return addElement(parent, name);
+            return addElement(parent, name, pos);
         }
 
         function eltName(prefix: number, nm: string) {
@@ -293,41 +320,55 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         }
     }
 
-    function callPreProcessors(ppDataList: XdfPreProcessorData[], target: XdfParamHost, parent: XdfParamHost) {
+    function callPreProcessors(ppDataList: XdfPreProcessorData[], target: XdfParamHost, parent: XdfParamHost | null, hookName: "setup" | "process") {
         for (let ppData of ppDataList) {
-            if (preProcessors === undefined || preProcessors[ppData.name] === undefined) {
+            if (ppFactories === U || ppFactories[ppData.name] === U) {
                 error("Undefined pre-processor '" + ppData.name + "'", ppData.pos);
                 return;
             }
-            let pp = preProcessors[ppData.name];
+            let pp: XdfPreProcessor = preProcessors[ppData.name];
+            if (pp === U) {
+                pp = preProcessors[ppData.name] = ppFactories[ppData.name]() as any;
+            }
+
+            if (pp[hookName] === U) continue;
+
+            if (ppData.paramsDict === U) {
+                let ppParams: XdfParamDictionary = {};
+                if (ppData.params) {
+                    for (let p of ppData.params) {
+                        ppParams[p.name] = p;
+                    }
+                }
+                ppData.paramsDict = ppParams;
+            }
+
             try {
-                pp(target, ppData.params || [], getPreProcessorContext(ppData.name, parent, ppData.pos));
+                pp[hookName]!(target, ppData.paramsDict, getPreProcessorContext(ppData.name, parent, ppData.pos));
             } catch (ex) {
                 let msg = ex.message || ex;
                 if (msg.match(/^XDF\:/)) {
                     // error was triggered through context.error()
                     throw ex;
                 } else {
-                    error("Error in " + ppData.name + " execution: " + msg, ppData.pos);
+                    error("Error in " + ppData.name + " " + hookName + "() execution: " + msg, ppData.pos);
                 }
             }
-
         }
     }
 
-    function getPreProcessorContext(ppName: string, parent: XdfParamHost, processorPos: number) {
+    function getPreProcessorContext(ppName: string, parent: XdfParamHost | null, processorPos: number) {
         currentPpName = ppName;
         currentPpPos = processorPos;
-        if (ppContext === undefined) {
+        if (ppContext === U) {
             ppContext = {
                 parent: parent,
-                fileName: context ? context.fileName || "" : "",
-                filePath: context ? context.filePath || "" : "",
+                fileId: context ? context.fileId || "" : "",
                 rootFragment: xf,
-                error: function (msg: string) {
-                    error(currentPpName + ": " + msg, currentPpPos);
+                error: function (msg: string, pos = -1) {
+                    error(currentPpName + ": " + msg, pos > -1 ? pos : currentPpPos);
                 },
-                preProcessors: preProcessors
+                preProcessors: ppFactories
             }
         } else {
             ppContext.parent = parent;
@@ -343,10 +384,13 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         if (CDATA === nextChars(CDATA_LENGTH)) {
             let startPos = pos;
             shiftNext(CDATA_LENGTH);
-            let cdata = addCData(parent, ""), ppDataList: XdfPreProcessorData[] | null = null;
+            let cdata = addCData(parent, "", pos), ppDataList: XdfPreProcessorData[] | null = null;
             if (xdfSpaces()) {
                 // spaces have been found: parse params
                 ppDataList = xdfParams(cdata, parent, endParamReached);
+                if (ppDataList !== null) {
+                    callPreProcessors(ppDataList, cdata, parent, "setup");
+                }
             }
             eat(CHAR_GT); // >
 
@@ -380,7 +424,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
             cdata.content = String.fromCharCode.apply(null, charCodes);
 
             if (ppDataList !== null) {
-                callPreProcessors(ppDataList, cdata, parent);
+                callPreProcessors(ppDataList, cdata, parent, "process");
             }
             return true;
         }
@@ -407,9 +451,10 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
     }
 
     function xdfParams(parent: XdfParamHost | XdfPreProcessorData, grandParent: XdfParamHost | XdfPreProcessorData, endReached: () => boolean): XdfPreProcessorData[] | null {
-        let prefix = 0, keepGoing = true, result: XdfPreProcessorData[] | null = null;
+        let prefix = 0, keepGoing = true, result: XdfPreProcessorData[] | null = null, startPos = -1;
         while (keepGoing && !endReached()) {
             // param name: prefix + name
+            startPos = pos;
             prefix = eatPrefix();
             let ppData: XdfPreProcessorData | null = null;
             if (prefix === CHAR_AT && cc === CHAR_AT) {
@@ -472,9 +517,9 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                     keepGoing = false;
                 }
                 if (r != null && ppData === null) {
-                    callPreProcessors(r, d, grandParent as any);
+                    callPreProcessors(r, d, grandParent as any, "process");
                 }
-            } else if (spacesFound || cc === CHAR_GT || cc === CHAR_FSLA || cc===CHAR_PARE) { // > or / or )
+            } else if (spacesFound || cc === CHAR_GT || cc === CHAR_FSLA || cc === CHAR_PARE) { // > or / or )
                 // orphan attribute
                 if (ppData === null) {
                     registerParam(name, ppData);
@@ -505,12 +550,12 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                 p = ppData as any;
             }
             if (prefix === CHAR_AT) {
-                return addDecorator(p, xf.ref(name), value);
+                return addDecorator(p, xf.ref(name), value, startPos);
             } else if (prefix === CHAR_HASH) {
                 // todo error if ppData
-                return addLabel(p, name, value);
+                return addLabel(p, name, value, startPos);
             }
-            return addParam(p, name, value, isProperty);
+            return addParam(p, name, value, isProperty, startPos);
         }
 
         function eatPrefix(): number {
@@ -594,10 +639,15 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
             }
         }
 
-        if (msg === undefined) {
+        let fileInfo = "";
+        if (context !== U && context.fileId !== U) {
+            fileInfo = `\nFile: ${context.fileId}`;
+        }
+
+        if (msg === U) {
             msg = "Invalid character: " + charName(cc);
         }
-        throw "XDF: " + msg + "\nLine " + lineNbr + " / Col " + columnNbr + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<";
+        throw "XDF: " + msg + "\nLine " + lineNbr + " / Col " + columnNbr + fileInfo + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<";
     }
 
     function charName(c: number) {
