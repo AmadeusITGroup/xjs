@@ -6,19 +6,21 @@ const U = undefined,
     RX_EXPORT = /^[\?a-zA-Z_]\w*$/,
     RX_ARRAY_TARGET = /\[\](\.)?$/;
 
-export function stringify(xdf: string, context?: XdfParserContext): string {
-    return processXdf(xdf, "string", context) as string;
+// Process an xdf string and return a JSON string
+export async function stringify(xdf: string, context?: XdfParserContext): Promise<string> {
+    return await processXdf(xdf, "string", context) as string;
 }
 
-export function json(xdf: string, context?: XdfParserContext): Object {
-    return processXdf(xdf, "object", context) as Object;
+// Process an xdf string and return a JSON object
+export async function json(xdf: string, context?: XdfParserContext): Promise<Object> {
+    return await processXdf(xdf, "object", context) as Object;
 }
 
-function processXdf(xdf: string, output: "object" | "string", context?: XdfParserContext): Object | string {
+async function processXdf(xdf: string, output: "object" | "string", context?: XdfParserContext): Promise<Object | string> {
     if (xdf === "") return {};
     let outputPrefix = "", outputSuffix = "";
 
-    context = context || {};
+    context = context || { fileId: '' };
     if (context.preProcessors === U) {
         context.preProcessors = { "@@json": json }
     } else {
@@ -27,13 +29,15 @@ function processXdf(xdf: string, output: "object" | "string", context?: XdfParse
     if (context.globalPreProcessors === U) {
         context.globalPreProcessors = [];
     }
-    context.globalPreProcessors.push("@@json");
+    const jsIdx = context.globalPreProcessors.findIndex(v => v === "@@json");
+    if (jsIdx < 0) {
+        context.globalPreProcessors.push("@@json"); // to have @@json called even if not explicitly mentioned in the file
+    }
 
     const jsonRoot = {};
 
     const stack: { holder: Object | Array<any>, propName: string, isArray: boolean, target: string, pos: number }[] = [];
-
-    parse(xdf, context);
+    await parse(xdf, context);
 
     // return object or string depending on output argument
     if (output === "object") {

@@ -144,15 +144,15 @@ describe('XDF', () => {
     });
 
     describe('Parser', () => {
-        it("should parse simple text nodes", function () {
-            assert.equal(str(parse('Hello  World\n(!)')), `
+        it("should parse simple text nodes", async function () {
+            assert.equal(str(await parse('Hello  World\n(!)')), `
                 Hello World
                 (!)
                 `, "1")
 
             // test \n and \s or \ (non breaking space): note str adds some spaces at the beginning of each line
             // which results in a strange display
-            assert.equal(str(parse(`\
+            assert.equal(str(await parse(`\
                 \\                     Special chars\\nNew line
 
                 \\sx
@@ -164,8 +164,8 @@ describe('XDF', () => {
                 `, "2")
         });
 
-        it("should parse elements", function () {
-            assert.equal(str(parse(`
+        it("should parse elements", async function () {
+            assert.equal(str(await parse(`
                 <div>
                     <span> Hello World     </span>
                     <*foo>ABC DEF    G</*foo>
@@ -187,8 +187,8 @@ describe('XDF', () => {
                 `, "1")
         });
 
-        it("should parse comments", function () {
-            assert.equal(str(parse(`
+        it("should parse comments", async function () {
+            assert.equal(str(await parse(`
                 <div>
                     // first comment
                     some text
@@ -204,7 +204,7 @@ describe('XDF', () => {
                 </>
                 `, "1");
 
-            assert.equal(str(parse(`
+            assert.equal(str(await parse(`
                 <div // comment
                   class="foo">
                   <span /* another 
@@ -216,7 +216,7 @@ describe('XDF', () => {
                 </>
                 `, "2");
 
-            assert.equal(str(parse(`
+            assert.equal(str(await parse(`
                 <div @class(// comment
                   value=123 /* comment */)>
                   <span/*xyz*/class="abc"> Hello World </span>
@@ -228,8 +228,8 @@ describe('XDF', () => {
                 `, "3");
         });
 
-        it("should parse child fragments", function () {
-            assert.equal(str(parse(`
+        it("should parse child fragments", async function () {
+            assert.equal(str(await parse(`
                 <div>
                     <span> Hello World     </span>
                     <! @foo @bar="baz">
@@ -259,8 +259,8 @@ describe('XDF', () => {
                 `, "1")
         });
 
-        it("should parse params, decorators and labels", function () {
-            assert.equal(str(parse(`
+        it("should parse params, decorators and labels", async function () {
+            assert.equal(str(await parse(`
                 <div foo="bar" disabled baz='abc'>
                     <span baz='a b \\'c\\' d' x=true   
                         y  =  false/>
@@ -284,8 +284,8 @@ describe('XDF', () => {
                 `, "1")
         });
 
-        it("should parse cdata nodes", function () {
-            assert.equal(str(parse(`
+        it("should parse cdata nodes", async function () {
+            assert.equal(str(await parse(`
                 <div>
                     <span> Hello World     </span>
                     <!cdata @foo @bar="baz">
@@ -322,9 +322,9 @@ describe('XDF', () => {
     describe('Parser errors', () => {
         const padding = '                ';
 
-        function error(xdf: string) {
+        async function error(xdf: string) {
             try {
-                let xf = parse(xdf);
+                let xf = await parse(xdf);
                 // console.log("xf=",xf)
             } catch (err) {
                 return "\n" + padding + err.replace(/\n/g, "\n" + padding) + "\n" + padding;
@@ -332,8 +332,8 @@ describe('XDF', () => {
             return "NO ERROR";
         }
 
-        it("should be raised for invalid identifiers", function () {
-            assert.equal(error(`
+        it("should be raised for invalid identifiers", async function () {
+            assert.equal(await error(`
                 <*cp-t foo&=123/>
             `), `
                 XDF: Invalid character: '-'
@@ -341,7 +341,7 @@ describe('XDF', () => {
                 Extract: >> <*cp-t foo&=123/> <<
                 `, "1");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <*cpt @foo+bar/>
             `), `
                 XDF: Invalid character: '+'
@@ -350,8 +350,8 @@ describe('XDF', () => {
                 `, "2");
         });
 
-        it("should be raised for unexpected characters", function () {
-            assert.equal(error(`
+        it("should be raised for unexpected characters", async function () {
+            assert.equal(await error(`
                 <div>
                     <span / >
                 </div>
@@ -361,7 +361,7 @@ describe('XDF', () => {
                 Extract: >> <span / > <<
                 `, "1");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <div>
                     <span />
                 <div>
@@ -372,8 +372,8 @@ describe('XDF', () => {
                 `, "2");
         });
 
-        it("should be raised for invalid param value", function () {
-            assert.equal(error(`
+        it("should be raised for invalid param value", async function () {
+            assert.equal(await error(`
                 <div foo=12. >
                     <span / >
                 </div>
@@ -383,7 +383,7 @@ describe('XDF', () => {
                 Extract: >> <div foo=12. > <<
                 `, "1");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <div foo=12.3.4 >
                     <span / >
                 </div>
@@ -393,7 +393,7 @@ describe('XDF', () => {
                 Extract: >> <div foo=12.3.4 > <<
                 `, "2");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <div foo=ABC >
                     <span / >
                 </div>
@@ -404,8 +404,8 @@ describe('XDF', () => {
                 `, "2");
         });
 
-        it("should be raised for invalid end tags", function () {
-            assert.equal(error(`
+        it("should be raised for invalid end tags", async function () {
+            assert.equal(await error(`
                 <div foo=12>
                     <span />
                 </dix>
@@ -416,8 +416,8 @@ describe('XDF', () => {
                 `, "1");
         });
 
-        it("should be raised for invalid cdata end", function () {
-            assert.equal(error(`
+        it("should be raised for invalid cdata end", async function () {
+            assert.equal(await error(`
                 <div foo=12>
                     <!cdata>
                 </dix>

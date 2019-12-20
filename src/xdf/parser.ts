@@ -55,12 +55,12 @@ interface XdfPreProcessorData {
 
 export interface XdfParserContext {
     preProcessors?: XdfPreProcessorDictionary;
-    fileId?: string; // e.g. /a/b/c/myfile.xdf
+    fileId: string; // e.g. /Users/blaporte/Dev/iv/src/doc/samples.xdf
     globalPreProcessors?: string[]; // e.g. ["@@json"]
 }
 
 // parse generates an XdfFragment (XDF tree)
-export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
+export async function parse(xdf: string, context?: XdfParserContext): Promise<XdfFragment> {
     let xf = createXdfFragment(),
         posEOS = xdf.length,
         pos = 0,    // current position
@@ -85,11 +85,11 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                     pos: 0
                 })
             }
-            callPreProcessors(ppDataList, xf, null, "setup");
+            await callPreProcessors(ppDataList, xf, null, "setup", 1);
         }
-        xdfContent(xf);
+        await xdfContent(xf);
         if (ppDataList !== U) {
-            callPreProcessors(ppDataList, xf, null, "process");
+            await callPreProcessors(ppDataList, xf, null, "process", 2);
         }
 
         if (cc !== CHAR_EOS) {
@@ -126,11 +126,11 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         return moveNext();
     }
 
-    function xdfContent(parent: XdfFragment | XdfElement) {
+    async function xdfContent(parent: XdfFragment | XdfElement) {
         // parse xdf content: text or element or fragments or cdata
         let keepGoing = true;
         while (keepGoing) {
-            if (!xdfElement(parent) && !xdfText(parent)) {
+            if (!await xdfElement(parent) && !xdfText(parent)) {
                 keepGoing = false;
             }
         }
@@ -233,7 +233,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         return false;
     }
 
-    function xdfElement(parent: XdfFragment | XdfElement): boolean {
+    async function xdfElement(parent: XdfFragment | XdfElement): Promise<boolean> {
         // return true if an element, a fragment or a cdata section has been found
         if (cc !== CHAR_LT || nextCharCode() === CHAR_FSLA) return false;
         cc = eat(CHAR_LT); // <
@@ -243,7 +243,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         let name = "", eltOrFragment: XdfElement | XdfFragment;
         if (cc === CHAR_BANG) {
             eat(CHAR_BANG);
-            if (xdfCData(parent)) {
+            if (await xdfCData(parent)) {
                 return true;
             }
             eltOrFragment = addFragment(parent, pos);
@@ -256,9 +256,9 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
 
         if (xdfSpaces()) {
             // spaces have been found: parse params
-            ppDataList = xdfParams(eltOrFragment, parent, endParamReached);
+            ppDataList = await xdfParams(eltOrFragment, parent, endParamReached);
             if (ppDataList !== null) {
-                callPreProcessors(ppDataList, eltOrFragment, parent, "setup");
+                await callPreProcessors(ppDataList, eltOrFragment, parent, "setup", 3);
             }
         }
         if (cc === CHAR_FSLA) {
@@ -268,7 +268,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         } else if (cc === CHAR_GT) {
             eat(CHAR_GT); // >
             // parse element content
-            xdfContent(eltOrFragment);
+            await xdfContent(eltOrFragment);
             // parse end of element
             eat(CHAR_LT); // <
             eat(CHAR_FSLA); // /
@@ -289,7 +289,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         }
 
         if (ppDataList !== null) {
-            callPreProcessors(ppDataList, eltOrFragment, parent, "process");
+            await callPreProcessors(ppDataList, eltOrFragment, parent, "process", 4);
         }
 
         return true;
@@ -320,7 +320,8 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         }
     }
 
-    function callPreProcessors(ppDataList: XdfPreProcessorData[], target: XdfParamHost, parent: XdfParamHost | null, hookName: "setup" | "process") {
+    async function callPreProcessors(ppDataList: XdfPreProcessorData[], target: XdfParamHost, parent: XdfParamHost | null, hookName: "setup" | "process", src: number) {
+        // console.log("callPreProcessors", src, ppDataList);
         for (let ppData of ppDataList) {
             if (ppFactories === U || ppFactories[ppData.name] === U) {
                 error("Undefined pre-processor '" + ppData.name + "'", ppData.pos);
@@ -344,7 +345,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
             }
 
             try {
-                pp[hookName]!(target, ppData.paramsDict, getPreProcessorContext(ppData.name, parent, ppData.pos));
+                await pp[hookName]!(target, ppData.paramsDict, getPreProcessorContext(ppData.name, parent, ppData.pos));
             } catch (ex) {
                 let msg = ex.message || ex;
                 if (msg.match(/^XDF\:/)) {
@@ -380,16 +381,16 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         return (cc === CHAR_FSLA || cc === CHAR_GT); // / or >
     }
 
-    function xdfCData(parent: XdfFragment | XdfElement): boolean {
+    async function xdfCData(parent: XdfFragment | XdfElement): Promise<boolean> {
         if (CDATA === nextChars(CDATA_LENGTH)) {
             let startPos = pos;
             shiftNext(CDATA_LENGTH);
             let cdata = addCData(parent, "", pos), ppDataList: XdfPreProcessorData[] | null = null;
             if (xdfSpaces()) {
                 // spaces have been found: parse params
-                ppDataList = xdfParams(cdata, parent, endParamReached);
+                ppDataList = await xdfParams(cdata, parent, endParamReached);
                 if (ppDataList !== null) {
-                    callPreProcessors(ppDataList, cdata, parent, "setup");
+                    await callPreProcessors(ppDataList, cdata, parent, "setup", 5);
                 }
             }
             eat(CHAR_GT); // >
@@ -424,7 +425,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
             cdata.content = String.fromCharCode.apply(null, charCodes);
 
             if (ppDataList !== null) {
-                callPreProcessors(ppDataList, cdata, parent, "process");
+                await callPreProcessors(ppDataList, cdata, parent, "process", 6);
             }
             return true;
         }
@@ -450,7 +451,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
         return String.fromCharCode.apply(null, charCodes);
     }
 
-    function xdfParams(parent: XdfParamHost | XdfPreProcessorData, grandParent: XdfParamHost | XdfPreProcessorData, endReached: () => boolean): XdfPreProcessorData[] | null {
+    async function xdfParams(parent: XdfParamHost | XdfPreProcessorData, grandParent: XdfParamHost | XdfPreProcessorData, endReached: () => boolean): Promise<XdfPreProcessorData[] | null> {
         let prefix = 0, keepGoing = true, result: XdfPreProcessorData[] | null = null, startPos = -1;
         while (keepGoing && !endReached()) {
             // param name: prefix + name
@@ -509,7 +510,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                 eat(CHAR_PARS); // ( parens start
                 xdfSpaces();
 
-                let r = xdfParams(d, parent, endDecoParamReached);
+                let r = await xdfParams(d, parent, endDecoParamReached);
                 eat(CHAR_PARE); // ) parens end
 
                 if (!xdfSpaces()) {
@@ -517,7 +518,7 @@ export function parse(xdf: string, context?: XdfParserContext): XdfFragment {
                     keepGoing = false;
                 }
                 if (r != null && ppData === null) {
-                    callPreProcessors(r, d, grandParent as any, "process");
+                    await callPreProcessors(r, d, grandParent as any, "process", 7);
                 }
             } else if (spacesFound || cc === CHAR_GT || cc === CHAR_FSLA || cc === CHAR_PARE) { // > or / or )
                 // orphan attribute

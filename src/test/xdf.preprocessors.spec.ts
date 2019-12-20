@@ -111,9 +111,9 @@ describe('XDF pre-processors', () => {
 
     const padding = '                ';
 
-    function error(xdf: string) {
+    async function error(xdf: string) {
         try {
-            let xf = parse(xdf, context);
+            let xf = await parse(xdf, context);
             // console.log("xf=",xf)
         } catch (err) {
             return "\n" + padding + err.replace(/\n/g, "\n" + padding) + "\n" + padding;
@@ -121,8 +121,8 @@ describe('XDF pre-processors', () => {
         return "NO ERROR";
     }
 
-    it("should work on fragments, elements, components, param nodes and decorators", function () {
-        assert.equal(str(parse(`
+    it("should work on fragments, elements, components, param nodes and decorators", async function () {
+        assert.equal(str(await parse(`
             Hello
             <! @@newParam(name="x" value="y")>
                 World
@@ -132,7 +132,7 @@ describe('XDF pre-processors', () => {
             <! x='y'> World </!>
             `, "1");
 
-        assert.equal(str(parse(`
+        assert.equal(str(await parse(`
             Hello
             <div @@newParam(name="x" value="y")> World </div>
         `, context)), `
@@ -140,7 +140,7 @@ describe('XDF pre-processors', () => {
             <div x='y'> World </div>
             `, "2");
 
-        assert.equal(str(parse(`
+        assert.equal(str(await parse(`
             Hello
             <*cpt a="b" @@newParam(name="x" value=123) c=42> World </>
         `, context)), `
@@ -148,7 +148,7 @@ describe('XDF pre-processors', () => {
             <*cpt a='b' c=42 x=123> World </*cpt>
             `, "3");
 
-        assert.equal(str(parse(`
+        assert.equal(str(await parse(`
             <*cpt bar="baz">
                 <.foo @@newParam(name="x" value=false)> World </>
             </>
@@ -158,7 +158,7 @@ describe('XDF pre-processors', () => {
             </>
             `, "4");
 
-        assert.equal(str(parse(`
+        assert.equal(str(await parse(`
             <div @deco(a="b" @@newParam(name="x" value=42) c="d")/>
         `, context)), `
             <div @deco(a='b' c='d' x=42)/>
@@ -171,8 +171,8 @@ describe('XDF pre-processors', () => {
         //     `, "6");
     });
 
-    it("should work on cdata (+ pp with multiple params)", function () {
-        assert.equal(str(parse(`
+    it("should work on cdata (+ pp with multiple params)", async function () {
+        assert.equal(str(await parse(`
             Hello
             <!cdata @@newParam(name="x" value=false)>
                 World..
@@ -185,8 +185,8 @@ describe('XDF pre-processors', () => {
             `, "1");
     });
 
-    it("should be able to replace a node with other nodes (+ pp with no params)", function () {
-        assert.equal(str(parse(`
+    it("should be able to replace a node with other nodes (+ pp with no params)", async function () {
+        assert.equal(str(await parse(`
             Hello
             <div @@surround foo="bar"> World </div>
         `, context)), `
@@ -199,8 +199,8 @@ describe('XDF pre-processors', () => {
             `, "1");
     });
 
-    it("should be applied in sequence (+ pp with default value)", function () {
-        assert.equal(str(parse(`
+    it("should be applied in sequence (+ pp with default value)", async function () {
+        assert.equal(str(await parse(`
             <div @@surround foo="bar" @@siblings="!!"> Hello </div>
         `, context)), `
             BEFORE
@@ -210,7 +210,7 @@ describe('XDF pre-processors', () => {
             AFTER
             `, "1");
 
-        assert.equal(str(parse(`
+        assert.equal(str(await parse(`
             <div foo="bar" @@siblings @@surround> Hello </div>
         `, context)), `
             BEFORE
@@ -221,9 +221,9 @@ describe('XDF pre-processors', () => {
             `, "2");
     });
 
-    it("should be able to add new pre-processor references", function () {
+    it("should be able to add new pre-processor references", async function () {
         // @@addRef will add a reference to @@newSurround (=@@surround)
-        assert.equal(str(parse(`
+        assert.equal(str(await parse(`
             <div @@addRef @@newSurround> Hello </div>
         `, context)), `
             BEFORE
@@ -232,8 +232,8 @@ describe('XDF pre-processors', () => {
             `, "1");
     });
 
-    it("should have access to parser context", function () {
-        assert.equal(str(parse(`
+    it("should have access to parser context", async function () {
+        assert.equal(str(await parse(`
             <div @@ctxt> Hello </div>
         `, context)), `
             <div fileId='src/test/xdf.preprocessors.spec.ts'>
@@ -242,9 +242,9 @@ describe('XDF pre-processors', () => {
             `, "1");
     });
 
-    it("should support setup() and process()", function () {
+    it("should support setup() and process()", async function () {
         TRACE_LOG = [];
-        parse(`
+        await parse(`
             <div @@trace="a" id="div1"> 
                 <div @@trace="b" id="div2"> 
                     Hello
@@ -262,8 +262,8 @@ describe('XDF pre-processors', () => {
         ], "1");
     });
 
-    it("should be able to raise errors for invalid params", function () {
-        assert.equal(error(`
+    it("should be able to raise errors for invalid params", async function () {
+        assert.equal(await error(`
                 <*cpt @@newParam(foo='bar')/>
             `), `
                 XDF: @@newParam: name is mandatory
@@ -272,7 +272,7 @@ describe('XDF pre-processors', () => {
                 Extract: >> <*cpt @@newParam(foo='bar')/> <<
                 `, "1");
 
-        assert.equal(error(`
+        assert.equal(await error(`
                 <*cpt @@newParam(name='bar')/>
             `), `
                 XDF: Error in @@newParam process() execution: value is mandatory
@@ -282,8 +282,8 @@ describe('XDF pre-processors', () => {
                 `, "2");
     });
 
-    it("should be raise errors for undefined pre-processor", function () {
-        assert.equal(error(`
+    it("should be raise errors for undefined pre-processor", async function () {
+        assert.equal(await error(`
                 <! @@foo/>
             `), `
                 XDF: Undefined pre-processor '@@foo'
@@ -293,8 +293,8 @@ describe('XDF pre-processors', () => {
                 `, "1");
     });
 
-    it("should raise errors if labels are used on pre-processors", function () {
-        assert.equal(error(`
+    it("should raise errors if labels are used on pre-processors", async function () {
+        assert.equal(await error(`
                 <*cpt @@newParam(name='foo' value="bar" #blah)/>
             `), `
                 XDF: Labels cannot be used on pre-processors
@@ -304,8 +304,8 @@ describe('XDF pre-processors', () => {
                 `, "1");
     });
 
-    it("should raise errors if pre-processors are used on pre-processors", function () {
-        assert.equal(error(`
+    it("should raise errors if pre-processors are used on pre-processors", async function () {
+        assert.equal(await error(`
                 <.title @@newParam(name='foo' @@surround value="bar")/>
             `), `
                 XDF: Pre-processors cannot be used on pre-processors: check @@surround

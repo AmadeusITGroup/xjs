@@ -21,24 +21,24 @@ describe('XDF JSON converter', () => {
         }
     }
 
-    it("should transform simple files with no @@json instructions", function () {
-        assert.deepEqual(stringify(`
+    it("should transform simple files with no @@json instructions", async function () {
+        assert.deepEqual(await stringify(`
             Hello
             <div class="foo" @deco1 @deco2="blah">
                 "World"
             </div>
         `), `{"content":"Hello <div class='foo' @deco1 @deco2='blah'> \\"World\\" </>"}`, '1');
 
-        assert.deepEqual(json(``), {}, '2');
+        assert.deepEqual(await json(``), {}, '2');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
 
 
         `), {}, '3');
 
-        assert.deepEqual(json(`   `), {}, '4');
+        assert.deepEqual(await json(`   `), {}, '4');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <div class="foo"> aaa </>
             <*cpt prop=123> 
                 bbb
@@ -50,8 +50,8 @@ describe('XDF JSON converter', () => {
         }, '5');
     });
 
-    it("should allow to change the root target", function () {
-        assert.deepEqual(json(`
+    it("should allow to change the root target", async function () {
+        assert.deepEqual(await json(`
             <div @@json="some.path" class="foo" @deco> Hello </div>
         `), {
             "some": {
@@ -59,7 +59,7 @@ describe('XDF JSON converter', () => {
             }
         }, '1');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <! @@json="a.b.c">
                 Hello
                 <div> World </>
@@ -74,8 +74,8 @@ describe('XDF JSON converter', () => {
         }, '2');
     });
 
-    it("should support absolute target on child elements", function () {
-        assert.deepEqual(json(`
+    it("should support absolute target on child elements", async function () {
+        assert.deepEqual(await json(`
             <div @@json="some.path" class="foo" @deco> 
                 Hello 
             </div>
@@ -87,7 +87,7 @@ describe('XDF JSON converter', () => {
             }
         }, '1');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <! @@json="a.b"> 
                 AAA 
                 <div @@json="c.d"> BBB </>
@@ -101,7 +101,7 @@ describe('XDF JSON converter', () => {
             }
         }, '2');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <*cpt @@json="a.b."> 
                 AAA 
                 <*cpt @@json="c.d."> BBB </>
@@ -119,7 +119,7 @@ describe('XDF JSON converter', () => {
             }
         }, '3');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <*cpt @@json="a.b."> 
                 AAA
                 <!cdata @@json="c"> "BBB" </!cdata>
@@ -135,8 +135,8 @@ describe('XDF JSON converter', () => {
         }, '4');
     });
 
-    it("should relative targets on child elements", function () {
-        assert.deepEqual(json(`
+    it("should relative targets on child elements", async function () {
+        assert.deepEqual(await json(`
             <div @@json=".some.path" class="foo" @deco> 
                 Hello 
                 <div @@json=".foo"> FOO </>
@@ -150,7 +150,7 @@ describe('XDF JSON converter', () => {
             }
         }, '1');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <div @@json=".some.path." class="foo" @deco> 
                 Hello 
                 <div @@json=".foo"> FOO </>
@@ -164,7 +164,7 @@ describe('XDF JSON converter', () => {
             }
         }, '2');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <! @@json=".a.">
                 <div @@json=".some.path." class="foo" @deco> 
                     Hello 
@@ -187,8 +187,8 @@ describe('XDF JSON converter', () => {
         }, '3');
     });
 
-    it("should support array paths", function () {
-        assert.deepEqual(json(`
+    it("should support array paths", async function () {
+        assert.deepEqual(await json(`
             <div @@json="a.b[]"> AAA </div>
             <div @@json="a.b[]"> BBB </div>
             <! @@json="a.b[]"></> // will be ignored
@@ -203,7 +203,7 @@ describe('XDF JSON converter', () => {
             }
         }, '1');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <! @@json="a[].">
                 <! @@json=".content"> ABC </>
                 <span @@json=".c"> 1.1 </>
@@ -224,7 +224,7 @@ describe('XDF JSON converter', () => {
             }]
         }, '2');
 
-        assert.deepEqual(json(`
+        assert.deepEqual(await json(`
             <! @@json="a.">
                 <! @@json=".b[]">
                     AAA
@@ -247,12 +247,12 @@ describe('XDF JSON converter', () => {
         }, '3');
     });
 
-    it("should work with other pre-processors", function () {
-        assert.deepEqual(json(`
+    it("should work with other pre-processors", async function () {
+        assert.deepEqual(await json(`
             <span> BEGINNING </span>
             <div @@surround @@json="a.b"> ABCD </>
             <span> END </span>
-        `, { preProcessors: { "@@surround": surround } }), {
+        `, { preProcessors: { "@@surround": surround }, fileId: "/a/foo.xdf" }), {
             a: {
                 b: "<div noSurroundParams> ABCD </>"
             },
@@ -260,14 +260,14 @@ describe('XDF JSON converter', () => {
         }, '1');
     });
 
-    it("should be able to export as a string with ES export", function () {
-        assert.deepEqual(stringify(`
+    it("should be able to export as a string with ES export", async function () {
+        assert.deepEqual(await stringify(`
             <! @@json(export="default")>
                 <div class='foo' @deco = 123> "ABCD" </div>
             </>
         `), `export default {"content":"<div class='foo' @deco=123> \\"ABCD\\" </>"};`, '1');
 
-        assert.deepEqual(stringify(`
+        assert.deepEqual(await stringify(`
             <! @@json(export="foo" target="main.xdf")>
                 AAA
                 <div> BBB 
@@ -281,17 +281,17 @@ describe('XDF JSON converter', () => {
     describe('Errors', () => {
         const padding = '                ';
 
-        function error(xdf: string) {
+        async function error(xdf: string) {
             try {
-                json(xdf, { fileId: "/a/b/theFile.xdf" });
+                await json(xdf, { fileId: "/a/b/theFile.xdf" });
             } catch (err) {
                 return "\n" + padding + err.replace(/\n/g, "\n" + padding) + "\n" + padding;
             }
             return "NO ERROR";
         }
 
-        it("should be raised for invalid targets", function () {
-            assert.equal(error(`
+        it("should be raised for invalid targets", async function () {
+            assert.equal(await error(`
                 <div @@json="a..b.c"> Hello </div>
             `), `
                 XDF: @@json: Invalid target value 'a..b.c'
@@ -300,7 +300,7 @@ describe('XDF JSON converter', () => {
                 Extract: >> <div @@json="a..b.c"> Hello </div> <<
                 `, "1");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <div @@json="a.b[].c"> Hello </div>
             `), `
                 XDF: @@json: Invalid target value 'a.b[].c'
@@ -309,7 +309,7 @@ describe('XDF JSON converter', () => {
                 Extract: >> <div @@json="a.b[].c"> Hello </div> <<
                 `, "2");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <div @@json="a.b.[]"> Hello </div>
             `), `
                 XDF: @@json: Invalid target value 'a.b.[]'
@@ -319,8 +319,8 @@ describe('XDF JSON converter', () => {
                 `, "3");
         });
 
-        it("should be raised if other pre-processors are not found", function () {
-            assert.equal(error(`
+        it("should be raised if other pre-processors are not found", async function () {
+            assert.equal(await error(`
                 <div @@json="a.b.c" 
                 @@foo> Hello </div>
             `), `
@@ -331,8 +331,8 @@ describe('XDF JSON converter', () => {
                 `, "1");
         });
 
-        it("should be raised for invalid export", function () {
-            assert.equal(error(`
+        it("should be raised for invalid export", async function () {
+            assert.equal(await error(`
                 <div @@json(export="123")> ABC </div>
             `), `
                 XDF: @@json: Invalid export value: '123'
@@ -341,7 +341,7 @@ describe('XDF JSON converter', () => {
                 Extract: >> <div @@json(export="123")> ABC </div> <<
                 `, "1");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <span>
                     <div @@json(export="abc")> ABC </div>
                 </>
@@ -353,8 +353,8 @@ describe('XDF JSON converter', () => {
                 `, "2");
         });
 
-        it("should be raised for invalid usage", function () {
-            assert.equal(error(`
+        it("should be raised for invalid usage", async function () {
+            assert.equal(await error(`
                 <div @foo(@@json='abc')> ABC </div>
             `), `
                 XDF: @@json: Pre-processor cannot be used in #decorator
@@ -363,7 +363,7 @@ describe('XDF JSON converter', () => {
                 Extract: >> <div @foo(@@json='abc')> ABC </div> <<
                 `, "1");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <div @@json="a[]">
                     <! @@json=".b"> Some content </>
                 </>
@@ -374,7 +374,7 @@ describe('XDF JSON converter', () => {
                 Extract: >> <! @@json=".b"> Some content </> <<
                 `, "2");
 
-            assert.equal(error(`
+            assert.equal(await error(`
                 <div @@json="a">
                     <! @@json=".b"> Some content A </>
                     <! @@json=".b"> Some content B </>
