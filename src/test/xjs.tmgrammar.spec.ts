@@ -89,7 +89,7 @@ describe('XJS TextMate grammar', () => {
         assert.equal(lineInfo(r[1]), "0:28/S/TXT  28:30/S/TXT/ESC  30:32/S/TXT  32:33/S/TXT/TXT_END", "multi line - line 1");
 
         r = await tokenize('# &lt; &nbsp;&#160;#');
-        assert.equal(lineInfo(r[0]), "0:1/S/TXT/TXT_START  1:2/S/TXT  2:6/S/TXT/ENTITY  6:7/S/TXT  7:13/S/TXT/ENTITY  13:19/S/TXT/ENTITY  19:20/S/TXT/TXT_END", "entities");
+        assert.equal(lineInfo(r[0]), "0:1/S/TXT/TXT_START  1:19/S/TXT  19:20/S/TXT/TXT_END", "entities");
 
         r = await tokenize('# Hello {1+2} #');
         assert.equal(lineInfo(r[0]), "0:1/S/TXT/TXT_START  1:8/S/TXT  8:9/S/TXT/BLOCK/B_START  9:10/S/TXT/BLOCK/NUM  10:11/S/TXT/BLOCK/OP  11:12/S/TXT/BLOCK/NUM  12:13/S/TXT/BLOCK/B_END  13:14/S/TXT  14:15/S/TXT/TXT_END", "# Hello {1+2} #");

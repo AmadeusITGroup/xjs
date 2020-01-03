@@ -1,4 +1,4 @@
-import { XdfParamHost, XdfParamDictionary, XdfPreProcessorCtxt, XdfElement, XdfFragment, addText } from './ast';
+import { XtrParamHost, XtrParamDictionary, XtrPreProcessorCtxt, XtrElement, XtrFragment, addText } from './ast';
 import { join } from 'path';
 import { promises } from 'fs';
 
@@ -11,7 +11,7 @@ export function extract() {
     const cache: { [path: string]: { [sectionName: string]: string } } = {};
 
     return {
-        async process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+        async process(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
             const value = params.value;
             let sections: { [sectionName: string]: string }, sectionName = "";
 
@@ -71,7 +71,7 @@ export function extract() {
                 return ctxt.error("Only elements and fragments can be used as host", target.pos);
             }
 
-            const host = target as XdfElement | XdfFragment;
+            const host = target as XtrElement | XtrFragment;
             if (host.children !== U && host.children.length > 0) {
                 return ctxt.error("Host cannot contain child elements", target.pos);
             }

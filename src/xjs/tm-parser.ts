@@ -3,8 +3,7 @@ import * as fs from 'fs';
 import * as vsTM from 'vscode-textmate';
 import { SCOPES, ATT, A_NAME, ATT1, COMMENT, C_DEF, DECO, DECO1, D_DEF, B_DEF, BLOCK, PR, PR_START, LBL, LBL_DEF } from './scopes';
 
-const XJS_TM_GRAMMAR = 'syntaxes/xjs.tmLanguage.json',
-    XDF_TM_GRAMMAR = 'syntaxes/xdf.tmLanguage.json';
+const XJS_TM_GRAMMAR = 'syntaxes/xjs.tmLanguage.json';
 
 const XJS_REGISTRY = new vsTM.Registry({
     loadGrammar: function () {
@@ -21,22 +20,7 @@ const XJS_REGISTRY = new vsTM.Registry({
     }
 });
 
-const XDF_REGISTRY = new vsTM.Registry({
-    loadGrammar: function () {
-        return new Promise((c, e) => {
-            fs.readFile(XDF_TM_GRAMMAR, (error, content) => {
-                if (error) {
-                    e(error);
-                } else {
-                    var rawGrammar = vsTM.parseRawGrammar(content.toString(), XDF_TM_GRAMMAR);
-                    c(rawGrammar);
-                }
-            });
-        });
-    }
-});
-
-let xjsGrammar: vsTM.IGrammar | null | undefined, xdfGrammar: vsTM.IGrammar | null | undefined;
+let xjsGrammar: vsTM.IGrammar | null | undefined;
 
 export async function tokenize(src: string): Promise<vsTM.IToken[][]> {
     if (!xjsGrammar) {
@@ -46,20 +30,6 @@ export async function tokenize(src: string): Promise<vsTM.IToken[][]> {
     let ruleStack: vsTM.StackElement | undefined, lines = src.split("\n"), result: vsTM.IToken[][] = [];
     for (var i = 0; i < lines.length; i++) {
         var r = xjsGrammar!.tokenizeLine(lines[i], <any>ruleStack);
-        result.push(r.tokens);
-        ruleStack = r.ruleStack;
-    }
-    return result;
-}
-
-export async function tokenizeXdf(src: string): Promise<vsTM.IToken[][]> {
-    if (!xdfGrammar) {
-        xdfGrammar = await XDF_REGISTRY.loadGrammar("source.xdf");
-    }
-
-    let ruleStack: vsTM.StackElement | undefined, lines = src.split("\n"), result: vsTM.IToken[][] = [];
-    for (var i = 0; i < lines.length; i++) {
-        var r = xdfGrammar!.tokenizeLine(lines[i], <any>ruleStack);
         result.push(r.tokens);
         ruleStack = r.ruleStack;
     }

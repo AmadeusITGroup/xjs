@@ -1,13 +1,14 @@
-import { XdfParserContext } from './../xdf/parser';
-import { XdfPreProcessorCtxt, addParam, createXdfText, XdfParamDictionary } from './../xdf/ast';
+import { XtrParserContext } from '../xtr/parser';
+import { XtrPreProcessorCtxt, addParam, createXtrText, XtrParamDictionary } from '../xtr/ast';
 import * as assert from 'assert';
-import { XdfFragment, XdfParam, XdfParamHost } from '../xdf/ast'
-import { parse } from '../xdf/parser';
+import { XtrFragment, XtrParamHost } from '../xtr/ast'
+import { parse } from '../xtr/parser';
+import { xtr } from '../xtr/xtr';
 
-describe('XDF pre-processors', () => {
+describe('XTR pre-processors', () => {
     const shift = '            ';
 
-    function str(xf: XdfFragment) {
+    function str(xf: XtrFragment) {
         let s = xf.toString();
         return s.replace(/\n/g, "\n" + shift);
     }
@@ -16,7 +17,7 @@ describe('XDF pre-processors', () => {
     // supports 2 parameters: name and value: @@newParam(name="x" value="y")
     function newParam() {
         return {
-            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+            process(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
                 let name = params.name ? params.name.value || "" : "", value: any = params.value ? params.value.value : undefined;
 
                 if (name === "") {
@@ -32,11 +33,11 @@ describe('XDF pre-processors', () => {
     // inject 2 text nodes before and after - no args (orphan)
     function surround() {
         return {
-            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+            process(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
                 let p = ctxt.parent;
                 if (p && (p.kind === "#element" || p.kind === "#fragment")) {
                     let ch = p.children!, targetIndex = ch.indexOf(target as any);
-                    let t1 = createXdfText("BEFORE"), t2 = createXdfText("AFTER");
+                    let t1 = createXtrText("BEFORE"), t2 = createXtrText("AFTER");
                     ch.splice(targetIndex, 1, t1, target as any, t2);
                     if (params.value === undefined) {
                         addParam(target, "noSurroundParams");
@@ -49,7 +50,7 @@ describe('XDF pre-processors', () => {
     // add a param with the nbr of siblings - suffix can be passed as default value
     function siblings() {
         return {
-            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+            process(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
                 let suffix = params.value ? params.value.value || "" : "", count = 0;
 
                 let p = ctxt.parent;
@@ -68,7 +69,7 @@ describe('XDF pre-processors', () => {
     // add parser context information as params
     function ctxt() {
         return {
-            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+            process(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
                 addParam(target, "fileId", ctxt.fileId);
             }
         }
@@ -77,7 +78,7 @@ describe('XDF pre-processors', () => {
     // add a reference to @@newSurround
     function addRef() {
         return {
-            setup(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+            setup(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
                 ctxt.preProcessors["@@newSurround"] = surround;
             }
         }
@@ -87,18 +88,18 @@ describe('XDF pre-processors', () => {
     let TRACE_LOG: string[] = [];
     function trace() {
         return {
-            setup(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+            setup(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
                 TRACE_LOG.push("@@trace setup: " + target.params![0].value + "/" + params.value.value);
             },
 
-            process(target: XdfParamHost, params: XdfParamDictionary, ctxt: XdfPreProcessorCtxt) {
+            process(target: XtrParamHost, params: XtrParamDictionary, ctxt: XtrPreProcessorCtxt) {
                 TRACE_LOG.push("@@trace process: " + target.params![0].value + "/" + params.value.value);
             }
         }
     }
 
-    const context: XdfParserContext = {
-        fileId: "src/test/xdf.preprocessors.spec.ts",
+    const context: XtrParserContext = {
+        fileId: "src/test/xtr.preprocessors.spec.ts",
         preProcessors: {
             "@@newParam": newParam,
             "@@surround": surround,
@@ -111,9 +112,9 @@ describe('XDF pre-processors', () => {
 
     const padding = '                ';
 
-    async function error(xdf: string) {
+    async function error(xtr: string) {
         try {
-            let xf = await parse(xdf, context);
+            let xf = await parse(xtr, context);
             // console.log("xf=",xf)
         } catch (err) {
             return "\n" + padding + err.replace(/\n/g, "\n" + padding) + "\n" + padding;
@@ -122,45 +123,45 @@ describe('XDF pre-processors', () => {
     }
 
     it("should work on fragments, elements, components, param nodes and decorators", async function () {
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             Hello
             <! @@newParam(name="x" value="y")>
                 World
             </>
-        `, context)), `
+        `, context)), xtr`
              Hello 
             <! x='y'> World </!>
             `, "1");
 
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             Hello
             <div @@newParam(name="x" value="y")> World </div>
-        `, context)), `
+        `, context)), xtr`
              Hello 
             <div x='y'> World </div>
             `, "2");
 
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             Hello
             <*cpt a="b" @@newParam(name="x" value=123) c=42> World </>
-        `, context)), `
+        `, context)), xtr`
              Hello 
             <*cpt a='b' c=42 x=123> World </*cpt>
             `, "3");
 
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             <*cpt bar="baz">
                 <.foo @@newParam(name="x" value=false)> World </>
             </>
-        `, context)), `
+        `, context)), xtr`
             <*cpt bar='baz'>
               <.foo x=false> World </.foo>
             </>
             `, "4");
 
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             <div @deco(a="b" @@newParam(name="x" value=42) c="d")/>
-        `, context)), `
+        `, context)), xtr`
             <div @deco(a='b' c='d' x=42)/>
             `, "5");
 
@@ -172,12 +173,12 @@ describe('XDF pre-processors', () => {
     });
 
     it("should work on cdata (+ pp with multiple params)", async function () {
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             Hello
             <!cdata @@newParam(name="x" value=false)>
                 World..
             </!cdata>
-        `, context)), `
+        `, context)), xtr`
              Hello 
             <!cdata x=false>
                             World..
@@ -186,10 +187,10 @@ describe('XDF pre-processors', () => {
     });
 
     it("should be able to replace a node with other nodes (+ pp with no params)", async function () {
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             Hello
             <div @@surround foo="bar"> World </div>
-        `, context)), `
+        `, context)), xtr`
              Hello 
             BEFORE
             <div foo='bar' noSurroundParams>
@@ -200,9 +201,9 @@ describe('XDF pre-processors', () => {
     });
 
     it("should be applied in sequence (+ pp with default value)", async function () {
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             <div @@surround foo="bar" @@siblings="!!"> Hello </div>
-        `, context)), `
+        `, context)), xtr`
             BEFORE
             <div foo='bar' noSurroundParams siblings1:3:div!!>
                Hello 
@@ -210,9 +211,9 @@ describe('XDF pre-processors', () => {
             AFTER
             `, "1");
 
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             <div foo="bar" @@siblings @@surround> Hello </div>
-        `, context)), `
+        `, context)), xtr`
             BEFORE
             <div foo='bar' siblings0:1:div noSurroundParams>
                Hello 
@@ -223,9 +224,9 @@ describe('XDF pre-processors', () => {
 
     it("should be able to add new pre-processor references", async function () {
         // @@addRef will add a reference to @@newSurround (=@@surround)
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             <div @@addRef @@newSurround> Hello </div>
-        `, context)), `
+        `, context)), xtr`
             BEFORE
             <div noSurroundParams> Hello </div>
             AFTER
@@ -233,10 +234,10 @@ describe('XDF pre-processors', () => {
     });
 
     it("should have access to parser context", async function () {
-        assert.equal(str(await parse(`
+        assert.equal(str(await parse(xtr`
             <div @@ctxt> Hello </div>
-        `, context)), `
-            <div fileId='src/test/xdf.preprocessors.spec.ts'>
+        `, context)), xtr`
+            <div fileId='src/test/xtr.preprocessors.spec.ts'>
                Hello 
             </>
             `, "1");
@@ -244,7 +245,7 @@ describe('XDF pre-processors', () => {
 
     it("should support setup() and process()", async function () {
         TRACE_LOG = [];
-        await parse(`
+        await parse(xtr`
             <div @@trace="a" id="div1"> 
                 <div @@trace="b" id="div2"> 
                     Hello
@@ -263,54 +264,54 @@ describe('XDF pre-processors', () => {
     });
 
     it("should be able to raise errors for invalid params", async function () {
-        assert.equal(await error(`
+        assert.equal(await error(xtr`
                 <*cpt @@newParam(foo='bar')/>
             `), `
-                XDF: @@newParam: name is mandatory
+                XTR: @@newParam: name is mandatory
                 Line 2 / Col 23
-                File: src/test/xdf.preprocessors.spec.ts
+                File: src/test/xtr.preprocessors.spec.ts
                 Extract: >> <*cpt @@newParam(foo='bar')/> <<
                 `, "1");
 
-        assert.equal(await error(`
+        assert.equal(await error(xtr`
                 <*cpt @@newParam(name='bar')/>
             `), `
-                XDF: Error in @@newParam process() execution: value is mandatory
+                XTR: Error in @@newParam process() execution: value is mandatory
                 Line 2 / Col 23
-                File: src/test/xdf.preprocessors.spec.ts
+                File: src/test/xtr.preprocessors.spec.ts
                 Extract: >> <*cpt @@newParam(name='bar')/> <<
                 `, "2");
     });
 
     it("should be raise errors for undefined pre-processor", async function () {
-        assert.equal(await error(`
+        assert.equal(await error(xtr`
                 <! @@foo/>
             `), `
-                XDF: Undefined pre-processor '@@foo'
+                XTR: Undefined pre-processor '@@foo'
                 Line 2 / Col 20
-                File: src/test/xdf.preprocessors.spec.ts
+                File: src/test/xtr.preprocessors.spec.ts
                 Extract: >> <! @@foo/> <<
                 `, "1");
     });
 
     it("should raise errors if labels are used on pre-processors", async function () {
-        assert.equal(await error(`
+        assert.equal(await error(xtr`
                 <*cpt @@newParam(name='foo' value="bar" #blah)/>
             `), `
-                XDF: Labels cannot be used on pre-processors
+                XTR: Labels cannot be used on pre-processors
                 Line 2 / Col 23
-                File: src/test/xdf.preprocessors.spec.ts
+                File: src/test/xtr.preprocessors.spec.ts
                 Extract: >> <*cpt @@newParam(name='foo' value="bar" #blah)/> <<
                 `, "1");
     });
 
     it("should raise errors if pre-processors are used on pre-processors", async function () {
-        assert.equal(await error(`
+        assert.equal(await error(xtr`
                 <.title @@newParam(name='foo' @@surround value="bar")/>
             `), `
-                XDF: Pre-processors cannot be used on pre-processors: check @@surround
+                XTR: Pre-processors cannot be used on pre-processors: check @@surround
                 Line 2 / Col 47
-                File: src/test/xdf.preprocessors.spec.ts
+                File: src/test/xtr.preprocessors.spec.ts
                 Extract: >> <.title @@newParam(name='foo' @@surround value="bar")/> <<
                 `, "1");
     });

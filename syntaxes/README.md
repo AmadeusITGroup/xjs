@@ -28,7 +28,7 @@ To refresh VS Code, simply reload the window through the **Reload Window** optio
 
 To view the text mate scope, use **Developer: Inspect TM Scopes** in the command palette
 
-The XJS grammar is generated from the TypeScript grammar through the *src/xjs-grammar/ts-grammar* script. To update the grammar, simply modify *ts-grammar.ts* and run `bash generate-and-deploy.bash` (or `yarn grammar`)
+The XJS grammar is generated from the TypeScript grammar through the *src/tm-grammar/xjs-grammar* script. To update the grammar, simply modify files in the *tm-grammar* directory and run `bash generate-and-deploy.bash` (or `yarn grammar`)
 
 ## Shortcuts
 

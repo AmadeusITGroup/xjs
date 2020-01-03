@@ -25,6 +25,10 @@ let xx = {
     template: function (s: string) { }
 }
 
+function xtr(strings: TemplateStringsArray, ...keys: any[]) {
+
+}
+
 let normalTemplateString = `hello world`;
 
 let foo = xx.template(`(state: MyStateType) => {
@@ -47,7 +51,7 @@ let foo = xx.template(`(state: MyStateType) => {
      # some text  
       on 2 lines #
       # some text with a \#! #
-      # &lt; &nbsp; &#160; # // requires run-time processing to decode each html entity -> not handled at xjs level
+      # &lt; &nbsp; &#160; # // html entities are not supported: use UTF-8 instead!
     # Hello {getName()} {1+2+3} #
 
     // attributes
@@ -178,3 +182,43 @@ class SomeClass {
         </div>
     }`);
 }
+
+const world = "world", txt = "abc";
+
+const str = xtr`
+    // comment
+    <*cpt a="b" // comment
+        bbb=123 /*
+            another comment
+        */ c=false ddd eee
+    >
+        <div x={ref}/>
+        Some text here <b> and here </b> \n \a
+        <foo #label #label='abc' #lbl={expr} />
+        <bar [className]="abc" class={ref1} />
+        <baz @deco @deco2="x" @deco3(x=123 y="abc")/>
+        <.value x="z"/>
+    </*cpt>
+
+    <!cdata att=123>
+        CDATA values
+        <div> Everything here is considered as a string </div>
+        // including comments
+    </!cdata>
+
+    // support of template substitution elements:
+    Hello ${world}
+    <div ${txt + 123} a=${txt} @deco=${1 + 2 + 3}/>
+    <! ${txt}/>
+    <!cdata ${txt}${txt}> rew </!cdata>
+    <${txt} a="b"/>
+    <${txt}>
+    <div />
+
+    // pre-processor instructions
+    <div @@extract="foo/bar#blah"/>
+`;
+
+const stdStr = `
+    abc ${123}
+`

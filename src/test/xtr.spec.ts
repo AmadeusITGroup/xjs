@@ -1,18 +1,19 @@
 import * as assert from 'assert';
-import { createXdfFragment, addElement, addText, XdfFragment, addParam, addDecorator, addLabel, addComponent, addParamNode, addFragment, addCData } from '../xdf/ast'
-import { parse } from '../xdf/parser';
+import { createXtrFragment, addElement, addText, XtrFragment, addParam, addDecorator, addLabel, addComponent, addParamNode, addFragment, addCData } from '../xtr/ast'
+import { parse } from '../xtr/parser';
+import { xtr } from '../xtr/xtr';
 
-describe('XDF', () => {
+describe('XTR', () => {
     const shift = '                ';
 
-    function str(xf: XdfFragment) {
+    function str(xf: XtrFragment) {
         let s = xf.toString();
         return s.replace(/\n/g, "\n" + shift);
     }
 
     describe('Tree', () => {
         it("should support element and text nodes", function () {
-            let xf = createXdfFragment(),
+            let xf = createXtrFragment(),
                 e1 = addElement(xf, "div"),
                 e2 = addElement(e1, "span");
             addText(e2, " AAA ");
@@ -22,7 +23,7 @@ describe('XDF', () => {
             addText(e1, "Some 'text' in the section");
             addText(xf, "Some text at the end");
 
-            assert.equal(str(xf), `
+            assert.equal(str(xf), xtr`
                 <div>
                   <span> AAA </span>
                   <span> BBB </span>
@@ -33,7 +34,7 @@ describe('XDF', () => {
         });
 
         it("should support child fragments", function () {
-            let xf = createXdfFragment(),
+            let xf = createXtrFragment(),
                 e1 = addElement(xf, "div"),
                 e2 = addElement(e1, "span");
             addText(e2, " AAA ");
@@ -45,11 +46,11 @@ describe('XDF', () => {
             addText(e1, "Some 'text' in the section");
             addText(f2, "Some text at the end of f2");
 
-            assert.equal(str(xf), `
+            assert.equal(str(xf), xtr`
                 <div>
-                  <span> AAA </span>
+                  <${"span"}> AAA </span>
                   <!>
-                    <span> BBB </span>
+                    <span> ${"BBB"} </span>
                   </>
                 </>
                 <!>
@@ -60,7 +61,7 @@ describe('XDF', () => {
         });
 
         it("should support attributes, properties, decorators and labels", function () {
-            let xf = createXdfFragment(),
+            let xf = createXtrFragment(),
                 e1 = addElement(xf, "div"),
                 e2 = addElement(e1, "input");
 
@@ -87,9 +88,9 @@ describe('XDF', () => {
             addLabel(d, "xyz");
             addDecorator(d, xf.ref("foo"));
 
-            assert.equal(str(xf), `
+            assert.equal(str(xf), xtr`
                 <div title='some \\'title\\'' [className]='main' type='text'>
-                  <input class={mainClass} disabled [maxLength]=123/>
+                  <input class={mainClass} ${"disabled"} [maxLength]=123/>
                   <span @foo @bar=false @baz={decoRef} #lblA #lblB='someLabel' #lblC={lblRef}/>
                   <div @deco(p1='text' p2={p2Ref} p3 #xyz @foo)/>
                 </>
@@ -97,7 +98,7 @@ describe('XDF', () => {
         });
 
         it("should support components and param nodes", function () {
-            let xf = createXdfFragment(),
+            let xf = createXtrFragment(),
                 e1 = addElement(xf, "div");
 
             let e2 = addComponent(e1, xf.ref("x.cpt"));
@@ -112,7 +113,7 @@ describe('XDF', () => {
             addText(e4, " Footer ");
             addText(e2, "Content");
 
-            assert.equal(str(xf), `
+            assert.equal(str(xf), xtr`
                 <div>
                   <*x.cpt p1='someValue' #lbl>
                     <.header> Header </.header>
@@ -126,14 +127,14 @@ describe('XDF', () => {
         });
 
         it("should support cdata", function () {
-            let xf = createXdfFragment(),
+            let xf = createXtrFragment(),
                 e1 = addElement(xf, "div"),
                 e2 = addElement(e1, "span");
             addText(e2, " AAA ");
             addCData(e1, "cdata #1");
             addCData(xf, "cdata #2: <section> Hello M </section>");
 
-            assert.equal(str(xf), `
+            assert.equal(str(xf), xtr`
                 <div>
                   <span> AAA </span>
                   <!cdata>cdata #1</!cdata>
@@ -145,7 +146,7 @@ describe('XDF', () => {
 
     describe('Parser', () => {
         it("should parse simple text nodes", async function () {
-            assert.equal(str(await parse('Hello  World\n(!)')), `
+            assert.equal(str(await parse('Hello  World\n(!)')), xtr`
                 Hello World
                 (!)
                 `, "1")
@@ -156,7 +157,7 @@ describe('XDF', () => {
                 \\                     Special chars\\nNew line
 
                 \\sx
-                `)), `
+                `)), xtr`
                   Special chars
                 New line
                 
@@ -165,17 +166,17 @@ describe('XDF', () => {
         });
 
         it("should parse elements", async function () {
-            assert.equal(str(await parse(`
+            assert.equal(str(await parse(xtr`
                 <div>
                     <span> Hello World     </span>
-                    <*foo>ABC DEF    G</*foo>
+                    <*foo>ABC DEF    ${"G"}</*foo>
 
-                    <*bar>
+                    <${"*bar"}>
                         <.header  />
                         Hello again
                     </>
                 </>
-            `)), `
+            `)), xtr`
                 <div>
                   <span> Hello World </span>
                   <*foo>ABC DEF G</*foo>
@@ -188,7 +189,7 @@ describe('XDF', () => {
         });
 
         it("should parse comments", async function () {
-            assert.equal(str(await parse(`
+            assert.equal(str(await parse(xtr`
                 <div>
                     // first comment
                     some text
@@ -197,31 +198,31 @@ describe('XDF', () => {
                     <span> Hello World     </span>
                     // <*foo // another comment
                 </>
-            `)), `
+            `)), xtr`
                 <div>
                    some text 
                   <span> Hello World </span>
                 </>
                 `, "1");
 
-            assert.equal(str(await parse(`
+            assert.equal(str(await parse(xtr`
                 <div // comment
                   class="foo">
                   <span /* another 
                   comment */> Hello World </span>
                 </>
-            `)), `
+            `)), xtr`
                 <div class='foo'>
                   <span> Hello World </span>
                 </>
                 `, "2");
 
-            assert.equal(str(await parse(`
+            assert.equal(str(await parse(xtr`
                 <div @class(// comment
                   value=123 /* comment */)>
                   <span/*xyz*/class="abc"> Hello World </span>
                 </>
-            `)), `
+            `)), xtr`
                 <div @class(value=123)>
                   <span class='abc'> Hello World </span>
                 </>
@@ -229,7 +230,7 @@ describe('XDF', () => {
         });
 
         it("should parse child fragments", async function () {
-            assert.equal(str(await parse(`
+            assert.equal(str(await parse(xtr`
                 <div>
                     <span> Hello World     </span>
                     <! @foo @bar="baz">
@@ -244,7 +245,7 @@ describe('XDF', () => {
                 <!>
                     text
                 </>
-            `)), `
+            `)), xtr`
                 <div>
                   <span> Hello World </span>
                   <! @foo @bar='baz'>
@@ -260,7 +261,7 @@ describe('XDF', () => {
         });
 
         it("should parse params, decorators and labels", async function () {
-            assert.equal(str(await parse(`
+            assert.equal(str(await parse(xtr`
                 <div foo="bar" disabled baz='abc'>
                     <span baz='a b \\'c\\' d' x=true   
                         y  =  false/>
@@ -271,7 +272,7 @@ describe('XDF', () => {
                         <div @title @foo={ xyz }  @bar(a="b" c=123) @blah(  a=123  @abc   )  @baz(@foo)   />
                     </span>
                 </>
-            `)), `
+            `)), xtr`
                 <div foo='bar' disabled baz='abc'>
                   <span baz='a b \\'c\\' d' x=true y=false/>
                   <span @title> Hello </span>
@@ -285,7 +286,7 @@ describe('XDF', () => {
         });
 
         it("should parse cdata nodes", async function () {
-            assert.equal(str(await parse(`
+            assert.equal(str(await parse(xtr`
                 <div>
                     <span> Hello World     </span>
                     <!cdata @foo @bar="baz">
@@ -322,9 +323,9 @@ describe('XDF', () => {
     describe('Parser errors', () => {
         const padding = '                ';
 
-        async function error(xdf: string) {
+        async function error(xtr: string) {
             try {
-                let xf = await parse(xdf);
+                let xf = await parse(xtr);
                 // console.log("xf=",xf)
             } catch (err) {
                 return "\n" + padding + err.replace(/\n/g, "\n" + padding) + "\n" + padding;
@@ -333,84 +334,84 @@ describe('XDF', () => {
         }
 
         it("should be raised for invalid identifiers", async function () {
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <*cp-t foo&=123/>
             `), `
-                XDF: Invalid character: '-'
+                XTR: Invalid character: '-'
                 Line 2 / Col 21
                 Extract: >> <*cp-t foo&=123/> <<
                 `, "1");
 
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <*cpt @foo+bar/>
             `), `
-                XDF: Invalid character: '+'
+                XTR: Invalid character: '+'
                 Line 2 / Col 27
                 Extract: >> <*cpt @foo+bar/> <<
                 `, "2");
         });
 
         it("should be raised for unexpected characters", async function () {
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <div>
                     <span / >
                 </div>
             `), `
-                XDF: '>' expected instead of ' '
+                XTR: '>' expected instead of ' '
                 Line 3 / Col 28
                 Extract: >> <span / > <<
                 `, "1");
 
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <div>
                     <span />
                 <div>
             `), `
-                XDF: '<' expected instead of End of Content
+                XTR: '<' expected instead of End of Content
                 Line 5 / Col 13
                 Extract: >>  <<
                 `, "2");
         });
 
         it("should be raised for invalid param value", async function () {
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <div foo=12. >
                     <span / >
                 </div>
             `), `
-                XDF: Invalid number
+                XTR: Invalid number
                 Line 2 / Col 29
                 Extract: >> <div foo=12. > <<
                 `, "1");
 
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <div foo=12.3.4 >
                     <span / >
                 </div>
             `), `
-                XDF: Invalid character: '.'
+                XTR: Invalid character: '.'
                 Line 2 / Col 30
                 Extract: >> <div foo=12.3.4 > <<
                 `, "2");
 
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <div foo=ABC >
                     <span / >
                 </div>
             `), `
-                XDF: Invalid parameter value: 'A'
+                XTR: Invalid parameter value: 'A'
                 Line 2 / Col 26
                 Extract: >> <div foo=ABC > <<
                 `, "2");
         });
 
         it("should be raised for invalid end tags", async function () {
-            assert.equal(await error(`
+            assert.equal(await error(xtr`
                 <div foo=12>
                     <span />
                 </dix>
             `), `
-                XDF: End tag </dix> doesn't match <div>
+                XTR: End tag </dix> doesn't match <div>
                 Line 4 / Col 19
                 Extract: >> </dix> <<
                 `, "1");
@@ -422,7 +423,7 @@ describe('XDF', () => {
                     <!cdata>
                 </dix>
             `), `
-                XDF: Invalid cdata section: end marker '</!cdata>' not found
+                XTR: Invalid cdata section: end marker '</!cdata>' not found
                 Line 3 / Col 21
                 Extract: >> <!cdata> <<
                 `, "1");

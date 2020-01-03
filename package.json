@@ -21,14 +21,6 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [
-            {
-                "id": "xdf",
-                "extensions": [
-                    ".xdf"
-                ]
-            }
-        ],
         "grammars": [
             {
                 "scopeName": "template.xjs",
@@ -36,17 +28,12 @@
                 "injectTo": [
                     "source.ts"
                 ]
-            },
-            {
-                "language": "xdf",
-                "scopeName": "source.xdf",
-                "path": "./syntaxes/xdf.tmLanguage.json"
             }
         ]
     },
     "scripts": {
         "build": "rm -rf dist/ && tsc",
-        "generate": "yarn run build && node dist/xjs-grammar/ts-grammar",
+        "generate": "yarn run build && node dist/tm-grammar/xjs-grammar",
         "test": "yarn run generate && yarn run mocha -r ts-node/register src/**/*.spec.ts --reporter dot"
     },
     "devDependencies": {

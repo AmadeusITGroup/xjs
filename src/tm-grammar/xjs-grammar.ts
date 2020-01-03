@@ -10,6 +10,8 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
+import { includeXtrDef } from './xtr-grammar';
+import common from './common';
 
 const TS_GRAMMAR_PATH = "../../syntaxes/TypeScript.tmLanguage.json",
     XJS_GRAMMAR_PATH = "../../syntaxes/xjs.tmLanguage.json",
@@ -30,10 +32,15 @@ async function main() {
     includeXjsTag(g);
     includeTextNode(g);
 
+    includeXtrDef(g);
+
     // copy node attributes patterns to decorator attributes patterns
-    let attributePatterns = g.repository["xjs-tag-open"].patterns;
-    g.repository["xjs-tag-attribute-decorator-with-attributes"].patterns = attributePatterns.slice(0);
-    g.repository["xjs-text-node-attributes"].patterns = attributePatterns.slice(0);
+    let xjsAttributePatterns = g.repository["xjs-tag-open"].patterns;
+    g.repository["xjs-tag-attribute-decorator-with-attributes"].patterns = xjsAttributePatterns.slice(0);
+    g.repository["xjs-text-node-attributes"].patterns = xjsAttributePatterns.slice(0);
+
+    let xtrAttributePatterns = g.repository["xtr-tag-open"].patterns;
+    g.repository["xtr-tag-attribute-decorator-with-attributes"].patterns = xtrAttributePatterns.slice(0);
 
     // save the new grammar
     let xjsFile = await fsp.open(path.join(__dirname, XJS_GRAMMAR_PATH), "w")
@@ -111,12 +118,11 @@ function includeXjsTag(g: any) {
     //includeNameExpressionBlock(g);
 
     // attributes: order matters -> most selective first:
-    includeLabelAttributes(g);
-    includeDecoratorAttributes(g);
-    includePropertyAttributes(g);
+    common.includeLabelAttributes(g, addXjsTagAttributeType, "xjs", attributeValues);
+    common.includeDecoratorAttributes(g, addXjsTagAttributeType, "xjs", attributeValues);
     includeBindingShortcuts(g);
     includeSpreadOperators(g);
-    includeNormalAttributes(g);
+    common.includeStandardAttributes(g, addXjsTagAttributeType, "xjs", attributeValues);
 
     addStatement(g, "xjs-tag-close", {
         "name": "meta.tag.js.xjs",
@@ -141,14 +147,14 @@ function includeTextNode(g: any) {
         "beginCaptures": {
             "1": { "name": "punctuation.definition.string.begin.js.xjs" }
         },
-        "end": "((?<!&)\\#)", // negative look behind to support html entities - e.g. &#160;
+        "end": "((?<!&)\\#)", // negative look behind to ignore html entities - e.g. &#160;
         "endCaptures": {
             "1": { "name": "punctuation.definition.string.end.js.xjs" }
         },
         "patterns": [
             { "include": "#xjs-text-node-attributes" },
             { "include": "#string-character-escape" },
-            { "include": "#xjs-text-html-entity" },
+            //{ "include": "#xjs-text-html-entity" }, // will not be supported - UTF8 should be use instead
             { "include": "#xjs-expression-block" }
         ]
     });
@@ -240,111 +246,6 @@ function attributeValues() {
         { "include": "#xjs-expression-function-block" },
         { "include": "#xjs-expression-block" }
     ]
-}
-
-function includeNormalAttributes(g: any) {
-    // attribute with value - e.g. <span foo={a*2+123} aria-label="abc" />
-    addXjsTagAttributeType(g, "xjs-tag-attribute", {
-        "name": "tag.attribute.assignment",
-        "begin": "\\s*(" + attributeSeparator() + attributeName(false, true) + ")\\s*(=)\\s*",
-        "beginCaptures": {
-            "1": { "name": "entity.other.attribute-name.js.xjs" },
-            "2": { "name": "keyword.operator.assignment.js.xjs" }
-        },
-        "end": " |(?=>)|(?=/)|(?=\\))",
-        "patterns": attributeValues()
-    });
-
-    // no values attribute - e.g. <div disabled/>
-    addXjsTagAttributeType(g, "xjs-tag-attribute-no-values", {
-        "name": "tag.attribute",
-        "match": "\\s*(" + attributeSeparator() + attributeName(false, true) + ")(?=(\\s|/|>|\\)))", // no need to support . notation
-        "captures": {
-            "1": { "name": "entity.other.attribute-name.js.xjs" }
-        }
-    });
-}
-
-function includePropertyAttributes(g: any) {
-    // property attribute - e.g. <div [foo]=123 [baz]={expr()} />
-    addXjsTagAttributeType(g, "xjs-tag-property", {
-        "name": "tag.attribute.property.assignment",
-        "begin": "(" + attributeSeparator() + "\\[)(" + attributeName() + ")(\\])\\s*(=)\\s*",
-        "beginCaptures": {
-            "1": { "name": "punctuation.section.embedded.property.begin.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" },
-            "3": { "name": "punctuation.section.embedded.property.end.js.xjs" },
-            "4": { "name": "keyword.operator.assignment.js.xjs" }
-        },
-        "end": " |(?=>)|(?=/)|(?=\\))",
-        "patterns": attributeValues()
-    });
-}
-
-function includeDecoratorAttributes(g: any) {
-    // decorator with value - e.g. @class="foo"
-    addXjsTagAttributeType(g, "xjs-tag-attribute-decorator", {
-        "name": "tag.attribute.decorator.assignment",
-        "begin": "\\s*(" + attributeSeparator() + "\\@)(" + attributeName(true) + ")\\s*(\\=)\\s*",
-        "beginCaptures": {
-            "1": { "name": "punctuation.section.embedded.decorator.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" },
-            "3": { "name": "keyword.operator.assignment.js.xjs" }
-        },
-        "end": " |(?=>)|(?=/)|(?=\\))",
-        "patterns": attributeValues()
-    });
-
-    // decorator with its own attributes
-    addXjsTagAttributeType(g, "xjs-tag-attribute-decorator-with-attributes", {
-        "name": "tag.attribute.decorator.assignment",
-        "begin": "\\s*(" + attributeSeparator() + "\\@)(" + attributeName(true) + ")\\s*(\\()\\s*",
-        "beginCaptures": {
-            "1": { "name": "punctuation.section.embedded.decorator.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" },
-            "3": { "name": "punctuation.section.embedded.decorator.begin.js.xjs" }
-        },
-        "end": "(\\))",
-        "endCaptures": {
-            "0": { "name": "punctuation.section.embedded.decorator.end.js.xjs" }
-        },
-        "patterns": [] // will be copied from "xjs-tag-open" (cf. above)
-    });
-
-    // decorator with no values - e.g. @host
-    addXjsTagAttributeType(g, "xjs-tag-attribute-decorator-no-values", {
-        "name": "entity.other.attribute.decorator.js.xjs",
-        "match": "\\s*" + attributeSeparator() + "(\\@)(" + attributeName(true) + ")(?=(\\s|/|>|\\)))",
-        "captures": {
-            "1": { "name": "punctuation.section.embedded.decorator.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" }
-        }
-    });
-}
-
-function includeLabelAttributes(g: any) {
-    // label attributes w/ expression - e.g. #foo={bar()}
-    addXjsTagAttributeType(g, "xjs-tag-attribute-label", {
-        "name": "entity.other.attribute.label.js.xjs",
-        "begin": "\\s*(" + attributeSeparator() + "\\#\\#?)(" + attributeName(true) + ")\\s*(\\=)\\s*",
-        "beginCaptures": {
-            "1": { "name": "punctuation.section.embedded.label.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" },
-            "3": { "name": "keyword.operator.assignment.js.xjs" }
-        },
-        "end": " |(?=>)|(?=/)|(?=\\))",
-        "patterns": attributeValues()
-    });
-
-    // label attribute w/o expressions - e.g. <div #foo #bar/>
-    addXjsTagAttributeType(g, "xjs-tag-attribute-label-no-expr", {
-        "name": "entity.other.attribute.label.js.xjs",
-        "match": "\\s*" + attributeSeparator() + "(\\#\\#?)(" + attributeName() + ")",
-        "captures": {
-            "1": { "name": "punctuation.section.embedded.label.js.xjs" },
-            "2": { "name": "entity.other.attribute-name.js.xjs" }
-        }
-    });
 }
 
 function includeBindingShortcuts(g: any) {

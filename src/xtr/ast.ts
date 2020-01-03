@@ -1,171 +1,171 @@
-const U = undefined, NO_VALUE: XdfRef = { kind: "#ref", identifier: "" };
+const U = undefined, NO_VALUE: XtrRef = { kind: "#ref", identifier: "" };
 
 // -------------------------------------------------------------------------------------
 // types
 
-export interface XdfFragment {
+export interface XtrFragment {
     kind: "#fragment";
-    children: XdfChildElement[];
-    ref(value: string): XdfRef;
-    refs: XdfRef[];
+    children: XtrChildElement[];
+    ref(value: string): XtrRef;
+    refs: XtrRef[];
     pos: number;
-    params?: XdfParam[];
+    params?: XtrParam[];
     toString(startIndent?: string, indent?: string, minimal?: boolean, multiline?: boolean): string;
 }
 
-export interface XdfRef {
+export interface XtrRef {
     kind: "#ref";
     identifier: string;
     target?: any;
 }
 
-export interface XdfElement {
+export interface XtrElement {
     kind: "#element" | "#component" | "#paramNode" | "#decoratorNode";
     name?: string;
     nameRef?: string;
-    params?: XdfParam[];
-    children?: XdfChildElement[];
+    params?: XtrParam[];
+    children?: XtrChildElement[];
     pos: number;
     toString(startIndent?: string, indent?: string, minimal?: boolean): string;
 }
 
-export interface XdfText {
+export interface XtrText {
     kind: "#text";
     value: string;
     pos: number;
-    params?: XdfParam[];
+    params?: XtrParam[];
     toString(startIndent?: string, indent?: string): string;
 }
 
-export interface XdfCData {
+export interface XtrCData {
     kind: "#cdata";
     content: string;
     pos: number;
-    params?: XdfParam[];
+    params?: XtrParam[];
     toString(startIndent?: string, indent?: string): string;
 }
 
-export interface XdfParam {
+export interface XtrParam {
     kind: "#param" | "#property" | "#decorator" | "#label";
     name: string;
     holdsValue: boolean;
     pos: number;
     value?: any;
     valueRef?: string;
-    params?: XdfParam[]; // for decorators
+    params?: XtrParam[]; // for decorators
 }
 
-export type XdfParamHost = XdfElement | XdfParam | XdfFragment | XdfCData;
+export type XtrParamHost = XtrElement | XtrParam | XtrFragment | XtrCData;
 
-export interface XdfPreProcessorFactory {
-    (): XdfPreProcessor;
+export interface XtrPreProcessorFactory {
+    (): XtrPreProcessor;
 }
 
-export interface XdfParamDictionary {
-    [name: string]: XdfParam;
+export interface XtrParamDictionary {
+    [name: string]: XtrParam;
 }
 
-export interface XdfPreProcessor {
+export interface XtrPreProcessor {
     // todo: support setup(): would be call for container nodes before the node content is processed
-    setup?(target: XdfParamHost, params?: XdfParamDictionary, ctxt?: XdfPreProcessorCtxt): void;
+    setup?(target: XtrParamHost, params?: XtrParamDictionary, ctxt?: XtrPreProcessorCtxt): void;
     // process is called when all the node attributes and content are loaded
-    process?(target: XdfParamHost, params?: XdfParamDictionary, ctxt?: XdfPreProcessorCtxt): void;
+    process?(target: XtrParamHost, params?: XtrParamDictionary, ctxt?: XtrPreProcessorCtxt): void;
 }
 
-export interface XdfPreProcessorCtxt {
-    rootFragment: XdfFragment;
-    parent: XdfParamHost | null; // null for root fragment
-    fileId: string; // e.g. /a/b/c/myfile.xdf
+export interface XtrPreProcessorCtxt {
+    rootFragment: XtrFragment;
+    parent: XtrParamHost | null; // null for root fragment
+    fileId: string; // e.g. /a/b/c/myfile.ts
     error: (msg: string, pos?: number) => void;
-    preProcessors: { [name: string]: XdfPreProcessorFactory };
+    preProcessors: { [name: string]: XtrPreProcessorFactory };
 }
 
-export type XdfChildElement = XdfFragment | XdfElement | XdfText | XdfCData;
+export type XtrChildElement = XtrFragment | XtrElement | XtrText | XtrCData;
 
 // -------------------------------------------------------------------------------------
-// Tree API to dynamically create an XDF tree and bypass the XDF parser
+// Tree API to dynamically create an XTR tree and bypass the XTR parser
 
-export function createXdfFragment(root = true, pos = -1): XdfFragment {
+export function createXtrFragment(root = true, pos = -1): XtrFragment {
     return new XFragment(root, pos);
 }
 
-export function createXdfElement(kind: "#element" | "#component" | "#paramNode" | "#decoratorNode", name?: string, nameRef?: string, pos = -1): XdfElement {
+export function createXtrElement(kind: "#element" | "#component" | "#paramNode" | "#decoratorNode", name?: string, nameRef?: string, pos = -1): XtrElement {
     return new XElement(kind, name, nameRef, pos);
 }
 
-export function createXdfCData(content: string, pos = -1): XdfCData {
+export function createXtrCData(content: string, pos = -1): XtrCData {
     return new XCData(content, pos);
 }
 
-export function createXdfText(text: string, pos = -1): XdfText {
+export function createXtrText(text: string, pos = -1): XtrText {
     return new XText(text, pos);
 }
 
-export function addElement(parent: XdfFragment | XdfElement, name: string, pos = -1): XdfElement {
-    return pushChild(parent, createXdfElement("#element", name, U, pos)) as XdfElement;
+export function addElement(parent: XtrFragment | XtrElement, name: string, pos = -1): XtrElement {
+    return pushChild(parent, createXtrElement("#element", name, U, pos)) as XtrElement;
 }
 
-export function addComponent(parent: XdfFragment | XdfElement, ref: XdfRef, pos = -1): XdfElement {
-    return pushChild(parent, createXdfElement("#component", U, ref.identifier, pos)) as XdfElement;
+export function addComponent(parent: XtrFragment | XtrElement, ref: XtrRef, pos = -1): XtrElement {
+    return pushChild(parent, createXtrElement("#component", U, ref.identifier, pos)) as XtrElement;
 }
 
-export function addFragment(parent: XdfFragment | XdfElement, pos = -1): XdfFragment {
-    return pushChild(parent, createXdfFragment(false, pos)) as XdfFragment;
+export function addFragment(parent: XtrFragment | XtrElement, pos = -1): XtrFragment {
+    return pushChild(parent, createXtrFragment(false, pos)) as XtrFragment;
 }
 
-export function addCData(parent: XdfFragment | XdfElement, content: string, pos = -1): XdfCData {
-    return pushChild(parent, createXdfCData(content, pos)) as XdfCData;
+export function addCData(parent: XtrFragment | XtrElement, content: string, pos = -1): XtrCData {
+    return pushChild(parent, createXtrCData(content, pos)) as XtrCData;
 }
 
-export function addParamNode(parent: XdfFragment | XdfElement, name: string, pos = -1): XdfElement {
-    return pushChild(parent, createXdfElement("#paramNode", name, U, pos)) as XdfElement;
+export function addParamNode(parent: XtrFragment | XtrElement, name: string, pos = -1): XtrElement {
+    return pushChild(parent, createXtrElement("#paramNode", name, U, pos)) as XtrElement;
 }
 
-export function addText(parent: XdfFragment | XdfElement, text: string, pos = -1) {
-    pushChild(parent, createXdfText(text, pos));
+export function addText(parent: XtrFragment | XtrElement, text: string, pos = -1) {
+    pushChild(parent, createXtrText(text, pos));
 }
 
-export function addParam(parent: XdfParamHost, name: string, value?: boolean | number | string | XdfRef, isProperty?: boolean, pos = -1) {
+export function addParam(parent: XtrParamHost, name: string, value?: boolean | number | string | XtrRef, isProperty?: boolean, pos = -1) {
     return pushParam(parent, new XParam(isProperty === true ? "#property" : "#param", name, value, pos));
 }
 
-export function addDecorator(parent: XdfParamHost, nameRef: XdfRef, value: boolean | number | string | XdfRef = NO_VALUE, pos = -1) {
+export function addDecorator(parent: XtrParamHost, nameRef: XtrRef, value: boolean | number | string | XtrRef = NO_VALUE, pos = -1) {
     return pushParam(parent, new XParam("#decorator", nameRef.identifier, value, pos));
 }
 
-export function addLabel(parent: XdfParamHost, name: string, value?: string | XdfRef, pos = -1) {
+export function addLabel(parent: XtrParamHost, name: string, value?: string | XtrRef, pos = -1) {
     return pushParam(parent, new XParam("#label", name, value, pos));
 }
 
-const INVALID_REF: XdfRef = {
+const INVALID_REF: XtrRef = {
     kind: "#ref",
     identifier: "#invalid"
 }
 
-class XFragment implements XdfFragment {
+class XFragment implements XtrFragment {
     kind: "#fragment" = "#fragment";
-    params?: XdfParam[];
-    _refs: { [refName: string]: XdfRef } = {};
+    params?: XtrParam[];
+    _refs: { [refName: string]: XtrRef } = {};
 
     constructor(private _isRoot = true, public pos = -1) { }
 
-    children: (XdfElement | XdfText)[] = [];
-    ref(name: string): XdfRef {
+    children: (XtrElement | XtrText)[] = [];
+    ref(name: string): XtrRef {
         if (this._isRoot) {
-            let ref: XdfRef = {
+            let ref: XtrRef = {
                 kind: "#ref",
                 identifier: name
             }
             this._refs[name] = ref;
             return ref;
         } else {
-            console.log("[XDF AST] references can only be created on root fragments - please check '" + name + "'");
+            console.log("[XTR AST] references can only be created on root fragments - please check '" + name + "'");
             return INVALID_REF;
         }
     }
 
-    get refs(): XdfRef[] {
-        let r: XdfRef[] = [], refs = this._refs;
+    get refs(): XtrRef[] {
+        let r: XtrRef[] = [], refs = this._refs;
         for (let k in refs) {
             if (refs.hasOwnProperty(k)) {
                 r.push(refs[k]);
@@ -201,7 +201,7 @@ const PREFIXES = {
     "#label": ""
 }
 
-function serializeChildren(nodes: (XdfChildElement[]) | undefined, startIndent: string, indent: string, multiline: boolean, minimal = false) {
+function serializeChildren(nodes: (XtrChildElement[]) | undefined, startIndent: string, indent: string, multiline: boolean, minimal = false) {
     if (nodes === U || !nodes.length) return "";
     let buf: string[] = [];
     for (let node of nodes) {
@@ -210,7 +210,7 @@ function serializeChildren(nodes: (XdfChildElement[]) | undefined, startIndent: 
             buf.push("\n" + startIndent);
         }
         if (k === "#text") {
-            buf.push((node as XdfText).toString());
+            buf.push((node as XtrText).toString());
         } else {
             buf.push(serializeContainer(node as any, startIndent, indent, minimal));
         }
@@ -218,7 +218,7 @@ function serializeChildren(nodes: (XdfChildElement[]) | undefined, startIndent: 
     return buf.join("");
 }
 
-function serializeContainer(node: XdfFragment | XdfElement | XdfCData, startIndent = "", indent = "", minimal = false): string {
+function serializeContainer(node: XtrFragment | XtrElement | XtrCData, startIndent = "", indent = "", minimal = false): string {
     let k = node.kind, buf: string[] = [], start = "";
     if (k === "#fragment") {
         start = "<!" + serializeParams(node.params);
@@ -228,12 +228,12 @@ function serializeContainer(node: XdfFragment | XdfElement | XdfCData, startInde
     } else if (k === "#cdata") {
         start = "<!cdata" + serializeParams(node.params);
     } else {
-        start = "<" + PREFIXES[k] + ((node as XdfElement).name || (node as XdfElement).nameRef) + serializeParams(node.params);
+        start = "<" + PREFIXES[k] + ((node as XtrElement).name || (node as XtrElement).nameRef) + serializeParams(node.params);
     }
 
     buf.push(start);
-    if (k !== "#cdata" && (node as XdfFragment | XdfElement).children && (node as XdfFragment | XdfElement).children!.length > 0) {
-        let n = node as XdfFragment | XdfElement; { }
+    if (k !== "#cdata" && (node as XtrFragment | XtrElement).children && (node as XtrFragment | XtrElement).children!.length > 0) {
+        let n = node as XtrFragment | XtrElement; { }
         if (start !== "") {
             buf.push(">");
         }
@@ -247,11 +247,11 @@ function serializeContainer(node: XdfFragment | XdfElement | XdfCData, startInde
                     buf.push("</!>");
                 }
             } else {
-                buf.push(minimal ? "</>" : "</" + PREFIXES[k] + ((n as XdfElement).name || (n as XdfElement).nameRef) + ">");
+                buf.push(minimal ? "</>" : "</" + PREFIXES[k] + ((n as XtrElement).name || (n as XtrElement).nameRef) + ">");
             }
         }
     } else if (k === "#cdata") {
-        buf.push(">" + (node as XdfCData).content + "</!cdata>");
+        buf.push(">" + (node as XtrCData).content + "</!cdata>");
     } else {
         if (minimal && start === "") return "";
         buf.push("/>");
@@ -259,7 +259,7 @@ function serializeContainer(node: XdfFragment | XdfElement | XdfCData, startInde
     return buf.join("");
 }
 
-function serializeParams(params?: XdfParam[], firstSeparator: string = " "): string {
+function serializeParams(params?: XtrParam[], firstSeparator: string = " "): string {
     if (params === U || params.length === 0) return "";
     let buf: string[] = [];
     for (let p of params) {
@@ -288,9 +288,9 @@ function encodeText(t: string) {
     return t.replace(/\'/g, "\\'")
 }
 
-class XElement implements XdfElement {
-    params?: XdfParam[];
-    children?: (XdfElement | XdfText)[];
+class XElement implements XtrElement {
+    params?: XtrParam[];
+    children?: (XtrElement | XtrText)[];
     constructor(public kind: "#element" | "#component" | "#paramNode" | "#decoratorNode", public name?: string, public nameRef?: string, public pos = -1) { }
 
     toString(startIndent: string = "", indent: string = "", minimal = false) {
@@ -298,7 +298,7 @@ class XElement implements XdfElement {
     }
 }
 
-function pushChild(parent: XdfFragment | XdfElement, child: XdfElement | XdfText | XdfFragment | XdfCData) {
+function pushChild(parent: XtrFragment | XtrElement, child: XtrElement | XtrText | XtrFragment | XtrCData) {
     if (!parent.children) {
         parent.children = [child];
     } else {
@@ -307,7 +307,7 @@ function pushChild(parent: XdfFragment | XdfElement, child: XdfElement | XdfText
     return child;
 }
 
-class XText implements XdfText {
+class XText implements XtrText {
     kind: "#text" = "#text";
     constructor(public value: string, public pos = -1) { }
     toString() {
@@ -315,7 +315,7 @@ class XText implements XdfText {
     }
 }
 
-class XCData implements XdfCData {
+class XCData implements XtrCData {
     kind: "#cdata" = "#cdata";
     constructor(public content: string, public pos = -1) { }
     toString(startIndent: string = "", indent: string = "") {
@@ -323,22 +323,22 @@ class XCData implements XdfCData {
     }
 }
 
-class XParam implements XdfParam {
-    params?: XdfParam[];
+class XParam implements XtrParam {
+    params?: XtrParam[];
     valueRef?: string;
     holdsValue: boolean = true;
 
-    constructor(public kind: "#param" | "#property" | "#decorator" | "#label", public name: string, public value?: boolean | number | string | XdfRef, public pos = -1) {
+    constructor(public kind: "#param" | "#property" | "#decorator" | "#label", public name: string, public value?: boolean | number | string | XtrRef, public pos = -1) {
         if (value === U || value === NO_VALUE) {
             this.holdsValue = false;
             this.value = U;
-        } else if ((value as XdfRef).kind === "#ref") {
-            this.valueRef = (value as XdfRef).identifier;
+        } else if ((value as XtrRef).kind === "#ref") {
+            this.valueRef = (value as XtrRef).identifier;
         }
     }
 }
 
-function pushParam(elt: XdfParamHost, param: XdfParam): XdfParam {
+function pushParam(elt: XtrParamHost, param: XtrParam): XtrParam {
     if (!elt.params) {
         elt.params = [param];
     } else {

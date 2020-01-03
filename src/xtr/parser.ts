@@ -1,4 +1,4 @@
-import { XdfFragment, createXdfFragment, XdfElement, addText, addElement, addComponent, addParamNode, XdfParam, addParam, addDecorator, addLabel, addFragment, addCData, XdfCData, XdfPreProcessorFactory, XdfParamHost, XdfPreProcessorCtxt, XdfPreProcessor, XdfParamDictionary } from './ast';
+import { XtrFragment, createXtrFragment, XtrElement, addText, addElement, addComponent, addParamNode, XtrParam, addParam, addDecorator, addLabel, addFragment, addCData, XtrCData, XtrPreProcessorFactory, XtrParamHost, XtrPreProcessorCtxt, XtrPreProcessor, XtrParamDictionary } from './ast';
 
 const U = undefined,
     CDATA = "cdata",
@@ -41,40 +41,40 @@ const U = undefined,
     CHAR_NBSP = '\u00A0'.charCodeAt(0), // non breaking space
     RX_TRAILING_SPACES = /[ \t\r\f\n]+$/;
 
-interface XdfPreProcessorDictionary {
-    [name: string]: XdfPreProcessorFactory;
+interface XtrPreProcessorDictionary {
+    [name: string]: XtrPreProcessorFactory;
 }
 
-interface XdfPreProcessorData {
+interface XtrPreProcessorData {
     kind: "#preprocessorData";
     name: string; // pre-processor name with @@ prefix
     pos: number;
-    params?: XdfParam[];
-    paramsDict?: { [name: string]: XdfParam };
+    params?: XtrParam[];
+    paramsDict?: { [name: string]: XtrParam };
 }
 
-export interface XdfParserContext {
-    preProcessors?: XdfPreProcessorDictionary;
-    fileId: string; // e.g. /Users/blaporte/Dev/iv/src/doc/samples.xdf
+export interface XtrParserContext {
+    preProcessors?: XtrPreProcessorDictionary;
+    fileId: string; // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
     globalPreProcessors?: string[]; // e.g. ["@@json"]
 }
 
-// parse generates an XdfFragment (XDF tree)
-export async function parse(xdf: string, context?: XdfParserContext): Promise<XdfFragment> {
-    let xf = createXdfFragment(),
-        posEOS = xdf.length,
+// parse generates an XtrFragment (XTR tree)
+export async function parse(xtr: string, context?: XtrParserContext): Promise<XtrFragment> {
+    let xf = createXtrFragment(),
+        posEOS = xtr.length,
         pos = 0,    // current position
         cc: number = CHAR_EOS,   // current char code at current position
-        ppContext: XdfPreProcessorCtxt | undefined,
+        ppContext: XtrPreProcessorCtxt | undefined,
         currentPpName = "",
         currentPpPos = 0,
         globalPreProcessors = context ? context.globalPreProcessors : U,
         ppFactories = context ? context.preProcessors || {} : {},
         preProcessors = {}; // dictionary of pre-processor instances
     if (posEOS > 0) {
-        cc = xdf.charCodeAt(0);
+        cc = xtr.charCodeAt(0);
 
-        let ppDataList: XdfPreProcessorData[] | undefined;
+        let ppDataList: XtrPreProcessorData[] | undefined;
 
         if (globalPreProcessors !== U) {
             ppDataList = [];
@@ -87,7 +87,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
             }
             await callPreProcessors(ppDataList, xf, null, "setup", 1);
         }
-        await xdfContent(xf);
+        await xtrContent(xf);
         if (ppDataList !== U) {
             await callPreProcessors(ppDataList, xf, null, "process", 2);
         }
@@ -104,15 +104,15 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
 
     function shiftNext(length: number) {
         pos += length;
-        return cc = pos < posEOS ? xdf.charCodeAt(pos) : CHAR_EOS;
+        return cc = pos < posEOS ? xtr.charCodeAt(pos) : CHAR_EOS;
     }
 
     function nextCharCode() {
-        return pos + 1 < posEOS ? xdf.charCodeAt(pos + 1) : CHAR_EOS;
+        return pos + 1 < posEOS ? xtr.charCodeAt(pos + 1) : CHAR_EOS;
     }
 
     function nextChars(length: number) {
-        return pos + length < posEOS ? xdf.substr(pos, length) : "";
+        return pos + length < posEOS ? xtr.substr(pos, length) : "";
     }
 
     function eat(charCode: number, errMsg?: string) {
@@ -126,20 +126,20 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         return moveNext();
     }
 
-    async function xdfContent(parent: XdfFragment | XdfElement) {
-        // parse xdf content: text or element or fragments or cdata
+    async function xtrContent(parent: XtrFragment | XtrElement) {
+        // parse xtr content: text or element or fragments or cdata
         let keepGoing = true;
         while (keepGoing) {
-            if (!await xdfElement(parent) && !xdfText(parent)) {
+            if (!await xtrElement(parent) && !xtrText(parent)) {
                 keepGoing = false;
             }
         }
     }
 
-    function xdfText(parent: XdfFragment | XdfElement): boolean {
+    function xtrText(parent: XtrFragment | XtrElement): boolean {
         // return true if blank spaces or text characters have been found
         if (cc === CHAR_LT || cc === CHAR_EOS) return false;
-        let spacesFound = xdfSpaces(), startPos = pos;
+        let spacesFound = xtrSpaces(), startPos = pos;
         if (cc !== CHAR_LT && cc !== CHAR_EOS) {
             let charCodes: number[] = [];
             if (spacesFound) {
@@ -177,7 +177,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         return true;
     }
 
-    function xdfSpaces(): boolean {
+    function xtrSpaces(): boolean {
         // eat spaces (white spaces or carriage return, tabs, etc.) 
         // return true if spaces have been found
         if (cc === CHAR_EOS) return false;
@@ -233,30 +233,30 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         return false;
     }
 
-    async function xdfElement(parent: XdfFragment | XdfElement): Promise<boolean> {
+    async function xtrElement(parent: XtrFragment | XtrElement): Promise<boolean> {
         // return true if an element, a fragment or a cdata section has been found
         if (cc !== CHAR_LT || nextCharCode() === CHAR_FSLA) return false;
         cc = eat(CHAR_LT); // <
         // prefix: [none] or * or . or @
         let prefix = 0;
         eatPrefix();
-        let name = "", eltOrFragment: XdfElement | XdfFragment;
+        let name = "", eltOrFragment: XtrElement | XtrFragment;
         if (cc === CHAR_BANG) {
             eat(CHAR_BANG);
-            if (await xdfCData(parent)) {
+            if (await xtrCData(parent)) {
                 return true;
             }
             eltOrFragment = addFragment(parent, pos);
         } else {
-            name = xdfIdentifier(true, prefix === 0);
+            name = xtrIdentifier(true, prefix === 0);
             eltOrFragment = createElement();
         }
 
-        let ppDataList: XdfPreProcessorData[] | null = null;
+        let ppDataList: XtrPreProcessorData[] | null = null;
 
-        if (xdfSpaces()) {
+        if (xtrSpaces()) {
             // spaces have been found: parse params
-            ppDataList = await xdfParams(eltOrFragment, parent, endParamReached);
+            ppDataList = await xtrParams(eltOrFragment, parent, endParamReached);
             if (ppDataList !== null) {
                 await callPreProcessors(ppDataList, eltOrFragment, parent, "setup", 3);
             }
@@ -268,12 +268,12 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         } else if (cc === CHAR_GT) {
             eat(CHAR_GT); // >
             // parse element content
-            await xdfContent(eltOrFragment);
+            await xtrContent(eltOrFragment);
             // parse end of element
             eat(CHAR_LT); // <
             eat(CHAR_FSLA); // /
             let endPos = pos;
-            let p1 = prefix, p2 = eatPrefix(), name2 = xdfIdentifier(false);
+            let p1 = prefix, p2 = eatPrefix(), name2 = xtrIdentifier(false);
             if (name2 === "" && p2 === 0 && CHAR_BANG === cc as any) {
                 eat(CHAR_BANG); // end of fragment !
             } else if (name2 !== "" || p2 !== 0) {
@@ -282,7 +282,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
                     error('End tag </' + eltName(p2, name2) + '> doesn\'t match <' + eltName(p1, name) + '>', endPos);
                 }
             }
-            xdfSpaces();
+            xtrSpaces();
             eat(CHAR_GT); // >
         } else {
             error();
@@ -303,7 +303,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
             return 0;
         }
 
-        function createElement(): XdfElement {
+        function createElement(): XtrElement {
             if (prefix === CHAR_STAR) { // *
                 return addComponent(parent, xf.ref(name), pos);
             } else if (prefix === CHAR_DOT) { // .
@@ -320,14 +320,14 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         }
     }
 
-    async function callPreProcessors(ppDataList: XdfPreProcessorData[], target: XdfParamHost, parent: XdfParamHost | null, hookName: "setup" | "process", src: number) {
+    async function callPreProcessors(ppDataList: XtrPreProcessorData[], target: XtrParamHost, parent: XtrParamHost | null, hookName: "setup" | "process", src: number) {
         // console.log("callPreProcessors", src, ppDataList);
         for (let ppData of ppDataList) {
             if (ppFactories === U || ppFactories[ppData.name] === U) {
                 error("Undefined pre-processor '" + ppData.name + "'", ppData.pos);
                 return;
             }
-            let pp: XdfPreProcessor = preProcessors[ppData.name];
+            let pp: XtrPreProcessor = preProcessors[ppData.name];
             if (pp === U) {
                 pp = preProcessors[ppData.name] = ppFactories[ppData.name]() as any;
             }
@@ -335,7 +335,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
             if (pp[hookName] === U) continue;
 
             if (ppData.paramsDict === U) {
-                let ppParams: XdfParamDictionary = {};
+                let ppParams: XtrParamDictionary = {};
                 if (ppData.params) {
                     for (let p of ppData.params) {
                         ppParams[p.name] = p;
@@ -348,7 +348,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
                 await pp[hookName]!(target, ppData.paramsDict, getPreProcessorContext(ppData.name, parent, ppData.pos));
             } catch (ex) {
                 let msg = ex.message || ex;
-                if (msg.match(/^XDF\:/)) {
+                if (msg.match(/^XTR\:/)) {
                     // error was triggered through context.error()
                     throw ex;
                 } else {
@@ -358,7 +358,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         }
     }
 
-    function getPreProcessorContext(ppName: string, parent: XdfParamHost | null, processorPos: number) {
+    function getPreProcessorContext(ppName: string, parent: XtrParamHost | null, processorPos: number) {
         currentPpName = ppName;
         currentPpPos = processorPos;
         if (ppContext === U) {
@@ -381,14 +381,14 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         return (cc === CHAR_FSLA || cc === CHAR_GT); // / or >
     }
 
-    async function xdfCData(parent: XdfFragment | XdfElement): Promise<boolean> {
+    async function xtrCData(parent: XtrFragment | XtrElement): Promise<boolean> {
         if (CDATA === nextChars(CDATA_LENGTH)) {
             let startPos = pos;
             shiftNext(CDATA_LENGTH);
-            let cdata = addCData(parent, "", pos), ppDataList: XdfPreProcessorData[] | null = null;
-            if (xdfSpaces()) {
+            let cdata = addCData(parent, "", pos), ppDataList: XtrPreProcessorData[] | null = null;
+            if (xtrSpaces()) {
                 // spaces have been found: parse params
-                ppDataList = await xdfParams(cdata, parent, endParamReached);
+                ppDataList = await xtrParams(cdata, parent, endParamReached);
                 if (ppDataList !== null) {
                     await callPreProcessors(ppDataList, cdata, parent, "setup", 5);
                 }
@@ -432,7 +432,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         return false;
     }
 
-    function xdfIdentifier(mandatory: boolean, acceptDashes = false): string {
+    function xtrIdentifier(mandatory: boolean, acceptDashes = false): string {
         // identifier is used for references and component/decorators names (which area also references)
         // they cannot start with $ on the contrary to JS identifiers
         let charCodes: number[] = [];
@@ -445,26 +445,26 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
                 moveNext();
             }
         } else if (mandatory) {
-            error("Invalid XDF identifier");
+            error("Invalid XTR identifier");
         }
         if (charCodes.length === 0) return "";
         return String.fromCharCode.apply(null, charCodes);
     }
 
-    async function xdfParams(parent: XdfParamHost | XdfPreProcessorData, grandParent: XdfParamHost | XdfPreProcessorData, endReached: () => boolean): Promise<XdfPreProcessorData[] | null> {
-        let prefix = 0, keepGoing = true, result: XdfPreProcessorData[] | null = null, startPos = -1;
+    async function xtrParams(parent: XtrParamHost | XtrPreProcessorData, grandParent: XtrParamHost | XtrPreProcessorData, endReached: () => boolean): Promise<XtrPreProcessorData[] | null> {
+        let prefix = 0, keepGoing = true, result: XtrPreProcessorData[] | null = null, startPos = -1;
         while (keepGoing && !endReached()) {
             // param name: prefix + name
             startPos = pos;
             prefix = eatPrefix();
-            let ppData: XdfPreProcessorData | null = null;
+            let ppData: XtrPreProcessorData | null = null;
             if (prefix === CHAR_AT && cc === CHAR_AT) {
                 // this is a pre-processor
                 eat(CHAR_AT); // 2nd @
 
                 if (parent.kind === "#preprocessorData") {
                     let errorPos = pos - 2;
-                    error("Pre-processors cannot be used on pre-processors: check @@" + xdfIdentifier(true, false), errorPos);
+                    error("Pre-processors cannot be used on pre-processors: check @@" + xtrIdentifier(true, false), errorPos);
                 }
 
                 ppData = {
@@ -473,7 +473,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
                     pos: pos - 2 // to be before the '@@' prefix
                 }
             }
-            let name = xdfIdentifier(true, prefix === 0), isProperty = false;
+            let name = xtrIdentifier(true, prefix === 0), isProperty = false;
             if (prefix === CHAR_SBRS) { // [
                 eat(CHAR_SBRE); // ]
                 isProperty = true;
@@ -485,22 +485,22 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
                 error("Labels cannot be used on pre-processors", parent.pos);
             }
 
-            let spacesFound = xdfSpaces();
+            let spacesFound = xtrSpaces();
             if (cc === CHAR_EQ) {
                 // look for value
                 eat(CHAR_EQ);
-                xdfSpaces();
+                xtrSpaces();
                 if (ppData !== null) {
-                    registerParam("value", ppData, xdfParamValue());
+                    registerParam("value", ppData, xtrParamValue());
                 } else {
-                    registerParam(name, ppData, xdfParamValue(), isProperty);
+                    registerParam(name, ppData, xtrParamValue(), isProperty);
                 }
-                if (!xdfSpaces()) {
+                if (!xtrSpaces()) {
                     // no spaces found -> we have reached the end of the param list
                     keepGoing = false;
                 }
             } else if (prefix === CHAR_AT && cc === CHAR_PARS) {
-                let d: XdfParamHost;
+                let d: XtrParamHost;
                 if (ppData !== null) {
                     d = ppData as any;
                 } else {
@@ -508,12 +508,12 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
                 }
                 // look for attribute params for decorators
                 eat(CHAR_PARS); // ( parens start
-                xdfSpaces();
+                xtrSpaces();
 
-                let r = await xdfParams(d, parent, endDecoParamReached);
+                let r = await xtrParams(d, parent, endDecoParamReached);
                 eat(CHAR_PARE); // ) parens end
 
-                if (!xdfSpaces()) {
+                if (!xtrSpaces()) {
                     // no spaces found -> we have reached the end of the param list
                     keepGoing = false;
                 }
@@ -545,7 +545,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
             return (cc === CHAR_PARE); // )
         }
 
-        function registerParam(name: string, ppData: XdfPreProcessorData | null, value?: any, isProperty: boolean = false) {
+        function registerParam(name: string, ppData: XtrPreProcessorData | null, value?: any, isProperty: boolean = false) {
             let p = parent as any;
             if (ppData !== null) {
                 p = ppData as any;
@@ -570,7 +570,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         }
     }
 
-    function xdfParamValue() {
+    function xtrParamValue() {
         // return the param value
         if (cc === CHAR_SQUO) {
             return stringContent(CHAR_SQUO); // single quote string
@@ -579,9 +579,9 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         } else if (cc === CHAR_CS) { // {
             // reference
             eat(CHAR_CS);
-            xdfSpaces();
-            let refName = xdfIdentifier(true, false);
-            xdfSpaces();
+            xtrSpaces();
+            let refName = xtrIdentifier(true, false);
+            xtrSpaces();
             eat(CHAR_CE);
             return xf.ref(refName);
         } else if (cc === CHAR_t) {
@@ -598,7 +598,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
             if (ccIsSign()) {
                 charCodes.push(cc);
                 moveNext();
-                xdfSpaces();
+                xtrSpaces();
             }
             while (ccIsNumber()) {
                 charCodes.push(cc);
@@ -622,7 +622,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
     }
 
     function error(msg?: string, errorPos?: number) {
-        let lines = xdf.split("\n"), lineLen = 0, posCount = 0, idx = 0, lineNbr = lines.length, columnNbr = lines[lineNbr - 1].length;
+        let lines = xtr.split("\n"), lineLen = 0, posCount = 0, idx = 0, lineNbr = lines.length, columnNbr = lines[lineNbr - 1].length;
         errorPos = errorPos || pos;
         if (errorPos > -1) {
             while (idx < lines.length) {
@@ -648,7 +648,7 @@ export async function parse(xdf: string, context?: XdfParserContext): Promise<Xd
         if (msg === U) {
             msg = "Invalid character: " + charName(cc);
         }
-        throw "XDF: " + msg + "\nLine " + lineNbr + " / Col " + columnNbr + fileInfo + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<";
+        throw "XTR: " + msg + "\nLine " + lineNbr + " / Col " + columnNbr + fileInfo + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<";
     }
 
     function charName(c: number) {
