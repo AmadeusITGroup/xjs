@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { createXtrFragment, addElement, addText, XtrFragment, addParam, addDecorator, addLabel, addComponent, addParamNode, addFragment, addCData } from '../xtr/ast'
-import { parse } from '../xtr/parser';
+import { parse, XtrParserContext } from '../xtr/parser';
 import { xtr } from '../xtr/xtr';
 
 describe('XTR', () => {
@@ -323,12 +323,13 @@ describe('XTR', () => {
     describe('Parser errors', () => {
         const padding = '                ';
 
-        async function error(xtr: string) {
+        async function error(xtr: string, ctxt?: XtrParserContext) {
             try {
-                let xf = await parse(xtr);
+                let xf = await parse(xtr, ctxt);
                 // console.log("xf=",xf)
             } catch (err) {
-                return "\n" + padding + err.replace(/\n/g, "\n" + padding) + "\n" + padding;
+                const msg = typeof err === 'string' ? err : err.message || "" + err;
+                return "\n" + padding + msg.replace(/\n/g, "\n" + padding) + "\n" + padding;
             }
             return "NO ERROR";
         }
@@ -348,6 +349,25 @@ describe('XTR', () => {
                 XTR: Invalid character: '+'
                 Line 2 / Col 27
                 Extract: >> <*cpt @foo+bar/> <<
+                `, "2");
+        });
+
+        it("should support line1 and col1 offsets", async function () {
+            assert.equal(await error(xtr`
+                // somme comment
+                <*cp-t foo=123/>
+            `, { fileId: "/fileA.ts", line1: 356, col1: 42 }), `
+                XTR: Invalid character: '-'
+                Line 358 / Col 21
+                File: /fileA.ts
+                Extract: >> <*cp-t foo=123/> <<
+                `, "1");
+
+            assert.equal(await error(xtr`<*cp-t foo=123/>`, { fileId: "/fileA.ts", line1: 366, col1: 42 }), `
+                XTR: Invalid character: '-'
+                Line 366 / Col 46
+                File: /fileA.ts
+                Extract: >> <*cp-t foo=123/> <<
                 `, "2");
         });
 

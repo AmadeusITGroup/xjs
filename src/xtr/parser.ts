@@ -55,7 +55,9 @@ interface XtrPreProcessorData {
 
 export interface XtrParserContext {
     preProcessors?: XtrPreProcessorDictionary;
-    fileId: string; // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
+    fileId: string;                 // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
+    line1?: number;                 // line 1 position - used to calculate offset for error messages - default: 1
+    col1?: number;                  // col 1 position - used to calculate offset for error messages - default: 1
     globalPreProcessors?: string[]; // e.g. ["@@json"]
 }
 
@@ -644,11 +646,18 @@ export async function parse(xtr: string, context?: XtrParserContext): Promise<Xt
         if (context !== U && context.fileId !== U) {
             fileInfo = `\nFile: ${context.fileId}`;
         }
+        let lineNbrMsg = lineNbr;
+        if (context) {
+            lineNbrMsg += context.line1 !== undefined ? context.line1 - 1 : 0;
+            if (lineNbr === 1) {
+                columnNbr += context.col1 !== undefined ? context.col1 - 1 : 0;
+            }
+        }
 
         if (msg === U) {
             msg = "Invalid character: " + charName(cc);
         }
-        throw "XTR: " + msg + "\nLine " + lineNbr + " / Col " + columnNbr + fileInfo + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<";
+        throw "XTR: " + msg + "\nLine " + lineNbrMsg + " / Col " + columnNbr + fileInfo + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<";
     }
 
     function charName(c: number) {
