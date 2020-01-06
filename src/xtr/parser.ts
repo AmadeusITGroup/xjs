@@ -41,7 +41,7 @@ const U = undefined,
     CHAR_NBSP = '\u00A0'.charCodeAt(0), // non breaking space
     RX_TRAILING_SPACES = /[ \t\r\f\n]+$/;
 
-interface XtrPreProcessorDictionary {
+export interface XtrPreProcessorDictionary {
     [name: string]: XtrPreProcessorFactory;
 }
 
