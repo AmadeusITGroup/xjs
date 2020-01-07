@@ -9,6 +9,9 @@ function foo() {
 // @@extract: sectionB
 // Hello World
 
+// @@extract: sectionF
+const xyz = ` Some stuff \`here\` `;
+
 // @@extract: sectionC
 class TheClass {
     method() {

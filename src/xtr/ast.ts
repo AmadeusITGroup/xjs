@@ -1,4 +1,7 @@
-const U = undefined, NO_VALUE: XtrRef = { kind: "#ref", identifier: "" };
+const U = undefined,
+    NO_VALUE: XtrRef = { kind: "#ref", identifier: "" },
+    RX_TEXT_SPECIALS = /(\<|\!|\/)/g,
+    RX_CDATA_SPECIALS = /\<\/\!cdata\>/g;
 
 // -------------------------------------------------------------------------------------
 // types
@@ -251,7 +254,7 @@ function serializeContainer(node: XtrFragment | XtrElement | XtrCData, startInde
             }
         }
     } else if (k === "#cdata") {
-        buf.push(">" + (node as XtrCData).content + "</!cdata>");
+        buf.push(">" + (node as XtrCData).content.replace(RX_CDATA_SPECIALS, "!</!cdata>") + "</!cdata>");
     } else {
         if (minimal && start === "") return "";
         buf.push("/>");
@@ -311,7 +314,7 @@ class XText implements XtrText {
     kind: "#text" = "#text";
     constructor(public value: string, public pos = -1) { }
     toString() {
-        return this.value;
+        return this.value.replace(RX_TEXT_SPECIALS, "!$1");
     }
 }
 

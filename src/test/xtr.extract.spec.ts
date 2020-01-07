@@ -36,7 +36,7 @@ describe('XTR extract pre-processor', () => {
         } catch (err) {
             return "\n" + padding + err.replace(/\n/g, "\n" + padding)
                 .replace(/File\:.*/, "File: ...")
-                .replace(/File doesn't exist\:.*/, "File doesn't exist: ...") + "\n" + padding;
+                .replace(/File not found\:.*/, "File not found: ...") + "\n" + padding;
         }
         return "NO ERROR";
     }
@@ -81,7 +81,7 @@ describe('XTR extract pre-processor', () => {
         assert.equal(await error(xtr`
                 <div @@extract="resources/invalid.ts#sectionE"/>
             `), `
-                XTR: @@extract: File doesn't exist: ...
+                XTR: @@extract: File not found: ...
                 Line 2 / Col 22
                 File: ...
                 Extract: >> <div @@extract="resources/invalid.ts#sectionE"/> <<
@@ -90,7 +90,7 @@ describe('XTR extract pre-processor', () => {
         assert.equal(await error(xtr`
                 <div @@extract="resources/sample1.ts#sectionE"/>
             `), `
-                XTR: @@extract: Invalid section: 'sectionE' is not defined
+                XTR: @@extract: Section not found: 'sectionE'
                 Line 2 / Col 22
                 File: ...
                 Extract: >> <div @@extract="resources/sample1.ts#sectionE"/> <<
@@ -115,6 +115,15 @@ describe('XTR extract pre-processor', () => {
                 File: ...
                 Extract: >> <div @@extract="resources/sample1.ts#sectionA"> <<
                 `, "8");
+
+        assert.equal(await error(xtr`
+                <div @@extract="resources/sample1.ts#section@#$"/>
+            `), `
+                XTR: @@extract: Invalid section name: 'section@#$'
+                Line 2 / Col 22
+                File: ...
+                Extract: >> <div @@extract="resources/sample1.ts#section@#$"/> <<
+                `, "9");
     });
 
 });

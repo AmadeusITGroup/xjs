@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import { tokenize } from '../xjs/tm-parser';
 import { IToken } from 'vscode-textmate';
+import { xtr } from '../xtr/xtr';
 
 describe('XTR TextMate grammar', () => {
 
@@ -85,8 +86,8 @@ describe('XTR TextMate grammar', () => {
 
     it("should support escaped chars", async function () {
         let r: IToken[][];
-        r = await processXtr('Hello\\n+\\s+\\<+\\>+\\\\!');
-        assert.equal(lineInfo(r[1]), "0:5/S  5:7/S/ESC  7:8/S  8:10/S/ESC  10:11/S  11:13/S/ESC  13:14/S  14:16/S/ESC  16:17/S  17:19/S/ESC  19:21/S", "1");
+        r = await processXtr(xtr`Hello!n+!s+!<+>+!!+!/`);
+        assert.equal(lineInfo(r[1]), "0:5/S  5:7/S/ESC  7:8/S  8:10/S/ESC  10:11/S  11:13/S/ESC  13:16/S  16:18/S/ESC  18:19/S  19:21/S/ESC", "1");
     });
 
     it("should support elements", async function () {
@@ -163,13 +164,13 @@ describe('XTR TextMate grammar', () => {
 
     it("should support cdata", async function () {
         let r: IToken[][];
-        r = await processXtr('<!cdata></!cdata>');
+        r = await processXtr(xtr`<!cdata></!cdata>`);
         assert.equal(lineInfo(r[1]), "0:1/S/TAG/PTB  1:7/S/TAG/ETAG  7:8/S/TAG/CDATA/PTE  8:10/S/TAG/PTB  10:16/S/TAG/ETAG  16:17/S/TAG/PTE", "1");
 
-        r = await processXtr('<!cdata> ABCD EFG /* comment */ \\</!cdata> xyz </!cdata>');
+        r = await processXtr(xtr`<!cdata> ABCD EFG /* comment */ !</!cdata> xyz </!cdata>`);
         assert.equal(lineInfo(r[1]), "0:1/S/TAG/PTB  1:7/S/TAG/ETAG  7:8/S/TAG/CDATA/PTE  8:46/S/TAG/CDATA/CDATA  46:47/S/TAG/CDATA/CDATA  47:49/S/TAG/PTB  49:55/S/TAG/ETAG  55:56/S/TAG/PTE", "2");
 
-        r = await processXtr('<!cdata foo="bar" > ABC </!cdata>');
+        r = await processXtr(xtr`<!cdata foo="bar" > ABC </!cdata>`);
         assert.equal(lineInfo(r[1]), "0:1/S/TAG/PTB  1:7/S/TAG/ETAG  7:8/S/TAG/ATA  8:11/S/TAG/ATA/ATN  11:12/S/TAG/ATA/=  12:13/S/TAG/ATA/SQD/SB  13:16/S/TAG/ATA/SQD  16:17/S/TAG/ATA/SQD/SE  17:18/S/TAG/ATA  18:19/S/TAG/CDATA/PTE  19:23/S/TAG/CDATA/CDATA  23:24/S/TAG/CDATA/CDATA  24:26/S/TAG/PTB  26:32/S/TAG/ETAG  32:33/S/TAG/PTE", "3");
     });
 });

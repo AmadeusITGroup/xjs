@@ -1,11 +1,11 @@
 import { XtrParamHost, XtrParamDictionary, XtrPreProcessorCtxt, XtrElement, XtrFragment, addText } from './ast';
-import { join } from 'path';
+import { join, isAbsolute } from 'path';
 import { promises } from 'fs';
 
 const U = undefined,
     RX_FILE_NAME = /[^\/]+$/,
     RX_SECTION_START = /\/\/\s*@@extract\:/,
-    RX_SECTION_NAME = /^\s*([\w\$]+) *.*\n/;
+    RX_SECTION_NAME = /^\s*(\w[\w\$\-]*)( .*)?\n/;
 
 export function extract() {
     const cache: { [path: string]: { [sectionName: string]: string } } = {};
@@ -33,8 +33,13 @@ export function extract() {
                 if (relPath.charAt(0) === "/") {
                     ctxt.error("Invalid path: file path must be relative", value.pos);
                 }
-                const p = join(ctxt.fileId.replace(RX_FILE_NAME, ""), relPath);
+
+                let p = join(ctxt.fileId.replace(RX_FILE_NAME, ""), relPath);
                 let content = "";
+
+                if (!isAbsolute(p)) {
+                    p = join(__dirname, p);
+                }
 
                 try {
                     const f = await promises.open(p, "r");
@@ -43,7 +48,7 @@ export function extract() {
                 } catch (ex) {
                     let msg = ex.message || "" + ex;
                     if (msg.match(/no such file/i)) {
-                        msg = "File doesn't exist: " + p;
+                        msg = "File not found: " + p;
                     }
                     return ctxt.error(msg);
                 }
@@ -63,7 +68,11 @@ export function extract() {
 
             const content = sections[sectionName];
             if (content === U) {
-                ctxt.error("Invalid section: '" + sectionName + "' is not defined");
+                if (!(sectionName + "\n").match(RX_SECTION_NAME)) {
+                    ctxt.error("Invalid section name: '" + sectionName + "'");
+                } else {
+                    ctxt.error("Section not found: '" + sectionName + "'");
+                }
             }
 
             const k = target.kind;

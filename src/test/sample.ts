@@ -200,10 +200,32 @@ const str = xtr`
         <.value x="z"/>
     </*cpt>
 
+    // special chars
+    angle bracket: !< 
+    new line: !n
+    non-breaking space: !s
+    forward slash: !/
+    escaped bang: !!
+
+    // escape / special chars
+    !<abc
+    !<*cpt a="b" !// comment
+        bbb=123 !/*
+            another comment
+        */ c=false ddd eee
+    />
+    !</div>
+    !<!> no fragments
+    !<${name} foo/>
+    !<!cdata att=123>
+
+    // cdata
     <!cdata att=123>
         CDATA values
         <div> Everything here is considered as a string </div>
         // including comments
+        <!cdata>
+        !</!cdata> // escaped cdata end
     </!cdata>
 
     // support of template substitution elements:

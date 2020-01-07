@@ -1,5 +1,7 @@
 import common from './common';
 
+const BANG = "(?<!\\!)"; // negative look behind to escape some chars - e.g. !<
+
 /**
  * Include the support of xtr` ...  ` in the ts files
  */
@@ -23,19 +25,28 @@ export function includeXtrDef(g: any) {
             { "include": "#xtr-tag-close" },
             { "include": "#template-substitution-element" },
             { "include": "#comment" },
-            { "include": "#string-character-escape" }
+            { "include": "#string-character-escape" },
+            { "include": "#xtr-character-escape" }
         ]
     });
 
+    includeXtrEscapedChars(g);
     includeXtrCData(g);
     includeXtrTags(g);
     includeXtrAttributes(g);
 }
 
+function includeXtrEscapedChars(g: any) {
+    g.repository["xtr-character-escape"] = {
+        "name": "constant.character.escape.ts",
+        "match": "\\!(\\<|\\!|n|s|\\/)"
+    };
+}
+
 function includeXtrCData(g: any) {
     g.repository["xtr-cdata"] = {
         "name": "meta.tag.js.xjs",
-        "begin": "(<)(\\!cdata)",
+        "begin": "(" + BANG + "<)(\\!cdata)",
         "beginCaptures": {
             "1": {
                 "name": "punctuation.definition.tag.begin.js.xjs"
@@ -87,7 +98,7 @@ function includeXtrCData(g: any) {
 
     g.repository["xtr-cdata-string"] = {
         "name": "cdata.content.xtr", // can also use string.cdata.content.xtr to get 'string' highlighting
-        "match": "((\\\\</\\!cdata>)|(.(?!</\\!cdata>)))+"
+        "match": "((\\!</\\!cdata>)|(.(?!</\\!cdata>)))+"
     };
 
     g.repository["xtr-cdata-string-end"] = {
@@ -99,7 +110,7 @@ function includeXtrCData(g: any) {
 function includeXtrTags(g: any) {
     g.repository["xtr-tag-open"] = {
         "name": "meta.tag.js.xjs",
-        "begin": "(<(?![/\\s\\d]))(\\!|((\\@|\\.|\\*)?[a-zA-Z][\\w\\-\\.]*))",
+        "begin": "(" + BANG + "<(?![/\\s\\d]))(\\!|((\\@|\\.|\\*)?[a-zA-Z][\\w\\-\\.]*))",
         "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.js.xjs" },
             "2": { "name": "entity.name.tag.js.xjs" }
@@ -116,7 +127,7 @@ function includeXtrTags(g: any) {
 
     g.repository["xtr-tag-close"] = {
         "name": "meta.tag.js.xjs",
-        "begin": "(<)(/)(\\!|((\\@|\\.|\\*)?[a-zA-Z][\\w\\-\\.]*))?",
+        "begin": "(" + BANG + "<)(/)(\\!|((\\@|\\.|\\*)?[a-zA-Z][\\w\\-\\.]*))?",
         "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.js.xjs" },
             "2": { "name": "punctuation.definition.tag.close.js.xjs" },
@@ -130,7 +141,7 @@ function includeXtrTags(g: any) {
 
     g.repository["xtr-tag-open-tpl-substitution"] = {
         "name": "meta.tag.js.xjs",
-        "begin": "(<(?=\\$\\{))",
+        "begin": "(" + BANG + "<(?=\\$\\{))",
         "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.js.xjs" }
         },

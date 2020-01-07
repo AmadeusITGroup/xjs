@@ -7,7 +7,7 @@ describe('XTR', () => {
     const shift = '                ';
 
     function str(xf: XtrFragment) {
-        let s = xf.toString();
+        let s = xf.toString("", "  ", false, true);
         return s.replace(/\n/g, "\n" + shift);
     }
 
@@ -148,20 +148,20 @@ describe('XTR', () => {
         it("should parse simple text nodes", async function () {
             assert.equal(str(await parse('Hello  World\n(!)')), xtr`
                 Hello World
-                (!)
+                (!!)
                 `, "1")
 
             // test \n and \s or \ (non breaking space): note str adds some spaces at the beginning of each line
             // which results in a strange display
-            assert.equal(str(await parse(`\
-                \\                     Special chars\\nNew line
+            assert.equal(str(await parse(xtr`\
+                !s                     Special chars!nNew line
 
-                \\sx
+                !sx !< !/ !! !a
                 `)), xtr`
                   Special chars
                 New line
                 
-                 x 
+                 x !< !/ !! !!a 
                 `, "2")
         });
 
@@ -186,6 +186,66 @@ describe('XTR', () => {
                   </>
                 </>
                 `, "1")
+        });
+
+        it("should manage escaped <", async function () {
+            assert.equal(str(await parse(xtr`
+                <div>
+                    aaa
+                    !<!cdata> hello
+                    // this comment will disappear
+                    !<span> Hello World     !</span>
+                    <*foo>ABC DEF    ${"G"}</*foo>
+
+                    !<*bar/>
+                    abc
+                    def
+                    !<${"*abc"} x={y} />
+                    !// not a comment
+                        <.header  />
+                        Hello again
+                    !</>
+                </div>
+            `)), xtr`
+                <div>
+                   aaa
+                !<!!cdata> hello
+                !<span> Hello World !<!/span> 
+                  <*foo>ABC DEF G</*foo>
+                   !<*bar!/>
+                abc
+                def
+                !<*abc x={y} !/>
+                !/!/ not a comment 
+                  <.header/>
+                   Hello again
+                !<!/> 
+                </>
+                `, "1"); // TODO: review space management...
+
+            assert.equal(str(await parse(xtr`
+                <div>
+                    !<!cdata> hi
+                </div>
+            `)), xtr`
+                <div> !<!!cdata> hi </div>
+                `, "2");
+            
+            assert.equal(str(await parse(xtr`
+                <div>
+                    !<div>
+                </div>
+            `)), xtr`
+                <div> !<div> </div>
+                `, "3");
+            
+            assert.equal(str(await parse(xtr`
+                <div>
+                    !</div>
+                </div>
+            `)), xtr`
+                <div> !<!/div> </div>
+                `, "4");
         });
 
         it("should parse comments", async function () {
@@ -291,7 +351,7 @@ describe('XTR', () => {
                     <span> Hello World     </span>
                     <!cdata @foo @bar="baz">
                         <*foo>ABC DEF    G</*foo>
-                        \\</!cdata> // escaped
+                        !</!cdata> // escaped
                         <*bar>
                             <.header  />
                             Hello again
@@ -306,7 +366,7 @@ describe('XTR', () => {
                   <span> Hello World </span>
                   <!cdata @foo @bar='baz'>
                                         <*foo>ABC DEF    G</*foo>
-                                        </!cdata> // escaped
+                                        !</!cdata> // escaped
                                         <*bar>
                                             <.header  />
                                             Hello again
