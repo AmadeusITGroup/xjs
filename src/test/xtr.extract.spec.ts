@@ -34,7 +34,9 @@ describe('XTR extract pre-processor', () => {
         try {
             await transform(xtr, context);
         } catch (err) {
-            return "\n" + padding + err.replace(/\n/g, "\n" + padding).replace(/File\:.*/, "File: ...") + "\n" + padding;
+            return "\n" + padding + err.replace(/\n/g, "\n" + padding)
+                .replace(/File\:.*/, "File: ...")
+                .replace(/File doesn't exist\:.*/, "File doesn't exist: ...") + "\n" + padding;
         }
         return "NO ERROR";
     }
@@ -79,7 +81,7 @@ describe('XTR extract pre-processor', () => {
         assert.equal(await error(xtr`
                 <div @@extract="resources/invalid.ts#sectionE"/>
             `), `
-                XTR: @@extract: File doesn't exist
+                XTR: @@extract: File doesn't exist: ...
                 Line 2 / Col 22
                 File: ...
                 Extract: >> <div @@extract="resources/invalid.ts#sectionE"/> <<

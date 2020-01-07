@@ -43,7 +43,7 @@ export function extract() {
                 } catch (ex) {
                     let msg = ex.message || "" + ex;
                     if (msg.match(/no such file/i)) {
-                        msg = "File doesn't exist";
+                        msg = "File doesn't exist: " + p;
                     }
                     return ctxt.error(msg);
                 }
