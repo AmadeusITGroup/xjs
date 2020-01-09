@@ -28,8 +28,8 @@ export async function tokenize(src: string): Promise<vsTM.IToken[][]> {
     }
 
     let ruleStack: vsTM.StackElement | undefined, lines = src.split("\n"), result: vsTM.IToken[][] = [];
-    for (var i = 0; i < lines.length; i++) {
-        var r = xjsGrammar!.tokenizeLine(lines[i], <any>ruleStack);
+    for (let i = 0; i < lines.length; i++) {
+        const r = xjsGrammar!.tokenizeLine(lines[i], <any>ruleStack);
         result.push(r.tokens);
         ruleStack = r.ruleStack;
     }

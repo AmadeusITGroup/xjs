@@ -3,6 +3,7 @@
 
 // @@extract: sectionA
 function foo() {
+    // comment with <span>
     return "bar";
 }
 

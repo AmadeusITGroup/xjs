@@ -12,21 +12,80 @@ describe('XTR extract pre-processor', () => {
         return (await parse(xtr, context)).toString();
     }
 
+    function format(s: string) {
+        return s.replace(/\n/g, "\n            ");
+    }
+
     it("should extract sections in the middle of a file", async function () {
-        assert.deepEqual(await transform(xtr`
+        assert.deepEqual(format(await transform(xtr`
             AA
             <! @@extract="resources/sample1.ts#sectionA" />
             BB
-        `, context), '\n AA \n<!>function foo() {\n    return "bar";\n}\n\n</!>\n BB \n', '1');
+        `, context)), `
+             AA 
+            <!>
+              <div class='extract ts'>
+                <div>
+                  <span class='hr'>function</span>
+                   
+                  <span class='hf'>foo</span>
+                  () {
+                </>
+                <div>
+                      
+                  <span class='hc'>!/!/ comment with !<span></span>
+                </>
+                <div>
+                      
+                  <span class='hk'>return</span>
+                   
+                  <span class='hs'>"bar"</span>
+                  ;
+                </>
+                <div>}</div>
+                <div> </div>
+              </>
+            </>
+             BB 
+            `, '1');
     });
 
     it("should extract sections at the end or a file", async function () {
-        assert.deepEqual(await transform(xtr`
+        assert.deepEqual(format(await transform(xtr`
             <span> BEGINNING </span>
             <div @@extract="./resources/sample1.ts#sectionC" />
             <div> abc </>
             <span> END </span>
-        `, context), '\n<span> BEGINNING </span>\n<div>class TheClass {\n    method() {\n        return 123;\n    }\n}\n</div>\n<div> abc </div>\n<span> END </span>\n', '1');
+        `, context)), `
+            <span> BEGINNING </span>
+            <div>
+              <div class='extract ts'>
+                <div>
+                  <span class='hr'>class</span>
+                   
+                  <span class='ht'>TheClass</span>
+                   {
+                </>
+                <div>
+                      
+                  <span class='hf'>method</span>
+                  () {
+                </>
+                <div>
+                          
+                  <span class='hk'>return</span>
+                   
+                  <span class='hn'>123</span>
+                  ;
+                </>
+                <div>    }</div>
+                <div>}</div>
+                <div> </div>
+              </>
+            </>
+            <div> abc </div>
+            <span> END </span>
+            `, '1');
     });
 
     const padding = '                ';
@@ -40,6 +99,71 @@ describe('XTR extract pre-processor', () => {
         }
         return "NO ERROR";
     }
+
+    it("should support template highlighting", async function () {
+        assert.deepEqual(format(await transform(xtr`
+            <div @@extract="./resources/sample3.ts#template-section" />
+        `, context)), `
+            <div>
+              <div class='extract ts'>
+                <div>
+                  <span class='hr'>interface</span>
+                   
+                  <span class='ht'>IFoo</span>
+                   {
+                </>
+                <div>
+                      
+                  <span class='hv'>x</span>
+                  <span class='hk'>:</span>
+                   
+                  <span class='hy'>boolean</span>
+                  ;
+                </>
+                <div>}</div>
+                <div>
+                  <span class='hr'>const</span>
+                   
+                  <span class='hv'>tpl</span>
+                   
+                  <span class='hk'>=</span>
+                   
+                  <span class='hf'>template</span>
+                  (\`(
+                  <span class='hv'>a</span>
+                  <span class='hk'>:</span>
+                  <span class='hy'>string</span>
+                  ) 
+                  <span class='hr'>=></span>
+                   {
+                </>
+                <div>
+                      
+                  <span class='hp'>!<</span>
+                  <span class='hg'>div</span>
+                   
+                  <span class='ho'>class</span>
+                  <span class='hk'>=</span>
+                  <span class='hs'>"abc"</span>
+                  <span class='hp'>></span>
+                  <span class='hs'>
+                     # text 
+                    <span class='hd'>{</span>
+                    <span class='hv'>a</span>
+                    <span class='hd'>}</span>
+                     #
+                  </>
+                   
+                  <span class='hp'>!<</span>
+                  <span class='hp'>!/</span>
+                  <span class='hp'>></span>
+                </>
+                <div>}\`);</div>
+                <div> </div>
+              </>
+            </>
+            `, '1');
+    });
 
     it("should properly manage errors", async function () {
         assert.equal(await error(xtr`
