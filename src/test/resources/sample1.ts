@@ -16,6 +16,7 @@ const xyz = ` Some stuff \`here\` `;
 // @@extract: sectionC
 class TheClass {
     method() {
+
         return 123;
     }
 }

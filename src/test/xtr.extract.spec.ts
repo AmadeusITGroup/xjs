@@ -70,6 +70,7 @@ describe('XTR extract pre-processor', () => {
                   <span class='hf'>method</span>
                   () {
                 </>
+                <div> </div>
                 <div>
                           
                   <span class='hk'>return</span>

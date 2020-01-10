@@ -156,6 +156,8 @@ function removeLastEmptyLines(mainDiv: XtrElement | XtrFragment) {
                 } else {
                     break;
                 }
+            } else {
+                break;
             }
         }
     }
