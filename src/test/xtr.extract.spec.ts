@@ -52,12 +52,12 @@ describe('XTR extract pre-processor', () => {
     it("should extract sections at the end or a file", async function () {
         assert.deepEqual(format(await transform(xtr`
             <span> BEGINNING </span>
-            <div @@extract="./resources/sample1.ts#sectionC" />
+            <*cpt @@extract="./resources/sample1.ts#sectionC" />
             <div> abc </>
             <span> END </span>
         `, context)), `
             <span> BEGINNING </span>
-            <div>
+            <*cpt>
               <div class='extract ts'>
                 <div>
                   <span class='hr'>class</span>
@@ -219,12 +219,12 @@ describe('XTR extract pre-processor', () => {
                 `, "6");
 
         assert.equal(await error(xtr`
-                <*cpt @@extract="resources/sample1.ts#sectionA"/>
+                <!cdata @@extract="resources/sample1.ts#sectionA"></!cdata>
             `), `
-                XTR: @@extract: Only elements and fragments can be used as host
-                Line 2 / Col 22
+                XTR: @@extract: Only elements, fragments, components or param nodes can be used as host
+                Line 2 / Col 24
                 File: ...
-                Extract: >> <*cpt @@extract="resources/sample1.ts#sectionA"/> <<
+                Extract: >> <!cdata @@extract="resources/sample1.ts#sectionA"></!cdata> <<
                 `, "7");
 
         assert.equal(await error(xtr`

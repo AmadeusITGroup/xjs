@@ -106,8 +106,8 @@ export function extract() {
             }
 
             const k = target.kind;
-            if (k !== "#element" && k !== "#fragment") {
-                return ctxt.error("Only elements and fragments can be used as host", target.pos);
+            if (k !== "#element" && k !== "#fragment" && k!=="#component" && k!=="#paramNode") {
+                return ctxt.error("Only elements, fragments, components or param nodes can be used as host", target.pos);
             }
 
             const host = target as XtrElement | XtrFragment;
