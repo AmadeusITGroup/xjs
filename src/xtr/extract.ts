@@ -10,6 +10,7 @@ const U = undefined,
     RX_SECTION_DEF = /^\s*\/\/\s*@@extract\:\s*(\w[\w\$\-]*)( .*)?$/,
     RX_SECTION_NAME = /^\w[\w\$\-]*$/,
     RX_FILE_EXT = /\.([^\.]+)$/,
+    RX_EMPTY_LINE = /^\s*$/,
     STR_NBSP = '\u00A0'; // non-breaking space
 
 interface Section {
@@ -134,6 +135,32 @@ export function extract() {
                 addText(lineDiv, lines[idx0 + i] || STR_NBSP);
             }
         }
+        removeLastEmptyLines(main);
+    }
+}
+
+function removeLastEmptyLines(mainDiv: XtrElement | XtrFragment) {
+    const ch = mainDiv.children;
+    if (ch === U) return;
+    const len = ch.length;
+    let removeIdx = -1;
+    if (len > 1) {
+        for (let i = len - 1; i > 0; i--) {
+            const lineDiv = ch[i] as XtrElement;
+            if (lineDiv.children!.length === 1) {
+                const c = lineDiv.children![0];
+                if (c.kind === "#text") {
+                    if (c.value.match(RX_EMPTY_LINE)) {
+                        removeIdx = i;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    if (removeIdx > -1) {
+        ch.splice(removeIdx);
     }
 }
 

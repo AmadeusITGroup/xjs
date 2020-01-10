@@ -43,7 +43,6 @@ describe('XTR extract pre-processor', () => {
                   ;
                 </>
                 <div>}</div>
-                <div> </div>
               </>
             </>
              BB 
@@ -80,7 +79,6 @@ describe('XTR extract pre-processor', () => {
                 </>
                 <div>    }</div>
                 <div>}</div>
-                <div> </div>
               </>
             </>
             <div> abc </div>
@@ -159,7 +157,6 @@ describe('XTR extract pre-processor', () => {
                   <span class='hp'>></span>
                 </>
                 <div>}\`);</div>
-                <div> </div>
               </>
             </>
             `, '1');
@@ -251,4 +248,3 @@ describe('XTR extract pre-processor', () => {
     });
 
 });
-
