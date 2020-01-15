@@ -163,12 +163,14 @@ export async function parse(xtr: string, context?: XtrParserContext): Promise<Xt
                 // capture string
                 if (cc === CHAR_BANG) {
                     // escaped chars
+                    const newPcc = pcc;
                     cc = eat(CHAR_BANG); // !
-                    let escValue = ESCAPED_CHARS["" + cc];
-                    if (escValue!==U) {
+                    const escValue = ESCAPED_CHARS["" + cc];
+                    if (escValue !== U) {
                         lastIsSpace = (cc === CHAR_s || cc === CHAR_n);
                         moveNext();
                         charCodes.push(escValue);
+                        pcc = newPcc;
                     } else {
                         charCodes.push(CHAR_BANG);
                         lastIsSpace = false;

@@ -230,7 +230,7 @@ describe('XTR', () => {
             `)), xtr`
                 <div> !<!!cdata> hi </div>
                 `, "2");
-            
+
             assert.equal(str(await parse(xtr`
                 <div>
                     !<div>
@@ -238,7 +238,7 @@ describe('XTR', () => {
             `)), xtr`
                 <div> !<div> </div>
                 `, "3");
-            
+
             assert.equal(str(await parse(xtr`
                 <div>
                     !</div>
@@ -377,6 +377,20 @@ describe('XTR', () => {
                                     text \\n \\s xyz
                                 </!cdata>
                 `, "1")
+        });
+
+        it("should parse special !! encoding", async function () {
+            assert.equal(
+                str(await parse(`<span class='hk'>!!</>`)), `
+                <span class='hk'>!!</span>
+                `, "1"
+            );
+
+            assert.equal(
+                str(await parse(`<span class='hk'>!x</>`)), `
+                <span class='hk'>!!x</span>
+                `, "2"
+            );
         });
     });
 
