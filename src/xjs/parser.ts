@@ -320,7 +320,6 @@ export async function parse(tpl: string, filePath = "", lineOffset = 0, columnOf
             } else if (lookup(V_RW)) {
                 advance(V_RW);
                 nd.defaultValue = currentText();
-                console.log("TODO: support default value as variable: ", nd.defaultValue);
             } else {
                 // console.log(cNode)
                 error("Invalid parameter initialization");
