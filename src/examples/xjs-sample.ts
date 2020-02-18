@@ -1,37 +1,12 @@
 
-/**
- * XJS benefits
- * - JS mental model: templates as JS functions (like JSX) -> simple learning curve, no hack
- * - generates statements instead of expression -> all JS features can be used (loops, comments, variables...)
- * - support of decorators (aka. directives in angular) 
- * - clear attribute / property distinction (e.g. "class" is an attribute while "[className]" is a property)
- * - dynamic attributes: 
- *     - some attributes can be created dynamically based on some application logic (e.g. in a conditional block)
- *     - logical sub-nodes (e.g. "tab" in a "tabList" component) can be considered as attributes and not separate nodes
- * - explicit text nodes: full control over white spaces, possibility to have text node decorators (cf. i18n)
- * - performance:
- *     - one-time binding (i.e. expression only calculated once)
- *     - deferred component content (i.e. content is calculated if component needs it -> performance)
- * - 2-way binding expression support (optional)
- * - limited to template functions -> no leak in all application code
- * - template functions are valid JS and will not be transformed by library providers
- *     -> syntax can evolve more easily than JSX as transformation will be performed by the end application at compilation time
- * - local reference support (cf. #xx[] attributes)
- * - i18n enablers (node and text node decorators)
- */
-
 // xx template engine interface: XJS should not be bound to a template engine (like JSX)
-let xx = {
+const xx = {
     template: function (s: string) { }
 }
 
-function xtr(strings: TemplateStringsArray, ...keys: any[]) {
+const normalTemplateString = `hello world`;
 
-}
-
-let normalTemplateString = `hello world`;
-
-let foo = xx.template(`(state: MyStateType) => {
+const foo = xx.template(`(state: MyStateType) => {
     // tag names
     <div/>
     <div> </div>
@@ -90,7 +65,7 @@ let foo = xx.template(`(state: MyStateType) => {
     <! @foo=123> </>
 
     // sub-component with property nodes
-    let className = "main";
+    const className = "main";
     <*b.tabBar @host(class={className} @foo)>
        <.tab id="a">
            <.title @tooltip(position="top" text={getMainTooltip()})> 
@@ -152,7 +127,7 @@ let foo = xx.template(`(state: MyStateType) => {
     <div \important \bar=123 \[foo] \@decorator a.b \#foo />
 }`);
 
-let sectionSample = xx.template(`() => {
+const sectionSample = xx.template(`() => {
     # Here is a section sample #
     <*section open=true>
         <.title> <b> # The great section # </b> </.title>
@@ -160,8 +135,7 @@ let sectionSample = xx.template(`() => {
     </>
 }`);
 
-export let section = xx.template(`(open:boolean, content, $) => { // content = reserved name
-    let title = dataNode($, ".title");
+export const section = xx.template(`(open:boolean, title:ContentNodes, content, $) => { // content = reserved name
     <div @host class="section">
         if (title) {
             <h1 class="title"> <! @innerHTML={title} /> </h1> // fragment with dynamic content
@@ -182,65 +156,3 @@ class SomeClass {
         </div>
     }`);
 }
-
-const world = "world", txt = "abc";
-
-const str = xtr`
-    // comment
-    <*cpt a="b" // comment
-        bbb=123 /*
-            another comment
-        */ c=false ddd eee
-    >
-        <div x={ref}/>
-        Some text here <b> and here </b> \n \a
-        <foo #label #label='abc' #lbl={expr} />
-        <bar [className]="abc" class={ref1} />
-        <baz @deco @deco2="x" @deco3(x=123 y="abc")/>
-        <.value x="z"/>
-    </*cpt>
-
-    // special chars
-    angle bracket: !< 
-    new line: !n
-    non-breaking space: !s
-    forward slash: !/
-    escaped bang: !!
-
-    // escape / special chars
-    !<abc
-    !<*cpt a="b" !// comment
-        bbb=123 !/*
-            another comment
-        */ c=false ddd eee
-    />
-    !</div>
-    !<!> no fragments
-    !<${name} foo/>
-    !<!cdata att=123>
-
-    // cdata
-    <!cdata att=123>
-        CDATA values
-        <div> Everything here is considered as a string </div>
-        // including comments
-        <!cdata>
-        !</!cdata> // escaped cdata end
-    </!cdata>
-
-    // support of template substitution elements:
-    Hello ${world}
-    <div ${txt + 123} a=${txt} @deco=${1 + 2 + 3}/>
-    <! ${txt}/>
-    <!cdata ${txt}${txt}> rew </!cdata>
-    <${txt} a="b"/>
-    <${txt}>
-    <div />
-
-    // pre-processor instructions
-    <div @@extract="foo/bar#blah"/>
-`;
-
-const stdStr = `
-    abc ${123}
-`
