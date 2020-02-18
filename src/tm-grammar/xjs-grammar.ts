@@ -5,7 +5,7 @@
  * To generate a new grammar version:
  * - update the syntaxes/TypeScript.tmLanguage.json file from
  *   https://github.com/Microsoft/vscode/blob/master/extensions/typescript-basics/syntaxes/TypeScript.tmLanguage.json
- * - and run this script: yarn run generate
+ * - and run this script: yarn build
  */
 
 import * as path from 'path';

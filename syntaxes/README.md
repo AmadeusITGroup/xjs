@@ -12,7 +12,7 @@ The grammar can be built tested through the following command:
  To generate a new grammar version:
  - update the syntaxes/TypeScript.tmLanguage.json file from
    https://github.com/Microsoft/vscode/blob/master/extensions/typescript-basics/syntaxes/TypeScript.tmLanguage.json
- - and run "yarn generate"
+ - and run "yarn build"
 
 ## Validating the grammar in VS Code
 

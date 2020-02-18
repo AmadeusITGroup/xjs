@@ -32,9 +32,8 @@
         ]
     },
     "scripts": {
-        "build": "rm -rf dist/ && tsc",
-        "generate": "yarn run build && node dist/tm-grammar/xjs-grammar",
-        "test": "yarn run generate && yarn run mocha -r ts-node/register src/**/*.spec.ts --reporter dot"
+        "build": "rm -rf dist/ && tsc && node dist/tm-grammar/xjs-grammar",
+        "test": "yarn run build && yarn run mocha -r ts-node/register src/**/*.spec.ts --reporter dot"
     },
     "devDependencies": {
         "@types/node": "^12.6.9",
