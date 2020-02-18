@@ -1,22 +1,11 @@
 
-import * as fs from 'fs';
 import * as vsTM from 'vscode-textmate';
 import { SCOPES, ATT, A_NAME, ATT1, COMMENT, C_DEF, DECO, DECO1, D_DEF, B_DEF, BLOCK, PR, PR_START, LBL, LBL_DEF } from './scopes';
-
-const XJS_TM_GRAMMAR = 'syntaxes/xjs.tmLanguage.json';
+import grammar from './tm-grammar';
 
 const XJS_REGISTRY = new vsTM.Registry({
-    loadGrammar: function () {
-        return new Promise((c, e) => {
-            fs.readFile(XJS_TM_GRAMMAR, (error, content) => {
-                if (error) {
-                    e(error);
-                } else {
-                    var rawGrammar = vsTM.parseRawGrammar(content.toString(), XJS_TM_GRAMMAR);
-                    c(rawGrammar);
-                }
-            });
-        });
+    loadGrammar: async function () {
+        return vsTM.parseRawGrammar(grammar, 'xjs.tmLanguage.json');
     }
 });
 

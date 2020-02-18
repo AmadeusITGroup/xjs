@@ -13,8 +13,10 @@ import * as fs from 'fs';
 import { includeXtrDef } from './xtr-grammar';
 import common from './common';
 
+// warning: __dirname is in the dist folder!
 const TS_GRAMMAR_PATH = "../../syntaxes/TypeScript.tmLanguage.json",
     XJS_GRAMMAR_PATH = "../../syntaxes/xjs.tmLanguage.json",
+    XJS_GRAMMAR_TS_PATH = "../../src/xjs/tm-grammar.ts",
     fsp = fs.promises;
 
 main();
@@ -43,10 +45,13 @@ async function main() {
     g.repository["xtr-tag-attribute-decorator-with-attributes"].patterns = xtrAttributePatterns.slice(0);
 
     // save the new grammar
-    let xjsFile = await fsp.open(path.join(__dirname, XJS_GRAMMAR_PATH), "w")
-    await fsp.writeFile(xjsFile, JSON.stringify(g, undefined, "\t"));
+    const xjsFile = await fsp.open(path.join(__dirname, XJS_GRAMMAR_PATH), "w");
+    const newContent = JSON.stringify(g, undefined, "\t");
+    await fsp.writeFile(xjsFile, newContent);
 
-    // console.log("Generation complete")
+    const xjsFile2 = await fsp.open(path.join(__dirname, XJS_GRAMMAR_TS_PATH), "w");
+    const newContent2 = JSON.stringify(g);
+    await fsp.writeFile(xjsFile2, "export default `" + newContent2.replace(/\\/g,"\\\\").replace(/\`/g,"\\`") + "`;", 'utf8');
 }
 
 /**
