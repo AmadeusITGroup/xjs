@@ -10,7 +10,7 @@
     ],
     "version": "0.0.2",
     "author": "Bertrand Laporte",
-    "license": "Apache-2.0",
+    "license": "MIT",
     "engines": {
         "vscode": "^1.36.0"
     },
