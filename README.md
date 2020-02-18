@@ -3,7 +3,7 @@
 XJS is a templating language that allows to mix XML elements within TypeScript files.
 The main difference between XJS and JSX is that **XJS considers XML elements as statements** whereas **JSX considers them as expressions** - which means for instance that in XJS control statements can be mixed with XML statements, like in this example:
 
-![loops](doc/imgs/loops.png?raw=true)
+![loops](docs/imgs/loops.png?raw=true)
 
 Main benefits:
 - JS mental model: templates as JS **functions** (like JSX) -> simple learning curve, no hack
@@ -25,13 +25,13 @@ The current repository contains the following items:
 - [XTR utilities][xtr-api] (AST and parser)
 - an XTR [@@extract][xtr-extract] plugin to extract and highlight code from a given file
 
-[xjs-ex]: examples/xjs-sample.ts
-[xtr-ex]: examples/xtr-sample.ts
-[xjs-doc]: doc/xjs.md
-[xtr-doc]: doc/xtr.md
-[xjs-api]: doc/xjs-api.md
-[xtr-api]: doc/xtr-api.md
-[xtr-extract]: doc/xtr-extract.md
+[xjs-ex]: ./examples/xjs-sample.ts
+[xtr-ex]: ./examples/xtr-sample.ts
+[xjs-doc]: ./docs/xjs.md
+[xtr-doc]: ./docs/xtr.md
+[xjs-api]: ./docs/xjs-api.md
+[xtr-api]: ./docs/xtr-api.md
+[xtr-extract]: ./docs/xtr-extract.md
 
 
 ## Deploying the visual studio extension
@@ -46,4 +46,4 @@ For this you simply need to copy the current repository to the following folder:
 
 Note: you will need to restart visual studio code (more options [here][build])
 
-[build]: doc/build
+[build]: ./docs/build.md
