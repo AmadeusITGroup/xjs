@@ -25,7 +25,7 @@ const blah="abc";
 ```
 
 Note: 
-- @@extract uses the fileId parameter from the [xtr parser][XTR api] - so it must not be left empty
+- @@extract uses the fileId parameter from the [xtr parser context][XTR api] - so it must not be left empty
 - @@extract can only be used as a compilation pre-processor (and not as a runtime pre-processor) - cf. ivy implementation for a practical example.
 
 More examples can be found in [xtr.extract.spec][]

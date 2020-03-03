@@ -123,6 +123,8 @@ function siblings() {
         }
     }
 }
-
-// adapted from test/xtr.preprocessors.spec.ts
 ```
+
+More examples can be found [here][xtr.preprocessors.spec]
+
+[xtr.preprocessors.spec]: ../src/test/xtr.preprocessors.spec.ts
