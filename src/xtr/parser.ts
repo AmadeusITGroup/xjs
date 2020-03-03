@@ -63,7 +63,7 @@ interface XtrPreProcessorData {
 
 export interface XtrParserContext {
     preProcessors?: XtrPreProcessorDictionary;
-    fileId: string;                 // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
+    fileId?: string;                // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
     line1?: number;                 // line 1 position - used to calculate offset for error messages - default: 1
     col1?: number;                  // col 1 position - used to calculate offset for error messages - default: 1
     globalPreProcessors?: string[]; // e.g. ["@@json"]

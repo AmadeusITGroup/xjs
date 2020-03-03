@@ -1,4 +1,4 @@
-XJS Parser
+# XJS Parser
 
 XJS is provided with a parser that produces an Abstract Syntax Tree from a template string. This parse should be typically used in a file pre-processor to replace the template string with some TypeScript code.
 

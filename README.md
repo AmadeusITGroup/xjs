@@ -13,7 +13,7 @@ Main benefits:
 - simple and powerful **binding** expressions
 - a string-based template syntax (aka. ***xtr***) to describe static (and safe) content that should be inserted dynamically (e.g. CMS content)
 
-Note: XJS doesn't come with a template engine (like XJS) and must be complemented with a template engine implementation to be used in actual web applications.
+Note: XJS doesn't come with a template engine (like react's JSX) and must be complemented with a template engine implementation to be used in actual web applications.
 
 The current repository contains the following items:
 - the [XJS][xjs-doc] and [XTR][xtr-doc] grammar documentations
@@ -24,6 +24,8 @@ The current repository contains the following items:
 - [XTR utilities][xtr-api] (AST and parser)
 - an XTR [@@extract][xtr-extract] plugin to extract and highlight code from a given file
 
+Full documentation [here][toc]
+
 [xjs-ex]: ./src/examples/xjs-sample.ts
 [xtr-ex]: ./src/examples/xtr-sample.ts
 [xjs-doc]: ./docs/xjs.md
@@ -31,6 +33,7 @@ The current repository contains the following items:
 [xjs-api]: ./docs/xjs-api.md
 [xtr-api]: ./docs/xtr-api.md
 [xtr-extract]: ./docs/xtr-extract.md
+[toc]: ./docs
 
 
 ## Deploying the visual studio extension
