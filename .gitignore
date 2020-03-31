@@ -10,3 +10,4 @@ misc/
 .rpt2_cache
 yarn-error.log
 todo.md
+/src/syntaxes/xjs.tmLanguage.json
