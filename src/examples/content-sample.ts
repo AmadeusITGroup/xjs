@@ -1,8 +1,11 @@
-import { xtr } from "../xtr/xtr";
 
-const world = "world", txt = "abc";
+function $content(strings: TemplateStringsArray, ...keys: any[]): object {
+    return {};
+}
 
-const str = xtr`
+const data = "data";
+
+const str = $content`
     // comment
     <*cpt a="b" // comment
         bbb=123 /*
@@ -11,7 +14,7 @@ const str = xtr`
     >
         <div x={ref}/>
         Some text here <b> and here </b> \n \a
-        <foo #label #label='abc' #lbl={expr} />
+        <foo #label ##label='abc' #lbl={expr} />
         <bar [className]="abc" class={ref1} />
         <baz @deco @deco2="x" @deco3(x=123 y="abc")/>
         <.value x="z"/>
@@ -33,7 +36,6 @@ const str = xtr`
     />
     !</div>
     !<!> no fragments
-    !<${name} foo/>
     !<!cdata att=123>
 
     // cdata
@@ -45,17 +47,26 @@ const str = xtr`
         !</!cdata> // escaped cdata end
     </!cdata>
 
-    // support of template substitution elements:
-    Hello ${world}
-    <div ${txt + 123} a=${txt} @deco=${1 + 2 + 3}/>
-    <! ${txt}/>
-    <!cdata ${txt}${txt}> rew </!cdata>
-    <${txt} a="b"/>
-    <${txt}>
-    <div />
-
     // pre-processor instructions
     <div @@extract="foo/bar#blah"/>
+
+    <*a.b.cpt title={a} dim=123/>
+
+    aggregated ${data}
+
+    // js statements
+    $if (a.b.c) {
+        Hi there!
+    }
+    $log("abc", foo.bar);
+    $each(ctxt.items, (item, trackBy) => {
+        Hello <b> World </b>
+    });
+    // invalid cases
+    $for (..)
+    $exec ...
+    $let ...
+    $template ...
 `;
 
 const stdStr = `

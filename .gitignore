@@ -1,6 +1,7 @@
 node_modules/
 dist/
 old/
+src_old/
 misc/
 .idea/
 .DS_STORE
