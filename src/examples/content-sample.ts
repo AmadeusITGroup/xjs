@@ -7,18 +7,18 @@ const data = "data";
 
 const str = $content`
     // comment
-    <*cpt a="b" // comment
+    <*a.cpt a="b" // comment
         bbb=123 /*
             another comment
         */ c=false ddd eee
     >
         <div x={ref}/>
         Some text here <b> and here </b> \n \a
-        <foo #label ##label='abc' #lbl={expr} />
+        <foo #label ##label='abc' #lbl={a.b.expr} />
         <bar [className]="abc" class={ref1} />
         <baz @deco @deco2="x" @deco3(x=123 y="abc")/>
         <.value x="z"/>
-    </*cpt>
+    </*a.cpt>
 
     // special chars
     angle bracket: !< 
@@ -59,7 +59,7 @@ const str = $content`
         Hi there!
     }
     $log("abc", foo.bar);
-    $each(ctxt.items, (item, trackBy) => {
+    $each(ctxt.items, (item) => {
         Hello <b> World </b>
     });
     // invalid cases

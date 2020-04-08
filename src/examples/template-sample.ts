@@ -10,8 +10,6 @@ const hello = $template `(name) => {
 
 const normalTemplateString = `hello world`;
 
-function f(x) { }
-
 const foo = $template`(state: MyStateType) => {
     This is some text
 
@@ -76,7 +74,8 @@ const foo = $template`(state: MyStateType) => {
     <! @foo=123> </>
 
     // escape chars
-    !< and !> and !{ and !} and !s and !n and !! and !$ and !z and !_
+    !< and !> and !{ and !} and !s and !n and !! and !$ and !z and !_ and !/
+    !// no comment
 
     // sub-component with property nodes
     $let className = "main";
@@ -99,7 +98,7 @@ const foo = $template`(state: MyStateType) => {
     !<!cdata att=123> // escaped
 
     // cdata
-    <!cdata att=123>
+    <!cdata>
         CDATA values
         Special chars: {}<>!s!n$ (ignored)
         $if (foo) {bar}

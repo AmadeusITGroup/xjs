@@ -65,7 +65,7 @@ function includeTemplateDef(g: any, prefix: "xjs" | "xtc") {
     if (prefix === "xjs") {
         g.repository.template.patterns.splice(0, 0, {
             "name": prefix + ".template.ts",
-            "begin": "(\\$template)\\s*(`)",
+            "begin": "(([a-zA-Z]+\\.)?\\$template)\\s*(`)", // xxx.$template or $template
             "beginCaptures": {
                 "1": { "name": "entity.name.function.ts" },
                 "2": { "name": "punctuation.definition.template.begin.xjs" }
@@ -180,10 +180,10 @@ function includeXStatements(g: any, prefix: "xjs" | "xtc") {
 
     if (prefix === "xjs") {
         // common: only need to be added once
-        // escape chars: !{ !} !< !> !s !! !n !$ !_
+        // escape chars: !{ !} !< !> !s !! !n !$ !_ !z
         g.repository["xjs-character-escape"] = {
             "name": "constant.character.escape.ts",
-            "match": "\\!(\\<|\\>|\\{|\\}|\\!|\\$|n|s|z|_)"
+            "match": "\\!(\\<|\\>|\\{|\\}|\\!|\\$|n|s|z|_|\\/)"
         };
     }
     includeXText(g, prefix);
@@ -686,7 +686,7 @@ function includeXJsStatements(g: any, prefix: "xjs" | "xtc") {
             "beginCaptures": {
                 "1": { "name": "keyword.control.exec.xjs" }
             },
-            "end": "(;|(?=$|\\}))",
+            "end": "(;)",
             "endCaptures": {
                 "1": { "name": "punctuation.terminator.statement.ts" }
             },
@@ -707,7 +707,7 @@ function includeXJsStatements(g: any, prefix: "xjs" | "xtc") {
                     "beginCaptures": {
                         "1": { "name": "keyword.control.let.xjs" }
                     },
-                    "end": "(;|(?=$|\\}))",
+                    "end": "(;)",
                     "endCaptures": {
                         "1": { "name": "punctuation.terminator.statement.ts" }
                     },
@@ -747,7 +747,7 @@ function includeXJsStatements(g: any, prefix: "xjs" | "xtc") {
             "1": { "name": "keyword.control.each.xjs" },
             "2": { "name": "meta.brace.round.ts" }
         },
-        "end": "(\\))(\\s*;)?",
+        "end": "(\\))(\\s*;)",
         "endCaptures": {
             "1": { "name": "meta.brace.round.ts" },
             "2": { "name": "punctuation.terminator.statement.ts" }
@@ -768,7 +768,7 @@ function includeXJsStatements(g: any, prefix: "xjs" | "xtc") {
             "1": { "name": "keyword.control.log.xjs" },
             "2": { "name": "meta.brace.round.ts" }
         },
-        "end": "(\\))(\\s*;)?",
+        "end": "(\\))(\\s*;)",
         "endCaptures": {
             "1": { "name": "meta.brace.round.ts" },
             "2": { "name": "punctuation.terminator.statement.ts" }

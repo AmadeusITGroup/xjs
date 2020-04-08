@@ -121,8 +121,8 @@ describe('XJS TextMate grammar', async () => {
         r = await tokenizeTemplate(' Hello World ');
         assert.equal(lineInfo(r[1]), "0:14/", "1");
 
-        r = await tokenizeTemplate('!< and !> and !{ and !} and !s and !n and !! and !$ and !z and !_');
-        assert.equal(lineInfo(r[1]), "0:2/ESC  2:7/  7:9/ESC  9:14/  14:16/ESC  16:21/  21:23/ESC  23:28/  28:30/ESC  30:35/  35:37/ESC  37:42/  42:44/ESC  44:49/  49:51/ESC  51:56/  56:58/ESC  58:63/  63:65/ESC", "2");
+        r = await tokenizeTemplate('!< and !> and !{ and !} and !s and !n and !! and !$ and !z and !/ and !_');
+        assert.equal(lineInfo(r[1]), "0:2/ESC  2:7/  7:9/ESC  9:14/  14:16/ESC  16:21/  21:23/ESC  23:28/  28:30/ESC  30:35/  35:37/ESC  37:42/  42:44/ESC  44:49/  49:51/ESC  51:56/  56:58/ESC  58:63/  63:65/ESC  65:70/  70:72/ESC", "2");
 
         r = await tokenizeTemplate('abc /* comment */ def');
         assert.equal(lineInfo(r[1]), "0:4/  4:6/COMMENT/C_DEF  6:15/COMMENT  15:17/COMMENT/C_DEF  17:22/", "3");
@@ -276,10 +276,10 @@ describe('XJS TextMate grammar', async () => {
         assert.equal(lineInfo(r[2]), "0:1/$C/BLOCK/TAG/T_START  1:4/$C/BLOCK/TAG/T_NAME  4:5/$C/BLOCK/TAG/T_CLOSE  5:6/$C/BLOCK/TAG/T_END", "1.2");
         assert.equal(lineInfo(r[3]), "0:1/$C/BLOCK/B  1:2/$C/BRACE_R  2:3/$C/TERM  3:7/", "1.3");
 
-        r = await tokenizeTemplate('$each(items, (item) => {\nabc\n})def');
+        r = await tokenizeTemplate('$each(items, (item) => {\nabc\n});def');
         assert.equal(lineInfo(r[1]), "0:5/$C/$each  5:6/$C/BRACE_R  6:11/$C/V_RW  11:12/$C/COMMA  12:13/$C  13:14/$C/PARAM/P_START  14:18/$C/PARAM/P_VAR  18:19/$C/PARAM/P_END  19:20/$C  20:22/$C/ARROW  22:23/$C  23:24/$C/BLOCK/B", "2.1");
         assert.equal(lineInfo(r[2]), "0:4/$C/BLOCK", "2.2");
-        assert.equal(lineInfo(r[3]), "0:1/$C/BLOCK/B  1:2/$C/BRACE_R  2:6/", "2.3");
+        assert.equal(lineInfo(r[3]), "0:1/$C/BLOCK/B  1:2/$C/BRACE_R  2:3/$C/TERM  3:7/", "2.3");
 
         r = await tokenizeTemplate('!$each(blah...)');
         assert.equal(lineInfo(r[1]), "0:2/ESC  2:16/", "3");
@@ -290,8 +290,8 @@ describe('XJS TextMate grammar', async () => {
         r = await tokenizeTemplate('$log("hello");abc');
         assert.equal(lineInfo(r[1]), "0:4/$L/$log  4:5/$L/BRACE_R  5:6/$L/STR_D/S_START  6:11/$L/STR_D  11:12/$L/STR_D/S_END  12:13/$L/BRACE_R  13:14/$L/TERM  14:18/", "1");
 
-        r = await tokenizeTemplate('$log(\"a\", someVar)abc');
-        assert.equal(lineInfo(r[1]), "0:4/$L/$log  4:5/$L/BRACE_R  5:6/$L/STR_D/S_START  6:7/$L/STR_D  7:8/$L/STR_D/S_END  8:9/$L/COMMA  9:10/$L  10:17/$L/V_RW  17:18/$L/BRACE_R  18:22/", "2");
+        r = await tokenizeTemplate('$log(\"a\", someVar);abc');
+        assert.equal(lineInfo(r[1]), "0:4/$L/$log  4:5/$L/BRACE_R  5:6/$L/STR_D/S_START  6:7/$L/STR_D  7:8/$L/STR_D/S_END  8:9/$L/COMMA  9:10/$L  10:17/$L/V_RW  17:18/$L/BRACE_R  18:19/$L/TERM  19:23/", "2");
 
         r = await tokenizeTemplate('!$log');
         assert.equal(lineInfo(r[1]), "0:2/ESC  2:6/", "3");
