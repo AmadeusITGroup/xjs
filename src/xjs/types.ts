@@ -78,6 +78,7 @@ export interface XjsTplArgument extends XjsNode {
 export interface XjsJsStatement extends XjsNode {
     kind: "#jsStatement";
     code: string;  // the js code (e.g. "let x = someExpr(); ... ")
+    args?: any[];      // list of parsed args - used in $content mode only
 }
 
 /**
@@ -88,6 +89,7 @@ export interface XjsJsBlock extends XjsNode {
     startCode: string;  // the js/ts code at the beginning of the block - e.g. "if (expr()) {" or " else {"
     endCode: string;    // end block code. Should match /\n?\s*\}$/ - e.g. "\n      }"
     content?: XjsContentNode[]; // content is undefined if isStart===false
+    args?: any[];      // list of parsed args - used in $content mode only
 }
 
 /**
@@ -174,9 +176,10 @@ export interface XjsLabel extends XjsNode {
  */
 export interface XjsExpression extends XjsNode {
     kind: "#expression";
-    oneTime: boolean;  // true if "::" is used in the expression
-    isBinding: boolean;// true if "=" is used as expression modifier - e.g. foo={=a.b}
-    code: string;      // e.g. "getSomeValue()*3"
+    oneTime: boolean;    // true if "::" is used in the expression
+    isBinding: boolean;  // true if "=" is used as expression modifier - e.g. foo={=a.b}
+    code: string;        // e.g. "getSomeValue()*3"
+    refPath?: string[];  // set in $content mode - e.g. ["a", "b"] for code = a.b
 }
 
 /**
@@ -186,7 +189,7 @@ export interface XjsExpression extends XjsNode {
 export interface XjsElement extends XjsFragment {
     kind: "#element" | "#paramNode";
     // nameExpression?: XjsExpression;  // defined if name is an expression (e.g. <{expr()}/>)
-    name: string;                    // "div" or "" if name is an expression
+    name: string;                       // "div" or "" if name is an expression
 }
 
 /**

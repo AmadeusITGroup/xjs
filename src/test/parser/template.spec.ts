@@ -139,6 +139,13 @@ describe('XJS $template parser', () => {
                     #expression {exp5}
                     " "
         `, "3")
+
+        assert.equal(await ast.$template`() => {
+            $foo() and $bar abc;
+        }`, `
+            #tplFunction()
+                #textNode " $foo() and $bar abc; "
+        `, "4")
     });
 
     it("should parse self-closing element nodes", async function () {
@@ -693,6 +700,16 @@ describe('XJS $template parser', () => {
                     }
                 #textNode " $for (end) "
         ` , '2');
+
+        assert.equal(await ast.$template`(a) => {
+            $for (let i=0;10>i;i++) {<div class={"x"+i}/>}
+        }`, `
+            #tplFunction(a)
+                #jsBlock
+                    for (let i=0;10>i;i++) {
+                        #element <div class={"x"+i}/>
+                    }
+        ` , '3');
     });
 
     it("should parse $each js blocks", async function () {
@@ -714,7 +731,7 @@ describe('XJS $template parser', () => {
         ` , '1');
 
         assert.equal(await ast.$template`(a, b) => {
-            $each ( items  , ( item , index , isLast ) => {
+            $each ( a.getItems()  , ( item , index , isLast ) => {
                 <div>
                     Item #{i+1}
                 </>
@@ -723,7 +740,7 @@ describe('XJS $template parser', () => {
         }`, `
             #tplFunction(a, b)
                 #jsBlock
-                    each(items,( item , index , isLast ) => {
+                    each(a.getItems(),( item , index , isLast ) => {
                         #element <div>
                             #textNode
                                 " Item #"

@@ -3,6 +3,9 @@ import { XjsTplFunction, XjsContentHost, XjsContentNode, XjsText, XjsFragment, X
 const U = undefined,
     RX_START_INDENT = /^[ \f\r\t\v]*\n(\s*)/,
     RX_ELSE = /\s*else/,
+    RX_STATEMENTS_XJS = /^\$(if|for|exec|let|each|log|template)/,    // $template mode
+    RX_STATEMENTS_XTR = /^\$(if|each|log)/,                          // $content mode
+    RX_REF_PATH = /^[$_a-zA-Z][_a-zA-Z0-9]*(\.[$_a-zA-Z][_a-zA-Z0-9]*)*$/,
     CDATA = "cdata",
     CDATA_LENGTH = CDATA.length,
     CDATA_END = "</!cdata>",
@@ -39,7 +42,6 @@ const U = undefined,
     CHAR_$ = 36,        // $
     CHAR__ = 95,        // _
     CHAR_i = 105,
-    CHAR_n = 110,
     CHAR_t = 116,
     CHAR_r = 114,
     CHAR_u = 117,
@@ -70,6 +72,7 @@ export interface XjsParserContext {
     line1?: number;                 // line number of the first template line - used to calculate offset for error messages - default: 1
     col1?: number;                  // column number of the first template character - used to calculate offset for error messages - default: 1
     globalPreProcessors?: string[]; // e.g. ["@@json"]
+    templateType?: "$template" | "$content";
 }
 
 /**
@@ -77,7 +80,7 @@ export interface XjsParserContext {
  * @param tpl the template string
  */
 export async function parse(xjs: string, context?: XjsParserContext): Promise<XjsTplFunction | XjsFragment> {
-    const isContentMode = false;
+    const isContentMode = (context && context.templateType === "$content");
     let root: XjsTplFunction | XjsFragment,
         posEOS = xjs.length,
         pos = 0,    // current position
@@ -427,16 +430,18 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
 
     function xjsText(parent: XjsContentHost): boolean {
         // return true if blank spaces or text characters have been found
-        if ((cc === CHAR_LT && pcc !== CHAR_BANG) || cc === CHAR_EOS || cc === CHAR_CE || (cc === CHAR_$ && pcc !== CHAR_BANG)) return false;
+        if ((cc === CHAR_LT && pcc !== CHAR_BANG) || cc === CHAR_EOS || cc === CHAR_CE) return false;
+        if (isJsStatement()) return false;
+
         let spacesFound = xjsSpaces(), startPos = pos;
-        if (cc !== CHAR_LT && cc !== CHAR_EOS && cc !== CHAR_$) {
+        if (cc !== CHAR_LT && cc !== CHAR_EOS && !isJsStatement()) {
             const tn = createText([], startPos);
             let charCodes: number[] = [];
             if (spacesFound) {
                 charCodes[0] = CHAR_SPACE; // leading spaces are transformed in a single space
             }
             let lastIsSpace = spacesFound;
-            while (cc !== CHAR_LT && cc !== CHAR_EOS && cc !== CHAR_CE && cc !== CHAR_$) {
+            while (cc !== CHAR_LT && cc !== CHAR_EOS && cc !== CHAR_CE && !isJsStatement()) {
                 eatComments();
                 // capture string
                 if (cc === CHAR_BANG) {
@@ -505,6 +510,11 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         return true;
     }
 
+    function isJsStatement(): boolean {
+        if (cc !== CHAR_$) return false;
+        return matchNext(isContentMode ? RX_STATEMENTS_XTR : RX_STATEMENTS_XJS) !== null;
+    }
+
     function xjsElement(parent: XjsContentHost): boolean {
         // return true if an element, a fragment or a cdata section has been found
         if (cc !== CHAR_LT || nextCharCode() === CHAR_FSLA) return false;
@@ -524,6 +534,8 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             posRef = pos;
             name = xjsIdentifier(true, prefix === 0);
             node = createNode();
+
+            // todo: ref
         }
 
         // let ppDataList: XtrPreProcessorData[] | null = null;
@@ -577,14 +589,17 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
 
         function createNode(): XjsContentHost {
-            let ch: XjsContentHost;
             if (prefix === CHAR_STAR) { // *
-                return addContent(createComponent(createExpression(name, posRef), pos), parent) as XjsContentHost;
+                let cpt = createComponent(createExpression(name, posRef), pos);
+                cpt.ref.refPath = getRefPath(cpt.ref.code);
+                return addContent(cpt, parent) as XjsContentHost;
             } else if (prefix === CHAR_DOT) { // .
                 return addContent(createParamNode(name, pos), parent) as XjsContentHost;
             } else if (prefix === CHAR_AT) { // @
                 // decorator node: stored as param
-                return addParam(createDecoNode(createExpression(name, posRef), pos), parent as any) as any;
+                let dNode = createDecoNode(createExpression(name, posRef), pos);
+                dNode.ref.refPath = getRefPath(dNode.ref.code);
+                return addParam(dNode, parent as any) as any;
             }
             return addContent(createElement(name, pos), parent) as XjsContentHost;
         }
@@ -738,6 +753,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 } else {
                     param.isOrphan = true;
                 }
+                param.ref.refPath = getRefPath(param.ref.code);
             } else if (prefix === CHAR_HASH) {
                 // label param
                 param = createLabel(name, startPos);
@@ -767,22 +783,22 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
     }
 
-    function xjsParamValue(): XjsParamValue {
+    function xjsParamValue(canBeExpression = true, canBeIdentifier = false): XjsParamValue {
         const p = pos;
         // return the param value
         if (cc === CHAR_SQ) {
             return stringContent(CHAR_SQ); // single quote string
         } else if (cc === CHAR_DQ) {
             return stringContent(CHAR_DQ); // double quote string
-        } else if (cc === CHAR_CS) { // {
+        } else if (canBeExpression && cc === CHAR_CS) { // {
             return xjsExpression();
-        } else if (cc === CHAR_t) {
+        } else if (!canBeIdentifier && cc === CHAR_t) {
             // true
-            eat(CHAR_t); eat(CHAR_r); eat(CHAR_u); eat(CHAR_e);
+            eatWord("true");
             return true;
-        } else if (cc === CHAR_f) {
+        } else if (!canBeIdentifier && cc === CHAR_f) {
             // false
-            eat(CHAR_f); eat(CHAR_a); eat(CHAR_l); eat(CHAR_s); eat(CHAR_e);
+            eatWord("false");
             return false;
         } else if (ccIsNumber() || ccIsSign()) {
             // number: 123 or 12.34
@@ -808,8 +824,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 }
             }
             return parseFloat(String.fromCharCode.apply(null, charCodes));
+        } else if (canBeIdentifier) {
+            let v = xjsIdentifier(true, false);
+            if (v === "true") return true;
+            else if (v === "false") return false;
+            return v;
         }
-        error("Invalid parameter value: " + charName(cc), p);
+        error("Invalid value: " + charName(cc), p);
         return 0;
     }
 
@@ -920,13 +941,21 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (isFunction) {
             e.code = "()=>" + e.code; // function expression shortcut
         }
+        if (isContentMode) {
+            let rp = getRefPath(e.code);
+            if (rp === null) {
+                error("Invalid reference path", e.pos);
+            } else {
+                e.refPath = rp;
+            }
+        }
         eat(CHAR_CE); // }
         return e;
     }
 
     function xjsJsStatement(parent: XjsContentHost): boolean {
         // return true if a statement has been found
-        if (cc !== CHAR_$) return false;
+        if (!isJsStatement()) return false;
         const start = nextChars(3), startPos = pos;
         let e: string;
         switch (start) {
@@ -942,16 +971,38 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 break;
             case "$lo":
                 // e.g. $log(abc, "some info", 123);
-                e = xjsJsParenStatementExpr("$log");
-                if (cc as any === CHAR_S_COLON) {
-                    eat(CHAR_S_COLON);
+                let logStatement = createJsStatement("log", startPos);
+                if (isContentMode) {
+                    eatWord("$log");
+                    xjsSpaces();
+                    eat(CHAR_PARS);
+                    let args: string[] = [];
+                    while (true) {
+                        xjsSpaces();
+                        let v = xjsParamValue(false, true);
+                        args.push("" + v);
+                        addArg("" + v, logStatement);
+                        xjsSpaces();
+                        if (cc === CHAR_COMMA) {
+                            moveNext();
+                        } else {
+                            break;
+                        }
+                    }
+                    eat(CHAR_PARE);
+                    xjsSpaces();
+                    logStatement.code = "console.log(" + args.join(", ") + ");"
+                } else {
+                    e = xjsJsParenStatementExpr("$log");
+                    logStatement.code = "console.log" + e + ";"
                 }
-                addContent(createJsStatement("console.log" + e + ";", startPos), parent);
+                eat(CHAR_S_COLON);
+                addContent(logStatement, parent);
                 break;
             case "$if":
                 // e.g. $if (exp()) { ... } else if (exp2) { ... } else { ... }
-                e = xjsJsParenStatementExpr("$if");
-                let errPos = -1, jsb = createJsBlockStatement("if " + e + " {", startPos);
+                let jsb = createJsBlockStatement("if", startPos);
+                ifBlock("$if", jsb);
                 addContent(jsb, parent);
                 eat(CHAR_CS); // {
                 xjsContent(jsb);
@@ -963,13 +1014,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     let ps = pos;
                     if (cc as any === CHAR_i) {
                         // else if (...) {
-                        e = xjsJsParenStatementExpr("if");
-                        jsb = createJsBlockStatement("else if " + e + " {", ps);
+                        jsb = createJsBlockStatement("", ps);
+                        ifBlock("if", jsb, "else ");
                     } else {
                         // else {
                         jsb = createJsBlockStatement("else {", ps);
                     }
-                    eat(CHAR_CS);
+                    eat(CHAR_CS); // {
                     addContent(jsb, parent);
                     xjsContent(jsb);
                     eat(CHAR_CE); // }
@@ -987,17 +1038,60 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             case "$ea":
                 // e.g. $each(items, (item, index, isLast) => {
                 eatWord("$each");
+                const eb = createJsBlockStatement("each", startPos);
                 xjsSpaces();
                 eat(CHAR_PARS); // (
-                const e1 = jsExpression(false);
+                xjsSpaces();
+                let e1: string;
+
+                // items part
+                if (isContentMode) {
+                    e1 = xjsIdentifier(true, false);
+                    xjsSpaces();
+                    addArg(e1, eb);
+                } else {
+                    e1 = jsExpression(false);
+                }
+
+                // , (item, index, isLast) part
                 eat(CHAR_COMMA); // ,
                 xjsSpaces();
-                const e2 = jsExpression(false, CHAR_PARS, CHAR_PARE);
+                let e2: string;
+                if (isContentMode) {
+                    eat(CHAR_PARS); // (
+                    e2 = "(";
+                    while (true) {
+                        xjsSpaces();
+                        let v = xjsIdentifier(true, false);
+                        addArg(v, eb);
+                        e2 += v;
+                        xjsSpaces();
+                        if (cc === CHAR_COLON) {
+                            // type part
+                            moveNext(); // :
+                            xjsSpaces();
+                            jsExpression(false, U, U, true); // ignore it
+                            xjsSpaces();
+                        }
+                        if (cc === CHAR_COMMA) {
+                            moveNext();
+                            e2 += ",";
+                        } else {
+                            break;
+                        }
+                    }
+                    eat(CHAR_PARE); // )
+                    e2 += ")";
+                } else {
+                    e2 = jsExpression(false, CHAR_PARS, CHAR_PARE);
+                }
+                eb.startCode = "each(" + e1 + "," + e2 + " => {";
+                eb.endCode = "});";
+
+                // function end
                 xjsSpaces();
                 eatWord("=>");
                 xjsSpaces();
-                const eb = createJsBlockStatement("each(" + e1 + "," + e2 + " => {", startPos);
-                eb.endCode = "});";
                 addContent(eb, parent);
                 eat(CHAR_CS); // {
                 xjsContent(eb);
@@ -1015,15 +1109,30 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 error("Invalid JS statement", pos);
         }
         return true;
+
+        function ifBlock(name: string, jsb: XjsJsBlock, prefix = "") {
+            if (isContentMode) {
+                eatWord(name);
+                xjsSpaces();
+                eat(CHAR_PARS);
+                xjsSpaces();
+                e = xjsIdentifier(true, false);
+                eat(CHAR_PARE);
+                xjsSpaces();
+                jsb.startCode = prefix + "if (" + e + ") {";
+                addArg(e, jsb);
+            } else {
+                e = xjsJsParenStatementExpr(name);
+                jsb.startCode = prefix + "if " + e + " {";
+            }
+        }
     }
 
     function xjsJsSimpleStatementExpr(name: string): string {
         eatWord(name);
         xjsSpaces(true);
         const e = jsExpression(false, U, U, false, true);
-        if (cc === CHAR_S_COLON) {
-            eat(CHAR_S_COLON);
-        }
+        eat(CHAR_S_COLON);
         return e;
     }
 
@@ -1120,6 +1229,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             return (cc === CHAR_EOS);
         }
     }
+
+    function getRefPath(exp: string): string[] | undefined {
+        // parses an expression that is supposed to be a reference path (e.g. a.b.c)
+        // return null if exp is not a valid path
+        if (exp === "" || !exp.match(RX_REF_PATH)) return U;
+        return exp.split(".");
+    }
 };
 
 // ########################################################################################################################
@@ -1145,6 +1261,18 @@ function addArgument(tf: XjsTplFunction, name: string, pos: number = -1): XjsTpl
         tf.arguments.push(arg);
     }
     return arg;
+}
+
+function addArg(arg: string, jss: XjsJsStatement | XjsJsBlock) {
+    // add parsed argument (should be used in $content mode only)
+    if (!jss.args) {
+        jss.args = [];
+    }
+    if (arg.match(RX_REF_PATH)) {
+        jss.args.push(arg.split("."));
+    } else {
+        jss.args.push(arg);
+    }
 }
 
 function createFragment(pos: number = -1): XjsFragment {

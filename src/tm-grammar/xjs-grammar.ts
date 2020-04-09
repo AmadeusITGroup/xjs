@@ -81,7 +81,7 @@ function includeTemplateDef(g: any, prefix: "xjs" | "xtc") {
     } else {
         g.repository.template.patterns.splice(0, 0, {
             "name": prefix + ".template.ts",
-            "begin": "(\\$content)\\s*(`)",
+            "begin": "(([a-zA-Z]+\\.)?\\$content)\\s*(`)",
             "beginCaptures": {
                 "1": { "name": "entity.name.function.ts" },
                 "2": { "name": "punctuation.definition.template.begin.xjs" }
@@ -255,7 +255,7 @@ function includeXAttributes(g: any, prefix: "xjs" | "xtc") {
     if (prefix === "xtc") {
         g.repository["xtc-ref"] = {
             "name": "variable.other.readwrite.ts",
-			"match": "[_$[:alpha:]][_$[:alnum:]]*"
+            "match": "[_$[:alpha:]][_$[:alnum:]]*"
         };
 
         g.repository["xtc-expression-ref"] = {

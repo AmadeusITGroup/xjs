@@ -4637,7 +4637,7 @@
 			"patterns": [
 				{
 					"name": "xtc.template.ts",
-					"begin": "(\\$content)\\s*(`)",
+					"begin": "(([a-zA-Z]+\\.)?\\$content)\\s*(`)",
 					"beginCaptures": {
 						"1": {
 							"name": "entity.name.function.ts"

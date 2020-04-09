@@ -11,18 +11,26 @@ export let ast = {
     // this api allows to trigger the vs-code text mate completion
     async $template(strings: TemplateStringsArray, log = false) {
         let root = await parse(strings[0]);
+        return processRoot(root, log);
+    },
 
-        if (!root) {
-            return "ERROR";
+    async $content(strings: TemplateStringsArray, ...values: any[]) {
+        let tpl = "";
+        if (values.length === 0) {
+            tpl = strings[0];
+        } else {
+            let buf: string[] = [], len1 = strings.length, len2 = values.length;
+            for (let i = 0; len1 > i; i++) {
+                buf.push(strings[i]);
+                if (i < len2) {
+                    buf.push(values[i]);
+                }
+            }
+            tpl = buf.join("");
         }
 
-        let lines: string[] = [];
-        lines.push("");
-        serialize(root, lines, ast.rootPrefix + ast.indent);
-        lines.push(ast.rootPrefix);
-        let r = lines.join("\n");
-        if (log) console.log(r);
-        return r;
+        let root = await parse(tpl, { templateType: "$content" });
+        return processRoot(root);
     },
 
     async initIndent(tpl: string, log = false) {
@@ -33,6 +41,20 @@ export let ast = {
         if (log) console.log(`'${(root as XjsTplFunction).indent}'`);
         return (root as XjsTplFunction).indent;
     }
+}
+
+function processRoot(root: XjsTplFunction | XjsFragment, log = false) {
+    if (!root) {
+        return "ERROR";
+    }
+
+    let lines: string[] = [];
+    lines.push("");
+    serialize(root, lines, ast.rootPrefix + ast.indent);
+    lines.push(ast.rootPrefix);
+    let r = lines.join("\n");
+    if (log) console.log(r);
+    return r;
 }
 
 function serialize(n: XjsNode, lines: string[], prefix: string) {
@@ -136,7 +158,11 @@ function textNode(n: XjsText, lines: string[], prefix: string) {
 }
 
 function expression(n: XjsExpression, lines: string[], prefix: string) {
-    lines.push(`${prefix}#expression {${n.oneTime ? "::" : ""}${n.code}}`);
+    if (n.refPath !== U) {
+        lines.push(`${prefix}#expression {#${n.refPath.join(".")}}`);
+    } else {
+        lines.push(`${prefix}#expression {${n.oneTime ? "::" : ""}${n.code}}`);
+    }
 }
 
 function params(n: XjsParamHost, prefix = "", suffix = ""): string {
@@ -167,13 +193,13 @@ function params(n: XjsParamHost, prefix = "", suffix = ""): string {
             res.push(`[${p.name}]=${getParamValue(p.value)}`);
             // }
         } else if (p.kind === "#decorator") {
-            const d = p;
+            const d = p, noRef = (d.ref.refPath === U)? "NO-REF" : "";
             if (d.isOrphan) {
-                res.push(`@${d.ref.code}`);
+                res.push(`@${d.ref.code}${noRef}`);
             } else if (d.hasDefaultPropValue) {
-                res.push(`@${d.ref.code}=${getParamValue(d.defaultPropValue)}`);
+                res.push(`@${d.ref.code}${noRef}=${getParamValue(d.defaultPropValue)}`);
             } else {
-                res.push(`@${d.ref.code}(${params(d)})`);
+                res.push(`@${d.ref.code}${noRef}(${params(d)})`);
             }
         } else if (p.kind === "#decoratorNode") {
             res.push(`node:@${p.ref.code}`);
@@ -195,6 +221,7 @@ function fragment(n: XjsFragment | XjsCData, lines: string[], prefix: string) {
     let nm = "!";
     if (n.kind === "#component") {
         nm = "*" + n["ref"].code;
+        if (!n["ref"].refPath) nm += "NO-REF";
     } else if (n.kind === "#element" || n.kind === "#paramNode") {
         let exp = n["nameExpression"] as XjsExpression;
         if (exp) {
@@ -204,6 +231,7 @@ function fragment(n: XjsFragment | XjsCData, lines: string[], prefix: string) {
         }
     } else if (n.kind === "#decoratorNode") {
         nm = "@" + n["ref"].code;
+        if (!n["ref"].refPath) nm += "NO-REF";
     }
     if (n.kind === "#paramNode") {
         nm = "." + nm;
@@ -232,7 +260,11 @@ function getParamValue(value: any) {
             return "" + value;
         case "object":
             let exp = value as XjsExpression;
-            return '{' + (exp.oneTime ? "::" : "") + (exp.isBinding ? "2b:" : "") + exp.code + '}';
+            if (exp.refPath) {
+                return '{#' + exp.refPath.join(".") + '}';
+            } else {
+                return '{' + (exp.oneTime ? "::" : "") + (exp.isBinding ? "2b:" : "") + exp.code + '}';
+            }
     }
     return "INVALID";
 }
