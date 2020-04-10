@@ -23,9 +23,10 @@ export interface XjsPreProcessorFactory {
     (): XjsPreProcessor;
 }
 
-export interface XjsError extends Error {
+export interface XjsError { // extends Error
     kind: "#Error";
     origin: "XJS";
+    description: string;
     message: string;
     line: number;
     column: number;

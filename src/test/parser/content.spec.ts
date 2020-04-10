@@ -234,7 +234,7 @@ describe('XJS $content parser', () => {
     it("should parse $each js blocks", async function () {
         assert.equal(await ast.$content`
             abc$each (items, (item, index, isLast) => {
-                <div class={"x"+index}>
+                <div class={index}>
                     hello
                 </div>
             } ) ;def
@@ -243,7 +243,7 @@ describe('XJS $content parser', () => {
                 #textNode " abc"
                 #jsBlock
                     each(items,(item,index,isLast) => {
-                        #element <div class={"x"+index}>
+                        #element <div class={#index}>
                             #textNode " hello "
                     });
                 #textNode "def "
@@ -252,7 +252,7 @@ describe('XJS $content parser', () => {
         assert.equal(await ast.$content`
             $each ( items  , ( item /* comment */ , index :number , isLast: boolean  ) => {
                 <div>
-                    Item #{i+1}
+                    Item #{i}
                 </>
             });
             !$each (end)
@@ -263,7 +263,7 @@ describe('XJS $content parser', () => {
                         #element <div>
                             #textNode
                                 " Item #"
-                                #expression {i+1}
+                                #expression {#i}
                                 " "
                     });
                 #textNode " $each (end) "

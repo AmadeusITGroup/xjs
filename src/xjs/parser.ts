@@ -1,4 +1,4 @@
-import { XjsTplFunction, XjsContentHost, XjsContentNode, XjsText, XjsFragment, XjsTplArgument, XjsElement, XjsParamNode, XjsComponent, XjsDecoratorNode, XjsExpression, XjsParamValue, XjsParam, XjsProperty, XjsDecorator, XjsLabel, XjsParamHost, XjsNodeParam, XjsPreProcessorNode, XjsJsStatement, XjsJsBlock, XjsCData } from './types';
+import { XjsTplFunction, XjsContentHost, XjsContentNode, XjsText, XjsFragment, XjsTplArgument, XjsElement, XjsParamNode, XjsComponent, XjsDecoratorNode, XjsExpression, XjsParamValue, XjsParam, XjsProperty, XjsDecorator, XjsLabel, XjsParamHost, XjsNodeParam, XjsPreProcessorNode, XjsJsStatement, XjsJsBlock, XjsCData, XjsError } from './types';
 
 const U = undefined,
     RX_START_INDENT = /^[ \f\r\t\v]*\n(\s*)/,
@@ -6,6 +6,9 @@ const U = undefined,
     RX_STATEMENTS_XJS = /^\$(if|for|exec|let|each|log|template)/,    // $template mode
     RX_STATEMENTS_XTR = /^\$(if|each|log)/,                          // $content mode
     RX_REF_PATH = /^[$_a-zA-Z][_a-zA-Z0-9]*(\.[$_a-zA-Z][_a-zA-Z0-9]*)*$/,
+    RX_JS_IDENTIFIER = /^[$_a-zA-Z][_a-zA-Z0-9]*$/,
+    RX_FORBIDDEN_TAGS_TPL = /^(script)$/,
+    RX_FORBIDDEN_TAGS_CONTENT = /^(script|frame|frameset|iframe)$/,
     CDATA = "cdata",
     CDATA_LENGTH = CDATA.length,
     CDATA_END = "</!cdata>",
@@ -85,7 +88,8 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         posEOS = xjs.length,
         pos = 0,    // current position
         cc: number = CHAR_EOS,   // current char code at current position
-        pcc: number = CHAR_BOS;  // previous cc
+        pcc: number = CHAR_BOS,  // previous cc
+        ec: string[] = [];       // error context - provides better error understanding
     // ppContext: XtrPreProcessorCtxt | undefined,
     // currentPpName = "",
     // currentPpPos = 0,
@@ -141,7 +145,10 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
 
     function nextChars(length: number) {
         // return the substring coming next (including the current char)
-        return pos + length < posEOS ? xjs.substr(pos, length) : "";
+        if (pos + length >= posEOS) length = posEOS - length - 1;
+        if (length < 1) return "";
+        // return pos + length < posEOS ? xjs.substr(pos, length) : "";
+        return xjs.substr(pos, length);
     }
 
     function matchNext(rx: RegExp) {
@@ -163,9 +170,11 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
     }
 
     function eatWord(w: string) {
-        const len = w.length;
-        for (let i = 0; len > i; i++) {
-            eat(w.charCodeAt(i));
+        const len = w.length, p = pos, extract = nextChars(len);
+        if (w === extract) {
+            shiftNext(len);
+        } else {
+            error(`Unexpected characters '${extract.replace(/\n/g, "\\n")}' instead of '${w}'`, p)
         }
         return cc;
     }
@@ -177,6 +186,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
 
     function stringContent(delimiter: number): string {
         let charCodes: number[] = [delimiter];
+        ec.push("string");
         eat(delimiter);
         while (cc !== delimiter && cc !== CHAR_EOS) {
             if (cc === CHAR_BSLA) { // \
@@ -187,6 +197,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
         eat(delimiter);
         charCodes.push(delimiter);
+        ec.pop();
         return String.fromCharCode.apply(null, charCodes);
     }
 
@@ -219,16 +230,14 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         let nc = nextCharCode();
         if (nc === CHAR_FSLA) {
             // double-slash comment
-            eat(CHAR_FSLA);
-            eat(CHAR_FSLA);
+            eatWord("//");
             while (CHAR_NL !== cc as any && CHAR_EOS !== cc as any) {
                 moveNext();
             }
             moveNext(); // to eat last new line
             return true;
         } else if (nc === CHAR_STAR) {
-            eat(CHAR_FSLA);
-            eat(CHAR_STAR);
+            eatWord("/*");
             let processing = true;
             while (processing) {
                 if (CHAR_EOS === cc as any || (CHAR_STAR === cc as any && nextCharCode() === CHAR_FSLA)) {
@@ -265,42 +274,57 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
     }
 
     function error(msg?: string, errorPos?: number) {
-        console.log("XJS ERROR", msg);
-        throw msg;
-        // let lines = xtr.split("\n"), lineLen = 0, posCount = 0, idx = 0, lineNbr = lines.length, columnNbr = lines[lineNbr - 1].length;
-        // errorPos = errorPos || pos;
-        // if (errorPos > -1) {
-        //     while (idx < lines.length) {
-        //         lineLen = lines[idx].length;
-        //         if (posCount + lineLen < errorPos) {
-        //             // continue
-        //             idx++;
-        //             posCount += lineLen + 1; // +1 for carriage return
-        //         } else {
-        //             // stop
-        //             lineNbr = idx + 1;
-        //             columnNbr = 1 + errorPos - posCount;
-        //             break;
-        //         }
-        //     }
-        // }
+        let c = (isContentMode) ? "$content" : "$template";
+        if (ec.length) {
+            c = ec[ec.length - 1];
+        }
+        let lines = xjs.split("\n"), lineLen = 0, posCount = 0, idx = 0, lineNbr = lines.length, columnNbr = lines[lineNbr - 1].length;
+        errorPos = errorPos || pos;
+        if (errorPos > -1) {
+            while (idx < lines.length) {
+                lineLen = lines[idx].length;
+                if (posCount + lineLen < errorPos) {
+                    // continue
+                    idx++;
+                    posCount += lineLen + 1; // +1 for carriage return
+                } else {
+                    // stop
+                    lineNbr = idx + 1;
+                    columnNbr = 1 + errorPos - posCount;
+                    break;
+                }
+            }
+        }
 
-        // let fileInfo = "";
-        // if (context !== U && context.fileId !== U) {
-        //     fileInfo = `\nFile: ${context.fileId}`;
-        // }
-        // let lineNbrMsg = lineNbr;
-        // if (context) {
-        //     lineNbrMsg += context.line1 !== undefined ? context.line1 - 1 : 0;
-        //     if (lineNbr === 1) {
-        //         columnNbr += context.col1 !== undefined ? context.col1 - 1 : 0;
-        //     }
-        // }
+        let fileInfo = "";
+        if (context !== U && context.fileId !== U) {
+            fileInfo = `\nFile: ${context.fileId}`;
+        }
+        let lineNbrMsg = lineNbr;
+        if (context) {
+            lineNbrMsg += context.line1 !== undefined ? context.line1 - 1 : 0;
+            if (lineNbr === 1) {
+                columnNbr += context.col1 !== undefined ? context.col1 - 1 : 0;
+            }
+        }
 
-        // if (msg === U) {
-        //     msg = "Invalid character: " + charName(cc);
-        // }
-        // throw "XTR: " + msg + "\nLine " + lineNbrMsg + " / Col " + columnNbr + fileInfo + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<";
+        if (msg === U) {
+            msg = `Invalid ${c}: Invalid character ${charName(cc)}`;
+        } else {
+            msg = `Invalid ${c}: ${msg}`;
+        }
+
+        const err: XjsError = {
+            kind: "#Error",
+            origin: "XJS",
+            description: msg,
+            message: "XJS: " + msg + "\nLine " + lineNbrMsg + " / Col " + columnNbr + fileInfo + "\nExtract: >> " + lines[lineNbr - 1].trim() + " <<",
+            file: context ? context.fileId || "" : "",
+            line: lineNbrMsg,
+            column: columnNbr,
+            lineExtract: lines[lineNbr - 1].trim()
+        }
+        throw err;
     }
 
     // ########################################################################################################################
@@ -311,19 +335,23 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
 
         if (isContentMode) {
             // $content template
-            xjsContent(f);
+            xjsContent(f, "$content");
             return f;
         } else {
             // $template template
             const p = pos;
+            xjsSpaces(false, false);
+            if (cc === CHAR_EOS) {
+                error("Empty template", p);
+            }
             if (!xjsTplFunction(f)) {
-                error("Invalid $template function parameters", p);
+                error("Invalid $template function", p);
             }
             return f.content![0]! as XjsTplFunction;
         }
     }
 
-    function xjsSpaces(required = false): boolean {
+    function xjsSpaces(required = false, errorOnEOS = true): boolean {
         // eat spaces and comments (white spaces or carriage return, tabs, etc.) 
         // return true if spaces or comments have been found
         let processing = true, p1 = pos;
@@ -343,6 +371,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             error("Invalid syntax: spaces expected instead of " + charName(cc), p1);
         }
 
+        if (cc === CHAR_EOS && errorOnEOS && !isContentMode) {
+            error("Unexpected End of Content");
+        }
         return p1 !== pos;
     }
 
@@ -351,6 +382,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         // or   $template foo(arg) { ... }   -> root === false
         // return true if a tpl function is found
         if ((root && cc !== CHAR_PARS) || (!root && cc !== CHAR_$)) return false; // ( or $
+        ec.push("template function");
         const tf = createTplFunction(pos);
         addContent(tf, parent);
 
@@ -366,8 +398,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
 
         // parameters
+        ec.push("template arguments");
         eat(CHAR_PARS); // (
-        let keepGoing = true, jsId: string | undefined, p1: number;
+        let keepGoing = true, jsId: string | undefined, p1: number, lastIsOptional = false;
         while (keepGoing) {
             xjsSpaces();
             p1 = pos;
@@ -376,7 +409,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 let arg = addArgument(tf, jsId, pos);
                 xjsSpaces();
                 if (cc === CHAR_QM) { // ? -> optional arg
-                    arg.optional = true;
+                    arg.optional = lastIsOptional = true;
                     moveNext();
                     xjsSpaces();
                 }
@@ -391,6 +424,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     xjsSpaces();
                     arg.defaultValue = jsExpression(false);
                 }
+                if (lastIsOptional && !arg.optional) {
+                    error("Optional arguments must be in last position", p1);
+                }
             }
             xjsSpaces();
             if (cc !== CHAR_COMMA) {
@@ -400,6 +436,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             }
         }
         eat(CHAR_PARE); // )
+        ec.pop();
 
         // arrow =>
         xjsSpaces();
@@ -413,25 +450,31 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (matchNext(RX_START_INDENT)) {
             tf.indent = RegExp.$1;
         }
-        xjsContent(tf); // content
+        xjsContent(tf, "template content"); // content
         eat(CHAR_CE);   // }
+        if (root) {
+            xjsSpaces(false, false);
+        }
+        ec.pop();
         return true;
     }
 
-    function xjsContent(parent: XjsContentHost) {
+    function xjsContent(parent: XjsContentHost, desc = "content block") {
         // parse xjs content: text or element or fragments or cdata
-        let keepGoing = true;
-        while (keepGoing) {
+        ec.push(desc);
+        while (true) {
             if (!xjsElement(parent) && !xjsJsStatement(parent) && !xjsText(parent)) {
-                keepGoing = false;
+                break;
             }
         }
+        ec.pop();
     }
 
     function xjsText(parent: XjsContentHost): boolean {
         // return true if blank spaces or text characters have been found
         if ((cc === CHAR_LT && pcc !== CHAR_BANG) || cc === CHAR_EOS || cc === CHAR_CE) return false;
         if (isJsStatement()) return false;
+        ec.push("text node");
 
         let spacesFound = xjsSpaces(), startPos = pos;
         if (cc !== CHAR_LT && cc !== CHAR_EOS && !isJsStatement()) {
@@ -484,6 +527,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             pushExpression(null);
             if (tn.expressions === U && tn.textFragments.length === 1 && tn.textFragments[0] === " ") {
                 // ignore space text node unless spaces were explicitly requested
+                ec.pop();
                 return false;
             }
             addContent(tn, parent);
@@ -507,6 +551,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 }
             }
         }
+        ec.pop();
         return true;
     }
 
@@ -522,25 +567,41 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         // prefix: [none] or * or . or @ (! is treated separately)
         let prefix = 0, posRef = -1;
         eatPrefix();
-        let name = "", node: XjsContentHost;
+        let name = "", node: XjsContentHost, desc = "element";
         if (cc === CHAR_BANG) {
             eat(CHAR_BANG);
             if (xjsCData(parent)) {
                 return true;
             }
+            desc = "fragment";
+            ec.push(desc);
             node = createFragment(pos);
             addContent(node, parent);
         } else {
+            if (prefix === CHAR_STAR) {
+                desc = "component";
+            } else if (prefix === CHAR_DOT) {
+                desc = "param node";
+            } else if (prefix === CHAR_AT) {
+                desc = "decorator node";
+            }
+            ec.push(desc);
             posRef = pos;
-            name = xjsIdentifier(true, prefix === 0);
+            name = xjsIdentifier(true, prefix === 0, desc + " identifier");
             node = createNode();
-
-            // todo: ref
+            if ((prefix === CHAR_STAR || prefix === CHAR_AT) && !name.match(RX_REF_PATH)) {
+                error("Invalid " + desc + " reference: '" + name + "'", posRef);
+            } else if (prefix === CHAR_DOT && !name.match(RX_JS_IDENTIFIER)) {
+                error("Invalid identifier: '" + name + "'", posRef);
+            }
+            if (prefix === 0 && name.match(isContentMode ? RX_FORBIDDEN_TAGS_CONTENT : RX_FORBIDDEN_TAGS_TPL)) {
+                error("Invalid tag name '" + name + "'", posRef);
+            }
         }
 
         // let ppDataList: XtrPreProcessorData[] | null = null;
-
-        if (xjsSpaces()) {
+        const spacesAfterName = xjsSpaces();
+        if (spacesAfterName) {
             // spaces have been found: parse params
             const ppNodes = xjsParams(node as XjsParamHost, parent as XjsParamHost, endParamReached);
             // if (ppDataList !== null) {
@@ -549,15 +610,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
         if (cc === CHAR_FSLA) {
             // end of element
-            eat(CHAR_FSLA); // /
-            eat(CHAR_GT); // >
+            eatWord("/>");
         } else if (cc === CHAR_GT) {
             eat(CHAR_GT); // >
             // parse element content
             xjsContent(node);
             // parse end of element
-            eat(CHAR_LT); // <
-            eat(CHAR_FSLA); // /
+            eatWord("</");
             let endPos = pos;
             let p1 = prefix, p2 = eatPrefix(), name2 = xjsIdentifier(false);
             if (name2 === "" && p2 === 0 && CHAR_BANG === cc as any) {
@@ -565,18 +624,21 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             } else if (name2 !== "" || p2 !== 0) {
                 // end tag name is provided
                 if (p1 !== p2 || (name2 !== "" && name2 !== name)) {
-                    error('End tag </' + eltName(p2, name2) + '> doesn\'t match <' + eltName(p1, name) + '>', endPos);
+                    error('End tag </' + eltName(p2, name2) + '> doesn\'t match start tag <' + eltName(p1, name) + '>', endPos);
                 }
             }
             xjsSpaces();
             eat(CHAR_GT); // >
+        } else if (!spacesAfterName) {
+            error("Invalid character in " + desc + " identifier: " + charName(cc), pos);
         } else {
-            error("Unexpected parameter character: " + charName(cc), pos);
+            error("Unexpected character: " + charName(cc), pos);
         }
 
         // if (ppDataList !== null) {
         //     await callPreProcessors(ppDataList, eltOrFragment, parent, "process", 4);
         // }
+        ec.pop();
         return true;
 
         function eatPrefix() {
@@ -610,10 +672,20 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
     }
 
     function xjsParams(parent: XjsParamHost, grandParent: XjsParamHost, endReached: () => boolean): XjsPreProcessorNode[] | null {
-        let prefix = 0, keepGoing = true, result: XjsPreProcessorNode[] | null = null, startPos = -1;
+        let prefix = 0, keepGoing = true, result: XjsPreProcessorNode[] | null = null, startPos = -1, desc = "";
+        ec.push("param");
         while (keepGoing && !endReached()) {
             // param name: prefix + name
             startPos = pos;
+            if (cc === CHAR_AT) {
+                desc = "decorator";
+            } else if (cc === CHAR_HASH) {
+                desc = "label";
+            } else if (cc === CHAR_SBRS) {
+                desc = "property";
+            } else {
+                desc = "param";
+            }
             prefix = eatPrefix();
             let ppn: XjsPreProcessorNode | null = null, isProperty = false, isFwdLabel = false, name: string;
             if (prefix === CHAR_AT && cc === CHAR_AT) {
@@ -643,6 +715,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 result.push(ppn);
             } else if (prefix === 0 && cc === CHAR_CS) {
                 // binding shortcut {type} or {::type} or {::[type]}
+                ec.push("binding shortcut");
                 let oneTime = false;
                 cc = eat(CHAR_CS); // {
                 if (cc === CHAR_COLON) {
@@ -669,18 +742,30 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     // no spaces found -> we have reached the end of the param list
                     keepGoing = false;
                 }
+                ec.pop();
                 continue
             } else {
+                ec.push(desc);
                 if (prefix === CHAR_HASH && cc === CHAR_HASH) {
                     eat(CHAR_HASH);
                     isFwdLabel = true;
                 }
-                name = xjsIdentifier(true, prefix === 0);
+                let nmPos = pos;
+                name = xjsIdentifier(true, prefix === 0, desc + " name");
                 if (prefix === CHAR_SBRS) { // [
                     eat(CHAR_SBRE); // ]
                     isProperty = true;
                 } else if (prefix === CHAR_HASH && parent.kind === "#preprocessor") {
                     error("Labels cannot be used on pre-processors", parent.pos);
+                }
+                if (prefix === CHAR_HASH || prefix === CHAR_SBRS) {
+                    // name must be a valid js identifier
+                    if (!name.match(RX_JS_IDENTIFIER)) {
+                        error("Invalid name '" + name + "'", nmPos);
+                    }
+                }
+                if (isFwdLabel && parent.kind !== "#component") {
+                    error("Forward label '" + name + "' can only be used on components", nmPos - 2);
                 }
             }
 
@@ -730,11 +815,15 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             } else {
                 keepGoing = false;
             }
+            if (ppn === null) {
+                ec.pop();
+            }
         }
         if (!endReached()) {
             error();
         }
 
+        ec.pop();
         return result;
 
         function endDecoParamReached() {
@@ -784,7 +873,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
     }
 
     function xjsParamValue(canBeExpression = true, canBeIdentifier = false): XjsParamValue {
-        const p = pos;
+        const p = pos, desc = canBeIdentifier ? "argument" : "param value";
         // return the param value
         if (cc === CHAR_SQ) {
             return stringContent(CHAR_SQ); // single quote string
@@ -830,7 +919,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             else if (v === "false") return false;
             return v;
         }
-        error("Invalid value: " + charName(cc), p);
+        error("Invalid " + desc + ": " + charName(cc), p);
         return 0;
     }
 
@@ -840,6 +929,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
 
     function xjsCData(parent: XjsContentHost): boolean {
         if (CDATA === nextChars(CDATA_LENGTH)) {
+            ec.push("cdata section");
             let startPos = pos;
             eatWord(CDATA);
             let cdata = createCData(pos), ppNodes: XjsPreProcessorNode[] | null = null;
@@ -858,7 +948,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             while (processing) {
                 if (cc === CHAR_EOS) {
                     processing = false;
-                    error("Invalid cdata section: end marker '</!cdata>' not found", startPos - 2)
+                    error("end marker '</!cdata>' not found", startPos - 2)
                 } else if (cc === CHAR_BANG) {
                     // ! -> escape sequence
                     moveNext();
@@ -885,12 +975,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             // if (ppNodes !== null) {
             //     callPreProcessors(ppNodes, cdata, parent, "process", 6);
             // }
+            ec.pop();
             return true;
         }
         return false;
     }
 
-    function xjsIdentifier(mandatory: boolean, acceptDashes = false): string {
+    function xjsIdentifier(mandatory: boolean, acceptDashes = false, desc = "identifier"): string {
         // e.g. div or my-cpt or lib.myCpt
         // identifier is used for references and component/decorators names (which area also references)
         // they cannot start with $ on the contrary to JS identifiers
@@ -907,10 +998,10 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 moveNext();
             }
             if (lastWasDot) {
-                error("Invalid XJS identifier");
+                error("Invalid " + desc);
             }
         } else if (mandatory) {
-            error("Invalid XJS identifier");
+            error("Invalid character " + charName(cc));
         }
         if (charCodes.length === 0) return "";
         return String.fromCharCode.apply(null, charCodes);
@@ -918,7 +1009,8 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
 
     function xjsExpression(): XjsExpression {
         // e.g. {exp(123) + 42} if isContentMode === true
-        let oneTime = false, isBinding = false, isFunction = false;;
+        ec.push("expression");
+        let oneTime = false, isBinding = false, isFunction = false;
         eat(CHAR_CS); // {
         if (cc === CHAR_COLON) { // :
             eatWord("::");
@@ -934,7 +1026,8 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 isBinding = true;
             }
         }
-        const e = createExpression(jsExpression(false), pos);
+        const p = pos;
+        const e = createExpression(jsExpression(false), p);
         e.oneTime = oneTime;
         e.isBinding = isBinding;
         const c = e.code;
@@ -943,19 +1036,21 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
         if (isContentMode) {
             let rp = getRefPath(e.code);
-            if (rp === null) {
-                error("Invalid reference path", e.pos);
+            if (rp === U) {
+                error("Invalid $content reference '" + e.code + "'", e.pos);
             } else {
                 e.refPath = rp;
             }
         }
         eat(CHAR_CE); // }
+        ec.pop();
         return e;
     }
 
     function xjsJsStatement(parent: XjsContentHost): boolean {
         // return true if a statement has been found
         if (!isJsStatement()) return false;
+        ec.push("js statement");
         const start = nextChars(3), startPos = pos;
         let e: string;
         switch (start) {
@@ -971,11 +1066,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 break;
             case "$lo":
                 // e.g. $log(abc, "some info", 123);
+                ec.push("$log statement");
                 let logStatement = createJsStatement("log", startPos);
                 if (isContentMode) {
                     eatWord("$log");
                     xjsSpaces();
                     eat(CHAR_PARS);
+                    ec.push("$log argument");
                     let args: string[] = [];
                     while (true) {
                         xjsSpaces();
@@ -991,6 +1088,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     }
                     eat(CHAR_PARE);
                     xjsSpaces();
+                    ec.pop();
                     logStatement.code = "console.log(" + args.join(", ") + ");"
                 } else {
                     e = xjsJsParenStatementExpr("$log");
@@ -998,9 +1096,11 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 }
                 eat(CHAR_S_COLON);
                 addContent(logStatement, parent);
+                ec.pop();
                 break;
             case "$if":
                 // e.g. $if (exp()) { ... } else if (exp2) { ... } else { ... }
+                ec.push("$if statement");
                 let jsb = createJsBlockStatement("if", startPos);
                 ifBlock("$if", jsb);
                 addContent(jsb, parent);
@@ -1025,6 +1125,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     xjsContent(jsb);
                     eat(CHAR_CE); // }
                 }
+                ec.pop();
                 break;
             case "$fo":
                 // e.g. $for (let i=0;10>i;i++) {
@@ -1037,6 +1138,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 break;
             case "$ea":
                 // e.g. $each(items, (item, index, isLast) => {
+                ec.push("$each statement");
                 eatWord("$each");
                 const eb = createJsBlockStatement("each", startPos);
                 xjsSpaces();
@@ -1044,6 +1146,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 xjsSpaces();
                 let e1: string;
 
+                ec.push("$each argument");
                 // items part
                 if (isContentMode) {
                     e1 = xjsIdentifier(true, false);
@@ -1085,6 +1188,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 } else {
                     e2 = jsExpression(false, CHAR_PARS, CHAR_PARE);
                 }
+                ec.pop();
                 eb.startCode = "each(" + e1 + "," + e2 + " => {";
                 eb.endCode = "});";
 
@@ -1100,6 +1204,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 eat(CHAR_PARE); // )
                 xjsSpaces();
                 eat(CHAR_S_COLON); // ;
+                ec.pop();
                 break;
             case "$te":
                 // $template function
@@ -1108,6 +1213,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             default:
                 error("Invalid JS statement", pos);
         }
+        ec.pop();
         return true;
 
         function ifBlock(name: string, jsb: XjsJsBlock, prefix = "") {
@@ -1129,14 +1235,17 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
     }
 
     function xjsJsSimpleStatementExpr(name: string): string {
+        ec.push(name + " statement");
         eatWord(name);
         xjsSpaces(true);
         const e = jsExpression(false, U, U, false, true);
         eat(CHAR_S_COLON);
+        ec.pop();
         return e;
     }
 
     function xjsJsParenStatementExpr(name: string): string {
+        ec.push(name + " statement");
         eatWord(name);
         xjsSpaces();
         if (cc as any !== CHAR_PARS) {
@@ -1144,6 +1253,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
         const e = jsExpression(false, CHAR_PARS, CHAR_PARE);
         xjsSpaces();
+        ec.pop();
         return e;
     }
 
