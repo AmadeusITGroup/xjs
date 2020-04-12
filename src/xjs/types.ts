@@ -8,8 +8,10 @@ export interface XjsPreProcessor {
     // setup(): called before the node content is processed (synchronous)
     setup?(target: XjsParamHost, params?: { [name: string]: XjsParam }, ctxt?: XjsPreProcessorCtxt): void;
     // process(): called when all the node attributes and content are loaded (asynchronous)
-    process?(target: XjsParamHost, params?: { [name: string]: XjsParam }, ctxt?: XjsPreProcessorCtxt): Promise<void>;
+    process?(target: XjsParamHost, params?: { [name: string]: XjsParam }, ctxt?: XjsPreProcessorCtxt): void | Promise<void>;
 }
+
+export type XjsParamDictionary = { [name: string]: XjsParam };
 
 export interface XjsPreProcessorCtxt {
     rootFragment: XjsFragment;
@@ -155,8 +157,10 @@ export interface XjsDecorator extends XjsNode {
  */
 export interface XjsPreProcessorNode extends XjsDecorator {
     kind: "#preprocessor";
-    parent: XjsParamHost;
+    parent: XjsParamHost;          // parent is the pre processor target
     grandParent: XjsParamHost;
+    instance?: XjsPreProcessor;      // used by parser to store the associated pre-processor instance
+    paramsDict?: XjsParamDictionary; // used by parser to store the params in a dictionary
 }
 
 /**

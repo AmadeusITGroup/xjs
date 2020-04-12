@@ -953,13 +953,13 @@ describe('XJS $template parser', () => {
             </div>
         }`, `
             #tplFunction()
-                #element <div class='abc' [title]='def'>
-                    #component <*b.section title='hello'>
-                        #paramNode <.header class='big'>
+                #element <div class="abc" [title]="def">
+                    #component <*b.section title="hello">
+                        #paramNode <.header class="big">
                             #element <b>
                                 #textNode " Rich header content "
                             #paramNode <.sidePanel>
-                                #element <button class='cool'/>
+                                #element <button class="cool"/>
                         #textNode " Section content "
         ` , '1');
     });

@@ -1,4 +1,4 @@
-import { XjsTplFunction, XjsContentHost, XjsContentNode, XjsText, XjsFragment, XjsTplArgument, XjsElement, XjsParamNode, XjsComponent, XjsDecoratorNode, XjsExpression, XjsParamValue, XjsParam, XjsProperty, XjsDecorator, XjsLabel, XjsParamHost, XjsNodeParam, XjsPreProcessorNode, XjsJsStatement, XjsJsBlock, XjsCData, XjsError } from './types';
+import { XjsTplFunction, XjsContentHost, XjsContentNode, XjsText, XjsFragment, XjsTplArgument, XjsElement, XjsParamNode, XjsComponent, XjsDecoratorNode, XjsExpression, XjsParamValue, XjsParam, XjsProperty, XjsDecorator, XjsLabel, XjsParamHost, XjsNodeParam, XjsPreProcessorNode, XjsJsStatement, XjsJsBlock, XjsCData, XjsError, XjsPreProcessor, XjsParamDictionary, XjsPreProcessorCtxt } from './types';
 
 const U = undefined,
     RX_START_INDENT = /^[ \f\r\t\v]*\n(\s*)/,
@@ -10,6 +10,7 @@ const U = undefined,
     RX_FORBIDDEN_TAGS_TPL = /^(script)$/,
     RX_FORBIDDEN_TAGS_CONTENT = /^(script|frame|frameset|iframe)$/,
     CDATA = "cdata",
+    PP_DEFAULT_VALUE = "$$default",
     CDATA_LENGTH = CDATA.length,
     CDATA_END = "</!cdata>",
     CDATA_END_LENGTH = CDATA_END.length,
@@ -46,13 +47,7 @@ const U = undefined,
     CHAR__ = 95,        // _
     CHAR_i = 105,
     CHAR_t = 116,
-    CHAR_r = 114,
-    CHAR_u = 117,
-    CHAR_e = 101,
     CHAR_f = 102,
-    CHAR_a = 97,
-    CHAR_l = 108,
-    CHAR_s = 115,
     CHAR_z = 122,
     CHAR_NBSP = '\u00A0'.charCodeAt(0), // non breaking space
     ESCAPED_CHARS = {
@@ -74,8 +69,9 @@ export interface XjsParserContext {
     fileId?: string;                // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
     line1?: number;                 // line number of the first template line - used to calculate offset for error messages - default: 1
     col1?: number;                  // column number of the first template character - used to calculate offset for error messages - default: 1
-    globalPreProcessors?: string[]; // e.g. ["@@json"]
+    // globalPreProcessors?: string[]; // e.g. ["@@json"]
     templateType?: "$template" | "$content";
+    preProcessors?: { [name: string]: () => XjsPreProcessor };
 }
 
 /**
@@ -84,23 +80,23 @@ export interface XjsParserContext {
  */
 export async function parse(xjs: string, context?: XjsParserContext): Promise<XjsTplFunction | XjsFragment> {
     const isContentMode = (context && context.templateType === "$content");
-    let root: XjsTplFunction | XjsFragment,
+    let root: XjsFragment,
         posEOS = xjs.length,
         pos = 0,    // current position
         cc: number = CHAR_EOS,   // current char code at current position
         pcc: number = CHAR_BOS,  // previous cc
-        ec: string[] = [];       // error context - provides better error understanding
-    // ppContext: XtrPreProcessorCtxt | undefined,
-    // currentPpName = "",
-    // currentPpPos = 0,
+        ec: string[] = [],       // error context - provides better error understanding
+        ppFactories = context ? context.preProcessors || {} : {},
+        preProcessorNodes: XjsPreProcessorNode[] | undefined, // list of pre-processor instance
+        ppContext: XjsPreProcessorCtxt | undefined,
+        currentPpName = "",  // used for error handing
+        currentPpPos = 0;    // used for error handling
     // globalPreProcessors = context ? context.globalPreProcessors : U,
-    // ppFactories = context ? context.preProcessors || {} : {},
-    // preProcessors = {}; // dictionary of pre-processor instances
+
     if (posEOS > 0) {
         cc = xjs.charCodeAt(0);
 
         // let ppDataList: XtrPreProcessorData[] | undefined;
-
         // if (globalPreProcessors !== U) {
         //     ppDataList = [];
         //     for (let pp of globalPreProcessors) {
@@ -113,17 +109,19 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         //     await callPreProcessors(ppDataList, xf, null, "setup", 1);
         // }
     }
-    root = xjsRoot();
+    xjsRoot();
     if (posEOS > 0) {
-        // if (ppDataList !== U) {
-        //     await callPreProcessors(ppDataList, xf, null, "process", 2);
-        // }
+        if (preProcessorNodes !== U) {
+            await processPreProcessors(preProcessorNodes);
+            ppContext = U;
+            preProcessorNodes = U;
+        }
 
         if (cc !== CHAR_EOS) {
             error();
         }
     }
-    return root;
+    return isContentMode ? root! : root!.content![0]! as XjsTplFunction;
 
     // ########################################################################################################################
     // utility functions
@@ -184,8 +182,11 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         return "'" + String.fromCharCode(c) + "'";
     }
 
-    function stringContent(delimiter: number): string {
-        let charCodes: number[] = [delimiter];
+    function stringContent(delimiter: number, includeDelimiter = true): string {
+        let charCodes: number[] = [];
+        if (includeDelimiter) {
+            charCodes.push(delimiter);
+        }
         ec.push("string");
         eat(delimiter);
         while (cc !== delimiter && cc !== CHAR_EOS) {
@@ -196,7 +197,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             moveNext();
         }
         eat(delimiter);
-        charCodes.push(delimiter);
+        if (includeDelimiter) {
+            charCodes.push(delimiter);
+        }
         ec.pop();
         return String.fromCharCode.apply(null, charCodes);
     }
@@ -249,28 +252,6 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             return true;
         }
         return false;
-    }
-
-    function addContent(child: XjsContentNode, parent: XjsContentHost) {
-        // add a content child to a parent node
-        if (!parent.content) {
-            parent.content = [child];
-        } else {
-            parent.content.push(child);
-        }
-        return child;
-    }
-
-    function addParam(p: XjsNodeParam, host: XjsParamHost): XjsNodeParam {
-        if (!host.params) {
-            host.params = [p];
-        } else {
-            host.params.push(p);
-        }
-        if (host.kind === "#decorator" || host.kind === "#preprocessor") {
-            host.isOrphan = false;
-        }
-        return p;
     }
 
     function error(msg?: string, errorPos?: number) {
@@ -330,13 +311,12 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
     // ########################################################################################################################
     // parser functions
 
-    function xjsRoot(): XjsTplFunction | XjsFragment {
-        const f = createFragment(pos);
+    function xjsRoot() {
+        root = createFragment(pos);
 
         if (isContentMode) {
             // $content template
-            xjsContent(f, "$content");
-            return f;
+            xjsContent(root, "$content");
         } else {
             // $template template
             const p = pos;
@@ -344,10 +324,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             if (cc === CHAR_EOS) {
                 error("Empty template", p);
             }
-            if (!xjsTplFunction(f)) {
+            if (!xjsTplFunction(root)) {
                 error("Invalid $template function", p);
             }
-            return f.content![0]! as XjsTplFunction;
         }
     }
 
@@ -604,9 +583,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (spacesAfterName) {
             // spaces have been found: parse params
             const ppNodes = xjsParams(node as XjsParamHost, parent as XjsParamHost, endParamReached);
-            // if (ppDataList !== null) {
-            //     await callPreProcessors(ppDataList, eltOrFragment, parent, "setup", 3);
-            // }
+            setupPreProcessors(ppNodes);
         }
         if (cc === CHAR_FSLA) {
             // end of element
@@ -635,9 +612,6 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             error("Unexpected character: " + charName(cc), pos);
         }
 
-        // if (ppDataList !== null) {
-        //     await callPreProcessors(ppDataList, eltOrFragment, parent, "process", 4);
-        // }
         ec.pop();
         return true;
 
@@ -691,13 +665,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             if (prefix === CHAR_AT && cc === CHAR_AT) {
                 // this is a pre-processor
                 eat(CHAR_AT); // 2nd @
-                name = jsIdentifier() || "";
                 const ppnPos = pos - 2; // to be before the '@@' prefix
+                name = jsIdentifier() || "";
 
                 if (name === "") {
                     error("Invalid preprocessor reference", ppnPos);
-                } else if (parent.kind === "#preprocessor") {
-                    error("Pre-processors cannot be used on pre-processors: check @@" + name, ppnPos);
+                } else if (parent.kind === "#preprocessor" || parent.kind === "#decorator" || parent.kind === "#decoratorNode") {
+                    error("@@" + name + " cannot be used in this context", ppnPos);
                 }
 
                 ppn = {
@@ -751,12 +725,15 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     isFwdLabel = true;
                 }
                 let nmPos = pos;
+                if (prefix !== 0) {
+                    nmPos -= 1;
+                }
                 name = xjsIdentifier(true, prefix === 0, desc + " name");
                 if (prefix === CHAR_SBRS) { // [
                     eat(CHAR_SBRE); // ]
                     isProperty = true;
                 } else if (prefix === CHAR_HASH && parent.kind === "#preprocessor") {
-                    error("Labels cannot be used on pre-processors", parent.pos);
+                    error("Labels cannot be used on pre-processors", nmPos);
                 }
                 if (prefix === CHAR_HASH || prefix === CHAR_SBRS) {
                     // name must be a valid js identifier
@@ -775,7 +752,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 eat(CHAR_EQ);
                 xjsSpaces();
                 if (ppn !== null) {
-                    registerParam("value", ppn, xjsParamValue(), false, isFwdLabel);
+                    registerParam(PP_DEFAULT_VALUE, ppn, xjsParamValue(), false, isFwdLabel, true); // $$default
                 } else {
                     registerParam(name, parent, xjsParamValue(), isProperty, isFwdLabel);
                 }
@@ -795,16 +772,13 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 eat(CHAR_PARS); // ( parens start
                 xjsSpaces();
 
-                let r = xjsParams(d, parent, endDecoParamReached);
+                xjsParams(d, parent, endDecoParamReached);
                 eat(CHAR_PARE); // ) parens end
 
                 if (!xjsSpaces()) {
                     // no spaces found -> we have reached the end of the param list
                     keepGoing = false;
                 }
-                // if (r != null && ppData === null) {
-                //     await callPreProcessors(r, d, grandParent as any, "process", 7);
-                // }
             } else if (spacesFound || cc === CHAR_GT || cc === CHAR_FSLA || cc === CHAR_PARE) { // > or / or )
                 // orphan attribute
                 if (ppn !== null) {
@@ -830,10 +804,10 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             return (cc === CHAR_PARE); // )
         }
 
-        function registerParam(name: string, p: XjsParamHost, value?: any, isProperty: boolean = false, isFwdLabel = false): XjsNodeParam {
+        function registerParam(name: string, p: XjsParamHost, value?: any, isProperty: boolean = false, isFwdLabel = false, isPpnParam = false): XjsNodeParam {
             // create the param node and add it to the params collection
             let param: XjsNodeParam;
-            if (prefix === CHAR_AT) {
+            if (prefix === CHAR_AT && !isPpnParam) {
                 // decorator param
                 param = createDecorator(createExpression(name, startPos), startPos);
                 if (value !== U) {
@@ -854,7 +828,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 param = createProperty(name, value, startPos);
             } else {
                 // normal param
-                param = createParam(name, startPos);
+                param = createParam(name, false, startPos);
                 param.value = value;
                 param.isOrphan = value === U;
             }
@@ -876,9 +850,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         const p = pos, desc = canBeIdentifier ? "argument" : "param value";
         // return the param value
         if (cc === CHAR_SQ) {
-            return stringContent(CHAR_SQ); // single quote string
+            return stringContent(CHAR_SQ, canBeIdentifier); // single quote string
         } else if (cc === CHAR_DQ) {
-            return stringContent(CHAR_DQ); // double quote string
+            return stringContent(CHAR_DQ, canBeIdentifier); // double quote string
         } else if (canBeExpression && cc === CHAR_CS) { // {
             return xjsExpression();
         } else if (!canBeIdentifier && cc === CHAR_t) {
@@ -937,9 +911,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             if (xjsSpaces()) {
                 // spaces have been found: parse params
                 ppNodes = xjsParams(cdata, parent as XjsParamHost, endParamReached);
-                // if (ppNodes !== null) {
-                //     callPreProcessors(ppNodes, cdata, parent, "setup", 5);
-                // }
+                setupPreProcessors(ppNodes);
             }
             eat(CHAR_GT); // >
 
@@ -971,10 +943,6 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 }
             }
             cdata.text = String.fromCharCode.apply(null, charCodes);
-
-            // if (ppNodes !== null) {
-            //     callPreProcessors(ppNodes, cdata, parent, "process", 6);
-            // }
             ec.pop();
             return true;
         }
@@ -1346,6 +1314,104 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (exp === "" || !exp.match(RX_REF_PATH)) return U;
         return exp.split(".");
     }
+
+
+    function setupPreProcessors(ppList: XjsPreProcessorNode[] | null) {
+        if (ppList === null) return;
+        const len = ppList.length;
+        for (let i = len - 1; i > -1; i--) {
+            const ppn = ppList[i];
+            let pp: XjsPreProcessor;
+            if (!ppn.instance) {
+                const nm = ppn.ref.code;
+                // create the pp instance
+                if (ppFactories === U || ppFactories[nm] === U) {
+                    error("Undefined pre-processor '" + nm + "'", ppn.pos);
+                    return;
+                }
+                pp = ppn.instance = ppFactories[nm]() as any;
+            } else {
+                pp = ppn.instance;
+            }
+
+            let ppParams: XjsParamDictionary = {};
+            if (ppn.params) {
+                for (let p of ppn.params) {
+                    ppParams[(p as XjsParam).name] = p as XjsParam;
+                }
+            }
+            ppn.paramsDict = ppParams;
+
+            if (pp["setup"] !== U) {
+                try {
+                    pp.setup!(ppn.parent, ppn.paramsDict, getPreProcessorContext(ppn.ref.code, ppn.grandParent, ppn.pos));
+                } catch (ex) {
+                    let msg = ex.message || ex;
+                    if (msg.match(/^XJS\:/)) {
+                        // error was triggered through context.error()
+                        throw ex;
+                    } else {
+                        error("Error in " + ppn.ref.code + ".setup(): " + msg, ppn.pos);
+                    }
+                }
+            }
+        }
+        // register the pre processors in the definition order (will be reversed when called for process())
+        for (let ppn of ppList) {
+            if (preProcessorNodes === U) {
+                preProcessorNodes = [ppn];
+            } else {
+                preProcessorNodes.push(ppn);
+            }
+        }
+    }
+
+    async function processPreProcessors(ppList: XjsPreProcessorNode[]) {
+        const len = ppList.length;
+        for (let i = len - 1; i > -1; i--) {
+            const ppn = ppList[i], pp: XjsPreProcessor = ppn.instance!;
+
+            if (pp["process"] !== U) {
+                try {
+                    await pp.process!(ppn.parent, ppn.paramsDict, getPreProcessorContext(ppn.ref.code, ppn.grandParent, ppn.pos));
+                    dispose();
+                } catch (ex) {
+                    let msg = ex.message || ex;
+                    dispose();
+                    if (msg.match(/^XJS\:/)) {
+                        // error was triggered through context.error()
+                        throw ex;
+                    } else {
+                        error("Error in " + ppn.ref.code + ".process(): " + msg, ppn.pos);
+                    }
+                }
+            }
+
+            function dispose() {
+                const n = ppn as any;
+                n.parent = n.grandParent = n.params = n.instance = n.paramsDict = U;
+            }
+        }
+    }
+
+    function getPreProcessorContext(ppName: string, parent: XjsParamHost | null, processorPos: number) {
+        currentPpName = ppName;
+        currentPpPos = processorPos;
+        if (ppContext === U) {
+            ppContext = {
+                parent: parent,
+                fileId: context ? context.fileId || "" : "",
+                rootFragment: root,
+                error: function (msg: string, pos = -1) {
+                    error(currentPpName + ": " + msg, pos > -1 ? pos : currentPpPos);
+                },
+                preProcessors: ppFactories
+            }
+        } else {
+            ppContext.parent = parent;
+        }
+        return ppContext;
+    }
 };
 
 // ########################################################################################################################
@@ -1385,14 +1451,14 @@ function addArg(arg: string, jss: XjsJsStatement | XjsJsBlock) {
     }
 }
 
-function createFragment(pos: number = -1): XjsFragment {
+export function createFragment(pos: number = -1): XjsFragment {
     return {
         kind: "#fragment",
         pos: pos
     }
 }
 
-function createElement(name: string, pos: number = -1): XjsElement {
+export function createElement(name: string, pos: number = -1): XjsElement {
     return {
         kind: "#element",
         name: name,
@@ -1400,7 +1466,29 @@ function createElement(name: string, pos: number = -1): XjsElement {
     }
 }
 
-function createComponent(ref: XjsExpression, pos: number = -1): XjsComponent {
+export function addContent(child: XjsContentNode, parent: XjsContentHost) {
+    // add a content child to a parent node
+    if (!parent.content) {
+        parent.content = [child];
+    } else {
+        parent.content.push(child);
+    }
+    return child;
+}
+
+export function addParam(p: XjsNodeParam, host: XjsParamHost): XjsNodeParam {
+    if (!host.params) {
+        host.params = [p];
+    } else {
+        host.params.push(p);
+    }
+    if (host.kind === "#decorator" || host.kind === "#preprocessor") {
+        host.isOrphan = false;
+    }
+    return p;
+}
+
+export function createComponent(ref: XjsExpression, pos: number = -1): XjsComponent {
     return {
         kind: "#component",
         ref: ref,
@@ -1408,7 +1496,7 @@ function createComponent(ref: XjsExpression, pos: number = -1): XjsComponent {
     }
 }
 
-function createParamNode(name: string, pos: number = -1): XjsParamNode {
+export function createParamNode(name: string, pos: number = -1): XjsParamNode {
     return {
         kind: "#paramNode",
         name: name,
@@ -1416,7 +1504,7 @@ function createParamNode(name: string, pos: number = -1): XjsParamNode {
     }
 }
 
-function createDecoNode(ref: XjsExpression, pos: number = -1): XjsDecoratorNode {
+export function createDecoNode(ref: XjsExpression, pos: number = -1): XjsDecoratorNode {
     return {
         kind: "#decoratorNode",
         ref: ref,
@@ -1424,7 +1512,7 @@ function createDecoNode(ref: XjsExpression, pos: number = -1): XjsDecoratorNode 
     }
 }
 
-function createText(textFragments: string[], pos: number = -1): XjsText {
+export function createText(textFragments: string[], pos: number = -1): XjsText {
     return {
         kind: "#textNode",
         pos: pos,
@@ -1432,7 +1520,7 @@ function createText(textFragments: string[], pos: number = -1): XjsText {
     }
 }
 
-function createExpression(code: string, pos: number = -1): XjsExpression {
+export function createExpression(code: string, pos: number = -1): XjsExpression {
     return {
         kind: "#expression",
         oneTime: false,
@@ -1442,16 +1530,16 @@ function createExpression(code: string, pos: number = -1): XjsExpression {
     }
 }
 
-function createParam(name: string, pos: number = -1): XjsParam {
+export function createParam(name: string, isOrphan = false, pos: number = -1): XjsParam {
     return {
         kind: "#param",
         name: name,
-        isOrphan: false,
+        isOrphan: isOrphan,
         pos: pos
     }
 }
 
-function createProperty(name: string, value: XjsParamValue, pos: number = -1): XjsProperty {
+export function createProperty(name: string, value: XjsParamValue, pos: number = -1): XjsProperty {
     return {
         kind: "#property",
         name: name,
@@ -1460,7 +1548,7 @@ function createProperty(name: string, value: XjsParamValue, pos: number = -1): X
     }
 }
 
-function createDecorator(ref: XjsExpression, pos: number = -1): XjsDecorator {
+export function createDecorator(ref: XjsExpression, pos: number = -1): XjsDecorator {
     return {
         kind: "#decorator",
         pos: pos,
@@ -1470,7 +1558,7 @@ function createDecorator(ref: XjsExpression, pos: number = -1): XjsDecorator {
     }
 }
 
-function createCData(pos: number = -1): XjsCData {
+export function createCData(pos: number = -1): XjsCData {
     return {
         kind: "#cdata",
         pos: pos,
@@ -1478,7 +1566,7 @@ function createCData(pos: number = -1): XjsCData {
     }
 }
 
-function createLabel(name: string, pos: number = -1): XjsLabel {
+export function createLabel(name: string, pos: number = -1): XjsLabel {
     return {
         kind: "#label",
         pos: pos,
@@ -1488,7 +1576,7 @@ function createLabel(name: string, pos: number = -1): XjsLabel {
     }
 }
 
-function createJsStatement(code: string, pos: number = -1): XjsJsStatement {
+export function createJsStatement(code: string, pos: number = -1): XjsJsStatement {
     return {
         kind: "#jsStatement",
         code: code,
@@ -1496,7 +1584,7 @@ function createJsStatement(code: string, pos: number = -1): XjsJsStatement {
     }
 }
 
-function createJsBlockStatement(startCode: string, pos: number = -1): XjsJsBlock {
+export function createJsBlockStatement(startCode: string, pos: number = -1): XjsJsBlock {
     return {
         kind: "#jsBlock",
         startCode: startCode,

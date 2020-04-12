@@ -11,7 +11,7 @@ export let ast = {
     // this api allows to trigger the vs-code text mate completion
     async $template(strings: TemplateStringsArray, log = false) {
         let root = await parse(strings[0]);
-        return processRoot(root, log);
+        return stringify(root, log);
     },
 
     async $content(strings: TemplateStringsArray, ...values: any[]) {
@@ -30,7 +30,7 @@ export let ast = {
         }
 
         let root = await parse(tpl, { templateType: "$content" });
-        return processRoot(root);
+        return stringify(root);
     },
 
     async initIndent(tpl: string, log = false) {
@@ -43,7 +43,7 @@ export let ast = {
     }
 }
 
-function processRoot(root: XjsTplFunction | XjsFragment, log = false) {
+export function stringify(root: XjsTplFunction | XjsFragment, log = false) {
     if (!root) {
         return "ERROR";
     }
@@ -193,7 +193,7 @@ function params(n: XjsParamHost, prefix = "", suffix = ""): string {
             res.push(`[${p.name}]=${getParamValue(p.value)}`);
             // }
         } else if (p.kind === "#decorator") {
-            const d = p, noRef = (d.ref.refPath === U)? "NO-REF" : "";
+            const d = p, noRef = (d.ref.refPath === U) ? "NO-REF" : "";
             if (d.isOrphan) {
                 res.push(`@${d.ref.code}${noRef}`);
             } else if (d.hasDefaultPropValue) {
@@ -256,8 +256,9 @@ function getParamValue(value: any) {
     switch (typeof value) {
         case "boolean":
         case "number":
-        case "string":
             return "" + value;
+        case "string":
+            return '"' + value + '"';
         case "object":
             let exp = value as XjsExpression;
             if (exp.refPath) {
