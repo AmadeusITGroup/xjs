@@ -1,4 +1,4 @@
-import { XjsElement, XjsFragment, XjsParamHost, XjsParamDictionary, XjsPreProcessorCtxt, XjsCData } from './../xjs/types';
+import { XjsElement, XjsFragment, XjsParamHost, XjsParamDictionary, XjsPreProcessorCtxt, XjsCData, XjsText } from './../xjs/types';
 import * as vsTM from 'vscode-textmate';
 import xjsTmGrammar from './../tm-grammar/xjs.tmLanguage.json';
 import { createElement, addContent, createParam, addParam, createText } from '../xjs/parser';
@@ -23,7 +23,7 @@ const SCOPE_CLASSES: (RegExp | string)[] = [
     /^support.type/, "hy",
     /^punctuation.definition.tag/, "hp",
     /^punctuation.section.embedded/, "hd"
-]
+];
 
 const XJS_REGISTRY = new vsTM.Registry({
     loadGrammar: async function () {
@@ -113,7 +113,7 @@ export function appendHighlightElts(lines: string[], tokens: vsTM.IToken[][], ho
     const len = lines.length;
     let idxFirst = startIdx, idxLast = lastIdx || len - 1;
     if (trim) {
-        for (let i = 0; len > i; i++) {
+        for (let i = startIdx; len > i; i++) {
             if (lines[i].match(RX_EMPTY_LINE)) {
                 idxFirst = i + 1;
             } else {
@@ -163,7 +163,6 @@ export function appendLineHighlightElts(line: string, tokens: vsTM.IToken[], hos
         // process current token
         for (let j = 0; len2 > j; j++) {
             let sName = scopes[j];
-
             if (currentTk.next === null || currentTk.next.name !== sName) {
                 // create a new token
                 currentTk.next = createTkScope(sName, currentTk.container, currentTk.className);
@@ -182,6 +181,7 @@ export function appendLineHighlightElts(line: string, tokens: vsTM.IToken[], hos
 
         // console.log("token: ", text, scopes.join(" / "));
         appendText(text, currentTk.container);
+        currentTk.next = null;
     }
     // if not content has been created, create a line with a non-breaking space
     if (lineDiv.content === U || lineDiv.content.length === 0) {
@@ -189,6 +189,15 @@ export function appendLineHighlightElts(line: string, tokens: vsTM.IToken[], hos
     }
 
     function appendText(text: string, host: LineHost) {
+        if (host.content) {
+            // append text to the last text node if any
+            const last = host.content[host.content.length - 1];
+            if (last.kind === "#textNode") {
+                const tf = (last as XjsText).textFragments;
+                tf[tf.length - 1] += text;
+                return;
+            }
+        }
         addContent(createText([text]), host);
     }
 

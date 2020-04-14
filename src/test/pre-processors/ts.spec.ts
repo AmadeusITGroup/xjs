@@ -26,7 +26,7 @@ describe('@@ts', () => {
         return "NO ERROR";
     }
 
-    it("should tokenize ts content property", async function () {
+    it("should tokenize ts content properly", async function () {
         const tokens = await tokenize(`const foo=123;\n\n//comment`);
         assert.equal(tokens.length, 3, "3 lines");
         assert.equal(tokens[0].length, 6, "6 tokens in line 1");
@@ -67,8 +67,7 @@ describe('@@ts', () => {
                     #textNode " "
                 #element <div>
                     #element <span class="hc">
-                        #textNode "//"
-                        #textNode "comment"
+                        #textNode "//comment"
         `, "2");
     });
 
@@ -106,10 +105,7 @@ describe('@@ts', () => {
                         #textNode " "
                         #element <span class="hf">
                             #textNode "foo"
-                        #textNode "("
-                        #textNode ")"
-                        #textNode " "
-                        #textNode "{"
+                        #textNode "() {"
                     #element <div>
                         #textNode "                    "
                         #element <span class="hk">
@@ -119,8 +115,7 @@ describe('@@ts', () => {
                             #textNode "null"
                         #textNode ";"
                     #element <div>
-                        #textNode "                "
-                        #textNode "}"
+                        #textNode "                }"
                 #textNode "def "
         `, "1");
     });
@@ -218,5 +213,24 @@ describe('@@ts', () => {
             File: src/test/pre-processors/ts.spec.ts
             Extract: >> <div @@ts(trim=false)> <<
             `, "1");
+    });
+
+    it("should work on backtick strings", async function () {
+        assert.equal(stringify(await parse($content`
+            <!cdata @@ts>\` Some content \\\`here\\\` \`;</!cdata>
+        `, context)), `
+            #fragment <!>
+                #element <div class="ts_code">
+                    #element <div>
+                        #element <span class="hs">
+                            #textNode "\` Some content "
+                            #element <span class="hn">
+                                #textNode "\\\`"
+                            #textNode "here"
+                            #element <span class="hn">
+                                #textNode "\\\`"
+                            #textNode " \`"
+                        #textNode ";"
+        `, "1");
     });
 });
