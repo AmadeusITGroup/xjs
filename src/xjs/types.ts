@@ -15,7 +15,7 @@ export type XjsParamDictionary = { [name: string]: XjsParam };
 
 export interface XjsPreProcessorCtxt {
     rootFragment: XjsFragment;
-    parent: XjsParamHost | null; // null for root fragment
+    parent: XjsContentHost | null; // null for root fragment
     fileId: string; // e.g. /a/b/c/myfile.ts
     error: (msg: string, pos?: number) => void;
     preProcessors: { [name: string]: XjsPreProcessorFactory };
@@ -158,7 +158,7 @@ export interface XjsDecorator extends XjsNode {
 export interface XjsPreProcessorNode extends XjsDecorator {
     kind: "#preprocessor";
     parent: XjsParamHost;          // parent is the pre processor target
-    grandParent: XjsParamHost;
+    grandParent: XjsContentHost;
     instance?: XjsPreProcessor;      // used by parser to store the associated pre-processor instance
     paramsDict?: XjsParamDictionary; // used by parser to store the params in a dictionary
 }

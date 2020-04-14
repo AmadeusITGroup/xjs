@@ -681,7 +681,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     hasDefaultPropValue: false,
                     isOrphan: false,
                     parent: parent,
-                    grandParent: grandParent
+                    grandParent: grandParent as any
                 }
                 if (result === null) {
                     result = [];
@@ -828,9 +828,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 param = createProperty(name, value, startPos);
             } else {
                 // normal param
-                param = createParam(name, false, startPos);
-                param.value = value;
-                param.isOrphan = value === U;
+                param = createParam(name, value, value === U, startPos);
             }
             return addParam(param, p);
         }
@@ -1394,7 +1392,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         }
     }
 
-    function getPreProcessorContext(ppName: string, parent: XjsParamHost | null, processorPos: number) {
+    function getPreProcessorContext(ppName: string, parent: XjsContentHost | null, processorPos: number) {
         currentPpName = ppName;
         currentPpPos = processorPos;
         if (ppContext === U) {
@@ -1530,12 +1528,13 @@ export function createExpression(code: string, pos: number = -1): XjsExpression 
     }
 }
 
-export function createParam(name: string, isOrphan = false, pos: number = -1): XjsParam {
+export function createParam(name: string, value?:any, isOrphan = false, pos: number = -1): XjsParam {
     return {
         kind: "#param",
         name: name,
         isOrphan: isOrphan,
-        pos: pos
+        pos: pos,
+        value: value
     }
 }
 

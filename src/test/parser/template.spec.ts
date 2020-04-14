@@ -461,19 +461,7 @@ describe('XJS $template parser', () => {
     //             #element <div {...[ expr(123)   ]}/>
     //     ` , '2');
     // });
-
-    // it("should parse params in text nodes", async function () {
-    //     assert.equal(await ast.$template`() => {
-    //         <div>
-    //             # (#foo @i18n="abc") Hello World #
-    //         </div>
-    //     }`, `
-    //         #tplFunction()
-    //             #element <div>
-    //                 #textNode(#foo @i18n="abc") " Hello World "
-    //     ` , '1');
-    // });
-
+    
     // it("should parse elements with name expressions", async function () {
     //     assert.equal(await ast.$template`() => {
     //         <{expr()} a="valueA"/>

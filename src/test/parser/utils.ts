@@ -1,4 +1,4 @@
-import { XjsCData } from './../../xjs/types';
+import { XjsCData, XjsElement } from './../../xjs/types';
 import { XjsNode, XjsTplFunction, XjsText, XjsExpression, XjsFragment, XjsJsBlock, XjsDecorator, XjsJsStatement, XjsParamHost, XjsContentHost } from '../../xjs/types';
 import { parse } from '../../xjs/parser';
 
@@ -43,7 +43,7 @@ export let ast = {
     }
 }
 
-export function stringify(root: XjsTplFunction | XjsFragment, log = false) {
+export function stringify(root: XjsTplFunction | XjsFragment | XjsElement, log = false) {
     if (!root) {
         return "ERROR";
     }

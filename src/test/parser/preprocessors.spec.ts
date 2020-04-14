@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { XjsFragment, XjsParamHost, XjsPreProcessorCtxt, XjsParam, XjsParamDictionary, XjsElement, XjsTplFunction } from "../../xjs/types";
+import { XjsParamHost, XjsPreProcessorCtxt, XjsParam, XjsParamDictionary, XjsElement, XjsTplFunction } from "../../xjs/types";
 import { addParam, createParam, createText, parse, XjsParserContext } from '../../xjs/parser';
 import { $content, $template } from '../../xjs/xjs';
 import { stringify } from './utils';
@@ -30,9 +30,7 @@ describe('Xjs pre-processors', () => {
                 } else if (value === "$$error2") {
                     (ctxt as any).foo.bar(); // runtime error
                 }
-                let p = createParam(name);
-                p.value = value;
-                addParam(p, target);
+                addParam(createParam(name, value), target);
             }
         }
     }
@@ -48,7 +46,7 @@ describe('Xjs pre-processors', () => {
                         t1 = createText(["BEFORE"]), t2 = createText(["AFTER"]);
                     ch.splice(targetIndex, 1, t1, target as any, t2);
                     if (params.value === undefined) {
-                        addParam(createParam("noSurroundParams", true), target);
+                        addParam(createParam("noSurroundParams", undefined, true), target);
                     }
                 }
             }
@@ -69,7 +67,7 @@ describe('Xjs pre-processors', () => {
                 if (target.kind === "#element") {
                     suffix = ":" + (target as XjsElement).name + suffix;
                 }
-                addParam(createParam("siblings" + (params["$$default"] ? 1 : 0) + ":" + count + suffix, true), target);
+                addParam(createParam("siblings" + (params["$$default"] ? 1 : 0) + ":" + count + suffix, undefined, true), target);
             }
         }
     }
@@ -78,9 +76,7 @@ describe('Xjs pre-processors', () => {
     function ctxt() {
         return {
             process(target: XjsParamHost, params: XjsParamDictionary, ctxt: XjsPreProcessorCtxt) {
-                const p = createParam("fileId");
-                p.value = ctxt.fileId;
-                addParam(p, target);
+                addParam(createParam("fileId", ctxt.fileId), target);
             }
         }
     }
