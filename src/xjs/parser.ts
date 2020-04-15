@@ -69,7 +69,6 @@ export interface XjsParserContext {
     fileId?: string;                // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
     line1?: number;                 // line number of the first template line - used to calculate offset for error messages - default: 1
     col1?: number;                  // column number of the first template character - used to calculate offset for error messages - default: 1
-    // globalPreProcessors?: string[]; // e.g. ["@@json"]
     templateType?: "$template" | "$content";
     preProcessors?: { [name: string]: () => XjsPreProcessor };
 }
@@ -91,23 +90,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         ppContext: XjsPreProcessorCtxt | undefined,
         currentPpName = "",  // used for error handing
         currentPpPos = 0;    // used for error handling
-    // globalPreProcessors = context ? context.globalPreProcessors : U,
 
     if (posEOS > 0) {
         cc = xjs.charCodeAt(0);
-
-        // let ppDataList: XtrPreProcessorData[] | undefined;
-        // if (globalPreProcessors !== U) {
-        //     ppDataList = [];
-        //     for (let pp of globalPreProcessors) {
-        //         ppDataList.push({
-        //             kind: "#preprocessorData",
-        //             name: pp, // e.g. "@@json"
-        //             pos: 0
-        //         })
-        //     }
-        //     await callPreProcessors(ppDataList, xf, null, "setup", 1);
-        // }
     }
     xjsRoot();
     if (posEOS > 0) {
@@ -172,7 +157,11 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (w === extract) {
             shiftNext(len);
         } else {
-            error(`Unexpected characters '${extract.replace(/\n/g, "\\n")}' instead of '${w}'`, p)
+            let msg = extract.replace(/\n/g, "\\n");
+            if (msg === "" && cc === CHAR_EOS) {
+                msg = "End of Content";
+            }
+            error(`Unexpected characters '${msg}' instead of '${w}'`, p)
         }
         return cc;
     }
@@ -1528,7 +1517,7 @@ export function createExpression(code: string, pos: number = -1): XjsExpression 
     }
 }
 
-export function createParam(name: string, value?:any, isOrphan = false, pos: number = -1): XjsParam {
+export function createParam(name: string, value?: any, isOrphan = false, pos: number = -1): XjsParam {
     return {
         kind: "#param",
         name: name,
