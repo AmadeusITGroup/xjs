@@ -27,7 +27,7 @@ Note: the XJS grammar also contains the XTR grammar.
 
 ## Testing the grammar
 
-To test the grammar, you simply need to run
+To test the grammar (and everything else), you simply need to run
 ```bash
 yarn test
 ```

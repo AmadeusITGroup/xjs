@@ -447,7 +447,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         let spacesFound = xjsSpaces(), startPos = pos;
         if (cc !== CHAR_LT && cc !== CHAR_EOS && !isJsStatement()) {
             const tn = createText([], startPos);
-            let charCodes: number[] = [];
+            let charCodes: number[] = [], specialCharFound = false;
             if (spacesFound) {
                 charCodes[0] = CHAR_SPACE; // leading spaces are transformed in a single space
             }
@@ -467,12 +467,14 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                                 charCodes.pop(); // remove last element
                             }
                             lastIsSpace = true;
+                            pcc = newPcc;
                             moveNext();
                         } else {
                             lastIsSpace = false;
                             moveNext();
                             charCodes.push(escValue);
-                            pcc = newPcc;
+                            pcc = escValue;
+                            specialCharFound = true;
                         }
                     } else {
                         charCodes.push(CHAR_BANG);
@@ -493,10 +495,12 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             }
 
             pushExpression(null);
-            if (tn.expressions === U && tn.textFragments.length === 1 && tn.textFragments[0] === " ") {
+            if (!specialCharFound && tn.expressions === U &&
+                ((tn.textFragments.length === 1 && tn.textFragments[0] === " ")
+                    || tn.textFragments.length === 0)) {
                 // ignore space text node unless spaces were explicitly requested
                 ec.pop();
-                return false;
+                return true;
             }
             addContent(tn, parent);
 

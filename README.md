@@ -1,39 +1,46 @@
 # XJS
 
-[XJS][xjs-doc] is a templating language that allows to mix XML elements in TypeScript files.
-The main difference between XJS and JSX is that **XJS considers XML elements as statements** whereas **JSX considers them as expressions** - which means for instance that in XJS control statements can be mixed with XML statements, like in this example:
+[XJS][xjs-doc] is a template language that allows to mix XML elements in TypeScript files. XJS was designed as an improvement of React [JSX][], combining the best of JSX with interesting features from other template engines.
 
 ![loops](docs/imgs/loops.png?raw=true)
 
-Main benefits:
-- JS mental model: templates as JS **functions** (like JSX) -> simple learning curve, no hack
-- advanced **components** attribute system (including **param nodes**)
-- possibility to use **JavaScript control statements** ('for' loops, 'if' conditions, local variables...)
-- support of **decorators** (aka. directives in the angular world)
-- simple and powerful **binding** expressions
-- a string-based template syntax (aka. ***xtr***) to describe static (and safe) content that should be inserted dynamically (e.g. CMS content)
+Key features:
+- like JSX, XJS considers XML elements as language shortcuts (aka. DSL) that can be directly translated into JavaScript (e.g. ```<div>``` means ```createElement("div",...)```)
+- unlike JSX, **XJS considers XML elements and text nodes as statements** (whereas JSX considers them as expressions) - which means for instance that JavaScript control statements can be used in XJS templates.
+- XJS introduces the notion of **decorators** (also known as **directives** in many frameworks)
+- XJS introduces the notion of **param nodes** to support advanced component API use cases (param nodes can be seen as [slots][] on steroids)
+- like JSX, XJS relies on **JavaScript imports** to manage components and libraries
+- XJS supports **pre-processors** that allow to modify a template at build time (e.g. to transform markdown text or inject content from another file)
+- XJS comes with a **VS-code extension** to support proper syntax highlighting
+- XJS is designed to play well with **typescript**
+- XJS supports 2 kinds of templates:
+    - $template strings to define parametric templates and components. $template strings have to be transformed into JavaScript at build time (like JSX) - note: this is the responsibility of the template engine that uses JSX (not provided in this repository)
+    - $content strings to define content views that will be loaded dynamically. $content strings will be parsed and interpreted dynamically at runtime and can thus be built dynamically (e.g. from dynamic content retrieved from the server-side).
+- In a general manner, the design of XJS is based on the [principle of least astonishment][POLA] and tries to leverage as much as possible existing JavaScript concepts to keep the learning curve as flat as possible.
 
-Note: XJS doesn't come with a template engine (like react's JSX) and must be complemented with a template engine implementation to be used in actual web applications.
+Note: XJS is only **a syntax, a grammar and a parser**. It must be complemented with a code generator and and template engine runtime (like [ivy][]) to be used in actual web applications.
 
 The current repository contains the following items:
-- the [XJS][xjs-doc] and [XTR][xtr-doc] grammar documentations
-- [XJS][xjs-ex] and [XTR][xtr-ex] examples
-- a visual studio code extension to support code highlighting
+- the [XJS][xjs-doc] syntax documentations
+- [$template][] and [$content][] examples
+- the [XJS parser][parser] documentation
+- the @@extract, @@md and @@ts [pre-processors][] documentation
+- the visual studio code extension to support code highlighting
 - the XJS textmate grammar ([generated][build] as a super-set of the TypeScript grammar)
-- an [XJS parser][xjs-api]
-- [XTR utilities][xtr-api] (AST and parser)
-- an XTR [@@extract][xtr-extract] plugin to extract and highlight code from a given file
 
 Full documentation [here][toc]
 
-[xjs-ex]: ./src/examples/xjs-sample.ts
-[xtr-ex]: ./src/examples/xtr-sample.ts
+[JSX]: https://reactjs.org/docs/introducing-jsx.html
+[slots]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
+[POLA]: https://en.wikipedia.org/wiki/Principle_of_least_astonishment
 [xjs-doc]: ./docs/xjs.md
-[xtr-doc]: ./docs/xtr.md
-[xjs-api]: ./docs/xjs-api.md
-[xtr-api]: ./docs/xtr-api.md
-[xtr-extract]: ./docs/xtr-extract.md
+[$template]: ./src/examples/template-sample.ts
+[$content]: ./src/examples/content-sample.ts
+[parser]: ./docs/parser.md
+[pre-processors]: ./docs/pre-processors.md
 [toc]: ./docs
+[ivy]: https://github.com/AmadeusITGroup/ivy
+[build]: ./docs/build.md
 
 
 ## Deploying the visual studio extension
@@ -48,4 +55,3 @@ For this you simply need to copy the current repository to the following folder:
 
 Note: you will need to restart visual studio code (more options [here][build])
 
-[build]: ./docs/build.md

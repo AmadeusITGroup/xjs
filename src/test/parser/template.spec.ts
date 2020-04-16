@@ -148,6 +148,26 @@ describe('XJS $template parser', () => {
         `, "4")
     });
 
+    it("should create space text nodes if need be", async function () {
+        assert.equal(await ast.$template`() => {
+            <span/>!_<span/>
+        }`, `
+            #tplFunction()
+                #element <span/>
+                #textNode " "
+                #element <span/>
+        `, "1");
+
+        assert.equal(await ast.$template`() => {
+            <span/>!z<span/> !z  <span/>
+        }`, `
+            #tplFunction()
+                #element <span/>
+                #element <span/>
+                #element <span/>
+        `, "2");
+    });
+
     it("should parse self-closing element nodes", async function () {
         assert.equal(await ast.$template`() => {
             <div/>

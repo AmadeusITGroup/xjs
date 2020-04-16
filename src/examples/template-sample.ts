@@ -4,7 +4,7 @@ function $template(strings: TemplateStringsArray, ...keys: any[]): () => object 
     }
 }
 
-const hello = $template `(name) => {
+const hello = $template`(name) => {
     <div> Hello {name}! </div>
 }`;
 
@@ -230,4 +230,30 @@ class SomeClass {
             {this.superNiceProp}
         </div>
     }`;
+
+    foo(text: string, oddBkg = false) {
+
+    }
 }
+
+// readme example
+
+const row = $template`(text: string, oddBkg = false) => {
+    <div class={oddBkg? "odd" : "even"}> {text} </div>
+    $if (oddBkg) {
+        <br/>
+    }
+}`;
+
+const greetings = $template`(nameList: string[] ) => {
+    $let count = 0;
+    <div class="rows">
+        $for (let name of nameList) {
+            <*row text={name} oddBkg={count % 2 === 1}/>
+            $exec count++;
+        }
+    </>
+}`;
+
+
+
