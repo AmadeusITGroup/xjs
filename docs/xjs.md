@@ -2,7 +2,7 @@
 # XJS syntax
 
 <!-- Generated through https://ecotrust-canada.github.io/markdown-toc/ -->
-* [General philosophy](#general-philosophy)
+  * [General philosophy](#general-philosophy)
   * [Template definition](#template-definition)
     + [$template vs. $content strings](#-template-vs--content-strings)
     + [$template function arguments](#-template-function-arguments)
