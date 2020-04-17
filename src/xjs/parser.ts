@@ -444,10 +444,10 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (isJsStatement()) return false;
         ec.push("text node");
 
-        let spacesFound = xjsSpaces(), startPos = pos;
+        let spacesFound = xjsSpaces(), startPos = pos, charCodes: number[] = [], specialCharFound = false;
         if (cc !== CHAR_LT && cc !== CHAR_EOS && !isJsStatement()) {
             const tn = createText([], startPos);
-            let charCodes: number[] = [], specialCharFound = false;
+
             if (spacesFound) {
                 charCodes[0] = CHAR_SPACE; // leading spaces are transformed in a single space
             }
@@ -481,7 +481,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                         lastIsSpace = false;
                     }
                 } else if (cc === CHAR_CS) { // { -> expression
-                    pushExpression(xjsExpression());
+                    pushExpression(xjsExpression(), tn);
                     lastIsSpace = false;
                 } else {
                     if (lastIsSpace && isSpace(cc)) {
@@ -494,7 +494,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 }
             }
 
-            pushExpression(null);
+            pushExpression(null, tn);
             if (!specialCharFound && tn.expressions === U &&
                 ((tn.textFragments.length === 1 && tn.textFragments[0] === " ")
                     || tn.textFragments.length === 0)) {
@@ -504,27 +504,29 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             }
             addContent(tn, parent);
 
-            function pushExpression(e: XjsExpression | null) {
-                if (e !== null) {
-                    if (charCodes.length) {
-                        tn.textFragments.push(String.fromCharCode.apply(null, charCodes));
-                        charCodes = [];
-                    } else {
-                        tn.textFragments.push("");
-                    }
-                    if (tn.expressions === U) {
-                        tn.expressions = [e];
-                    } else {
-                        tn.expressions.push(e);
-                    }
-                } else if (charCodes.length) {
-                    // last call
-                    tn.textFragments.push(String.fromCharCode.apply(null, charCodes));
-                }
-            }
+
         }
         ec.pop();
         return true;
+
+        function pushExpression(e: XjsExpression | null, tn: XjsText) {
+            if (e !== null) {
+                if (charCodes.length) {
+                    tn.textFragments.push(String.fromCharCode.apply(null, charCodes));
+                    charCodes = [];
+                } else {
+                    tn.textFragments.push("");
+                }
+                if (tn.expressions === U) {
+                    tn.expressions = [e];
+                } else {
+                    tn.expressions.push(e);
+                }
+            } else if (charCodes.length) {
+                // last call
+                tn.textFragments.push(String.fromCharCode.apply(null, charCodes));
+            }
+        }
     }
 
     function isJsStatement(): boolean {
@@ -1365,10 +1367,10 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             if (pp["process"] !== U) {
                 try {
                     await pp.process!(ppn.parent, ppn.paramsDict, getPreProcessorContext(ppn.ref.code, ppn.grandParent, ppn.pos));
-                    dispose();
+                    dispose(ppn);
                 } catch (ex) {
                     let msg = ex.message || ex;
-                    dispose();
+                    dispose(ppn);
                     if (msg.match(/^XJS\:/)) {
                         // error was triggered through context.error()
                         throw ex;
@@ -1378,10 +1380,10 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 }
             }
 
-            function dispose() {
-                const n = ppn as any;
-                n.parent = n.grandParent = n.params = n.instance = n.paramsDict = U;
-            }
+
+        }
+        function dispose(n: any) {
+            n.parent = n.grandParent = n.params = n.instance = n.paramsDict = U;
         }
     }
 
