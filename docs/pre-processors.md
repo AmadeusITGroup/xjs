@@ -2,9 +2,9 @@
 # Pre-processors
 
 On top of the [pre-processor API][] that allows to create custom pre-processors, XJS comes with 3 pre-processors that can be used out-of-the-box:
-- [@@extract](#--extract): to extract, inject and highlight a typescript section from another file
-- [@@md markdown converter](#--md-markdown-converter): to convert a markdown text into HTML
-- [@@ts typescript highlighter](#--ts-typescript-highlighter): to highlight some typescript text 
+- [@@extract](#extract): to extract, inject and highlight a typescript section from another file
+- [@@md markdown converter](#md-markdown-converter): to convert a markdown text into HTML
+- [@@ts typescript highlighter](#ts-typescript-highlighter): to highlight some typescript text 
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
