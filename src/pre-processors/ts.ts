@@ -37,6 +37,7 @@ let xjsGrammar: vsTM.IGrammar | null | undefined;
 /**
  * @@ts preprocessor
  * e.g. $content`<!cdata @@ts> const x=123; </!cdata>`
+ * @param class:string (default param) a css class to attach to the container element
  * @param trim:boolean [optional] tell if the start & end empty lines should be removed (default: true)
  */
 export function ts() {
@@ -49,6 +50,11 @@ export function ts() {
             if (target.kind !== "#cdata") {
                 ctxt.error("pre-processor can only be used on <!cdata> sections");
             }
+            const classParam = params["class"] || params["$$default"];
+            let classValue = "ts_code";
+            if (classParam) {
+                classValue = "ts_code " + (classParam.value || "");
+            }
 
             // replace the cdata by a div element
             const p = ctxt.parent,
@@ -59,13 +65,23 @@ export function ts() {
                 // fwk error - should not occur
                 ctxt.error("Unexpected error: cdata not found in parent element");
             }
-            target = createElement("div"); // could also be createFragment
-            addParam(createParam("class", "ts_code"), target);
-            content.splice(idx, 1, target);
+            const oneLine = tsCode.indexOf("\n") === -1;
+
+            let host = createElement("div"); // could also be createFragment
+            addParam(createParam("class", classValue), host);
+
 
             // tokenize and appendLineHighlightElts
             const lines = tsCode.split('\n'), tokens = await tokenize(tsCode);
-            appendHighlightElts(lines, tokens, target, trim);
+            appendHighlightElts(lines, tokens, host, trim);
+
+            if (oneLine) {
+                // remove the main host and change the line div into a span
+                host = host.content![0] as XjsElement;
+                host.name = "span";
+                addParam(createParam("class", classValue), host);
+            }
+            content.splice(idx, 1, host);
         }
     }
 }

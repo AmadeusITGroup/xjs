@@ -215,22 +215,39 @@ describe('@@ts', () => {
             `, "1");
     });
 
-    it("should work on backtick strings", async function () {
+    it("should work on one-line backtick strings", async function () {
         assert.equal(stringify(await parse($content`
             <!cdata @@ts>\` Some content \\\`here\\\` \`;</!cdata>
         `, context)), `
             #fragment <!>
-                #element <div class="ts_code">
-                    #element <div>
-                        #element <span class="hs">
-                            #textNode "\` Some content "
-                            #element <span class="hn">
-                                #textNode "\\\`"
-                            #textNode "here"
-                            #element <span class="hn">
-                                #textNode "\\\`"
-                            #textNode " \`"
-                        #textNode ";"
+                #element <span class="ts_code">
+                    #element <span class="hs">
+                        #textNode "\` Some content "
+                        #element <span class="hn">
+                            #textNode "\\\`"
+                        #textNode "here"
+                        #element <span class="hn">
+                            #textNode "\\\`"
+                        #textNode " \`"
+                    #textNode ";"
+        `, "1");
+    });
+
+    it("should support the class param", async function () {
+        assert.equal(stringify(await parse($content`
+            <!cdata @@ts="dark">some.func("blah");</!cdata>
+        `, context)), `
+            #fragment <!>
+                #element <span class="ts_code dark">
+                    #element <span class="hv">
+                        #textNode "some"
+                    #textNode "."
+                    #element <span class="hf">
+                        #textNode "func"
+                    #textNode "("
+                    #element <span class="hs">
+                        #textNode ""blah""
+                    #textNode ");"
         `, "1");
     });
 });
