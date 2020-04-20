@@ -737,7 +737,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     }
                 }
                 if (isFwdLabel && parent.kind !== "#component") {
-                    error("Forward label '" + name + "' can only be used on components", nmPos - 2);
+                    error("Forward label '" + name + "' can only be used on components", nmPos - 1);
                 }
             }
 
