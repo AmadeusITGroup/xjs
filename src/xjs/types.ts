@@ -1,6 +1,6 @@
 
 export interface XjsNode {
-    kind: "#tplFunction" | "#jsStatement" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#cdata" | "#param" | "#property" | "#decorator" | "#preprocessor" | "#label" | "#expression" | "#number" | "#boolean" | "#string" | "#tplArgument";
+    kind: "#tplFunction" | "#jsStatement" | "#jsBlock" | "#fragment" | "#element" | "#component" | "#paramNode" | "#decoratorNode" | "#textNode" | "#cdata" | "#param" | "#property" | "#decorator" | "#preprocessor" | "#label" | "#expression" | "#tplArgument";
     pos: number;
 }
 
