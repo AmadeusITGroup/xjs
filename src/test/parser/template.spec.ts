@@ -583,7 +583,7 @@ describe('XJS $template parser', () => {
             #tplFunction()
                 #textNode " abc"
                 #jsStatement
-                    console.log(x, y+42, "...");
+                    log(x, y+42, "...");
                 #textNode "def "
         ` , '1');
 
@@ -596,10 +596,10 @@ describe('XJS $template parser', () => {
         }`, `
             #tplFunction()
                 #jsStatement
-                    console.log("abc");
+                    log("abc");
                 #textNode " Some text "
                 #jsStatement
-                    console.log("def", foo);
+                    log("def", foo);
                 #textNode " $log ... "
         ` , '2');
     });

@@ -80,6 +80,7 @@ export interface XjsTplArgument extends XjsNode {
  */
 export interface XjsJsStatement extends XjsNode {
     kind: "#jsStatement";
+    name: string;  // e.g. "$exec"
     code: string;  // the js code (e.g. "let x = someExpr(); ... ")
     args?: any[];      // list of parsed args - used in $content mode only
 }
@@ -89,6 +90,7 @@ export interface XjsJsStatement extends XjsNode {
  */
 export interface XjsJsBlock extends XjsNode {
     kind: "#jsBlock";
+    name: string;       // e.g. "$if"
     startCode: string;  // the js/ts code at the beginning of the block - e.g. "if (expr()) {" or " else {"
     endCode: string;    // end block code. Should match /\n?\s*\}$/ - e.g. "\n      }"
     content?: XjsContentNode[]; // content is undefined if isStart===false

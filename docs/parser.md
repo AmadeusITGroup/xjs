@@ -2,6 +2,7 @@
 
   * [XJS Parser](#xjs-parser)
   * [XJS AST](#xjs-ast)
+  * [XJS AST serialization](#xjs-ast-serialization)
   * [XJS Pre-processors](#xjs-pre-processors)
   
 ## XJS Parser
@@ -66,6 +67,15 @@ The [parser][] file exports the following helper functions to manipulate the AST
 [pre-processors]: ./pre-processors.md
 [parser]: ../src/xjs/parser.ts
 
+## XJS AST serialization
+
+On top of the previous helper functions, the XJS parser exposes a *toString()* method to serialize an XJS AST as an XJS string:
+```js
+function toString(root: XjsFragment | XjsTplFunction, baseIndent = "    ")
+```
+**toString()** takes 2 arguments
+- the root element returned by the parse method
+- an optional indentation string that will be used for the first-level indentation. If not empty, the indent will increase for child elements. If an empty string is passed, the serialization will be done on one single line.
 
 ## XJS Pre-processors
 

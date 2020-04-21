@@ -1018,17 +1018,17 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             case "$ex":
                 // e.g. $exec someExpression("abc") + foo.getNbr({x:123});
                 e = xjsJsSimpleStatementExpr("$exec");
-                addContent(createJsStatement(e + ";", startPos), parent);
+                addContent(createJsStatement(e + ";", "$exec", startPos), parent);
                 break;
             case "$le":
                 // e.g. $let foo='bar', baz={a:"AA", b:42};
                 e = xjsJsSimpleStatementExpr("$let");
-                addContent(createJsStatement("let " + e + ";", startPos), parent);
+                addContent(createJsStatement("let " + e + ";", "$let", startPos), parent);
                 break;
             case "$lo":
                 // e.g. $log(abc, "some info", 123);
                 ec.push("$log statement");
-                let logStatement = createJsStatement("log", startPos);
+                let logStatement = createJsStatement("log", "$log", startPos);
                 if (isContentMode) {
                     eatWord("$log");
                     xjsSpaces();
@@ -1050,10 +1050,10 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     eat(CHAR_PARE);
                     xjsSpaces();
                     ec.pop();
-                    logStatement.code = "console.log(" + args.join(", ") + ");"
+                    logStatement.code = "log(" + args.join(", ") + ");"
                 } else {
                     e = xjsJsParenStatementExpr("$log");
-                    logStatement.code = "console.log" + e + ";"
+                    logStatement.code = "log" + e + ";"
                 }
                 eat(CHAR_S_COLON);
                 addContent(logStatement, parent);
@@ -1062,7 +1062,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             case "$if":
                 // e.g. $if (exp()) { ... } else if (exp2) { ... } else { ... }
                 ec.push("$if statement");
-                let jsb = createJsBlockStatement("if", startPos);
+                let jsb = createJsBlockStatement("if", "$if", startPos);
                 ifBlock("$if", jsb);
                 addContent(jsb, parent);
                 eat(CHAR_CS); // {
@@ -1075,11 +1075,11 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     let ps = pos;
                     if (cc as any === CHAR_i) {
                         // else if (...) {
-                        jsb = createJsBlockStatement("", ps);
+                        jsb = createJsBlockStatement("", "$elseif", ps);
                         ifBlock("if", jsb, "else ");
                     } else {
                         // else {
-                        jsb = createJsBlockStatement("else {", ps);
+                        jsb = createJsBlockStatement("else {", "$else", ps);
                     }
                     eat(CHAR_CS); // {
                     addContent(jsb, parent);
@@ -1091,7 +1091,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             case "$fo":
                 // e.g. $for (let i=0;10>i;i++) {
                 e = xjsJsParenStatementExpr("$for");
-                const fb = createJsBlockStatement("for " + e + " {", startPos);
+                const fb = createJsBlockStatement("for " + e + " {", "$for", startPos);
                 addContent(fb, parent);
                 eat(CHAR_CS); // {
                 xjsContent(fb);
@@ -1101,7 +1101,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 // e.g. $each(items, (item, index, isLast) => {
                 ec.push("$each statement");
                 eatWord("$each");
-                const eb = createJsBlockStatement("each", startPos);
+                const eb = createJsBlockStatement("each", "$each", startPos);
                 xjsSpaces();
                 eat(CHAR_PARS); // (
                 xjsSpaces();
@@ -1184,6 +1184,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 eat(CHAR_PARS);
                 xjsSpaces();
                 e = xjsIdentifier(true, false);
+                xjsSpaces();
                 eat(CHAR_PARE);
                 xjsSpaces();
                 jsb.startCode = prefix + "if (" + e + ") {";
@@ -1570,19 +1571,209 @@ export function createLabel(name: string, pos: number = -1): XjsLabel {
     }
 }
 
-export function createJsStatement(code: string, pos: number = -1): XjsJsStatement {
+export function createJsStatement(code: string, name: string, pos: number = -1): XjsJsStatement {
     return {
         kind: "#jsStatement",
+        name: name,
         code: code,
         pos: pos
     }
 }
 
-export function createJsBlockStatement(startCode: string, pos: number = -1): XjsJsBlock {
+export function createJsBlockStatement(startCode: string, name: string, pos: number = -1): XjsJsBlock {
     return {
         kind: "#jsBlock",
+        name: name,
         startCode: startCode,
         endCode: "}",
         pos: pos
     }
+}
+
+// ########################################################################################################################
+// Serialization
+
+export function toString(root: XjsFragment | XjsTplFunction, baseIndent = "    ") {
+    const buf: string[] = [];
+    serializeContentHost(root, buf, baseIndent);
+    return buf.join("");
+}
+
+const DECO_NODES = "$$decoNodes"; // hidden property to transfer deco nodes to content
+
+function serializeContentHost(nd: XjsContentHost, buf: string[], indent: string) {
+    const k = nd.kind,
+        hasContent = nd.content !== U,
+        lnIndent = indent !== "" ? "\n" + indent : "";
+    // start
+    if (k === "#tplFunction") {
+        const f = nd as XjsTplFunction, arrowFn = (f.name === U)
+        if (arrowFn) {
+            buf.push(`${lnIndent}(`);
+        } else {
+            buf.push(`${lnIndent}$template ${f.name!} (`);
+        }
+        if (f.arguments !== U) {
+            let len = f.arguments.length;
+            for (let i = 0; len > i; i++) {
+                let arg = f.arguments[i];
+                if (i > 0) {
+                    buf.push(", ");
+                }
+                buf.push(arg.name);
+                if (arg.optional) {
+                    buf.push("?");
+                }
+                if (arg.typeRef !== U) {
+                    buf.push(":" + arg.typeRef);
+                }
+                if (arg.defaultValue !== U) {
+                    buf.push(" = " + arg.defaultValue);
+                }
+            }
+        }
+        if (arrowFn) {
+            buf.push(`) => {`);
+        } else {
+            buf.push(`) {`);
+        }
+    } else if (k === "#jsBlock") {
+        const name = (nd as XjsJsBlock).name, prefix = (name === "$else" || name === "$elsif") ? " " : lnIndent+"$";
+        buf.push(`${prefix}${(nd as XjsJsBlock).startCode}`);
+        if (!hasContent) {
+            buf.push(`${(nd as XjsJsBlock).endCode}`);
+        }
+    } else {
+        let prefix = "", name = "";
+        if (k === "#component") {
+            prefix = "*";
+            name = serializeExpr((nd as XjsComponent).ref, false);
+        } else if (k === "#decoratorNode") {
+            prefix = "@";
+            name = serializeExpr((nd as XjsDecoratorNode).ref, false);
+        } else if (k === "#fragment") {
+            prefix = "!";
+        } else if (k === "#paramNode") {
+            prefix = ".";
+            name = (nd as XjsParamNode).name;
+        } else {
+            name = (nd as XjsElement).name;
+        }
+        buf.push(`${lnIndent}<${prefix}${name}`);
+        serializeParams(nd as XjsParamHost, buf);
+        buf.push(hasContent ? ">" : "/>");
+    }
+    // content
+    if (hasContent) {
+        const newIndent = indent === "" ? "" : indent + "    ";
+        const h = nd as any;
+        if (h[DECO_NODES] !== U) for (let c of h[DECO_NODES]) {
+            serializeContentNode(c, buf, newIndent);
+        }
+        for (let c of nd.content!) {
+            serializeContentNode(c, buf, newIndent);
+        }
+        // end
+        if (k === "#tplFunction") {
+            buf.push(`${lnIndent}}`);
+        } else if (k === "#jsBlock") {
+            buf.push(`${lnIndent}${(nd as XjsJsBlock).endCode}`);
+        } else {
+            buf.push(`${lnIndent}</>`);
+        }
+    }
+}
+
+function serializeContentNode(nd: XjsContentNode, buf: string[], indent: string) {
+    const k = nd.kind,
+        lnIndent = indent !== "" ? "\n" + indent : "";
+    if (k === "#textNode") {
+        const t = nd as XjsText, hasExpressions = t.expressions !== U, len = t.textFragments.length;
+        buf.push(lnIndent);
+        for (let i = 0; len > i; i++) {
+            buf.push(t.textFragments[i]);
+            if (hasExpressions && t.expressions![i] !== U) {
+                buf.push(serializeExpr(t.expressions![i]));
+            }
+        }
+    } else if (k === "#cdata") {
+        buf.push(lnIndent + "<!cdata");
+        serializeParams(nd as XjsParamHost, buf);
+        buf.push(">" + (nd as XjsCData).text + "</!cdata>");
+    } else if (k === "#jsStatement") {
+        let prefix = (nd as XjsJsStatement).name === "$exec" ? "$exec " : "$";
+        buf.push(lnIndent + prefix + (nd as XjsJsStatement).code);
+    } else {
+        serializeContentHost(nd as XjsContentHost, buf, indent);
+    }
+}
+
+function serializeExpr(e: XjsExpression, brackets = true) {
+    const r = `${e.oneTime ? "::" : ""}${e.isBinding ? "=" : ""}${e.code}`;
+    return brackets ? "{" + r + "}" : r;
+}
+
+function serializeParams(host: XjsParamHost, buf: string[]) {
+    if (host.params === U) return;
+    for (let p of host.params) {
+        let k = p.kind;
+        if (k === "#decoratorNode") {
+            const h = host as any;
+            if (h[DECO_NODES] === U) {
+                h[DECO_NODES] = [];
+            }
+            h[DECO_NODES].push(p);
+        } else {
+            buf.push(" ");
+            if (k === "#decorator" || k === "#preprocessor") {
+                if (k === "#preprocessor") {
+                    buf.push("@");
+                }
+                let d = p as XjsDecorator;
+                buf.push("@" + serializeExpr(d.ref, false));
+                if (!d.isOrphan) {
+                    if (d.hasDefaultPropValue) {
+                        serializeParamValue(d.defaultPropValue, buf);
+                    } else {
+                        buf.push("(");
+                        serializeParams(d, buf);
+                        buf.push(")");
+                    }
+                }
+            } else if (k === "#label") {
+                let lbl = p as XjsLabel;
+                if (lbl.fwdLabel) {
+                    buf.push("#");
+                }
+                buf.push("#" + lbl.name);
+                if (!lbl.isOrphan) {
+                    serializeParamValue(lbl.value, buf);
+                }
+            } else if (k === "#param") {
+                buf.push((p as XjsParam).name);
+                if (!(p as XjsParam).isOrphan) {
+                    serializeParamValue((p as XjsParam).value, buf);
+                }
+            } else if (k === "#property") {
+                buf.push("[" + (p as XjsProperty).name + "]");
+                serializeParamValue((p as XjsProperty).value, buf);
+            }
+        }
+    }
+}
+function serializeParamValue(v: XjsParamValue | undefined, buf: string[]) {
+    if (v !== U) {
+        let tp = typeof v;
+        if (tp === 'string') {
+            buf.push("='" + encodeText("" + v) + "'");
+        } else if (tp === "object") {
+            buf.push("=" + serializeExpr(v as any));
+        } else if (tp === "number" || tp === "boolean") {
+            buf.push("=" + v);
+        }
+    }
+}
+
+function encodeText(t: string) {
+    return t.replace(/\'/g, "\\'")
 }

@@ -210,7 +210,7 @@ describe('XJS $content parser', () => {
             #fragment <!>
                 #textNode " abc"
                 #jsStatement
-                    console.log(tx, y.z, "...");
+                    log(tx, y.z, "...");
                 #textNode "def "
         ` , '1');
 
@@ -223,10 +223,10 @@ describe('XJS $content parser', () => {
         `, `
             #fragment <!>
                 #jsStatement
-                    console.log("abc");
+                    log("abc");
                 #textNode " Some text "
                 #jsStatement
-                    console.log("def", foo.bar, zz);
+                    log("def", foo.bar, zz);
                 #textNode " $log ... "
         ` , '2');
     });
