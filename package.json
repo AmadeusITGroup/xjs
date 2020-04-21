@@ -24,7 +24,7 @@
         "grammars": [
             {
                 "scopeName": "template.xjs",
-                "path": "./syntaxes/xjs.tmLanguage.json",
+                "path": "./dist/tm-grammar/xjs.tmLanguage.json",
                 "injectTo": [
                     "source.ts"
                 ]
@@ -32,19 +32,42 @@
         ]
     },
     "scripts": {
-        "build": "rm -rf dist/ && tsc && node dist/tm-grammar/xjs-grammar",
-        "test": "yarn run build && yarn run mocha -r ts-node/register src/**/*.spec.ts --reporter dot"
+        "prepare": "yarn build",
+        "clean": "rm -rf coverage/ .nyc_output/ dist/ src/tm-grammar/xjs.tmLanguage.json",
+        "prebuild": "yarn clean",
+        "build:grammar": "ts-node src/tm-grammar/xjs-grammar",
+        "build:ts": "tsc",
+        "build": "yarn build:grammar && yarn build:ts",
+        "pretest": "yarn build",
+        "test": "nyc mocha -r ts-node/register src/**/*.spec.ts --reporter dot"
     },
     "devDependencies": {
         "@types/node": "^12.6.9",
         "@types/mocha": "^5.2.7",
         "typescript": "^3.5.3",
         "mocha": "^6.2.0",
+        "nyc": "^15.0.1",
         "ts-node": "^8.3.0",
         "vscode-textmate": "^4.2.2",
         "tslib": "^1.10.0"
     },
     "dependencies": {
         "marked": "^0.8.2"
-    }
+    },
+    "nyc": {
+        "extension": [
+            ".ts"
+        ],
+        "include": [
+            "src/{pre-processors,xjs}/**/*"
+        ],
+        "exclude": [
+            "**/*.d.ts",
+            "src/test/**/*.ts"
+        ],
+        "reporter": [
+            "lcov"
+        ],
+        "all": true
+      }
 }

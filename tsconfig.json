@@ -26,7 +26,8 @@
         "esModuleInterop": true
     },
     "include": [
-        "src/**/*.ts"
+        "src/xjs/*.ts",
+        "src/pre-processors/*.ts",
     ],
     "exclude": [],
     "compileOnSave": false
