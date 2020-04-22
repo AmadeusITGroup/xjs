@@ -1,3 +1,9 @@
+<div align="center">
+  <a href="https://codecov.io/gh/AmadeusITGroup/xjs?branch=master">
+    <img src="https://codecov.io/gh/AmadeusITGroup/xjs/branch/master/graphs/badge.svg?branch=master" alt="Codecov" />
+  </a>
+</div>
+
 # XJS
 
 [XJS][xjs-doc] is a template language that allows to mix XML elements in TypeScript files. XJS was designed as an improvement of React [JSX][], combining the best of JSX with interesting features from other template engines.
