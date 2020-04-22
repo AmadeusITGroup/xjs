@@ -630,6 +630,7 @@ describe('XJS $template parser', () => {
             } else {
                 Done!
             }
+            end: else
         }`, `
             #tplFunction(a, b)
                 #jsBlock
@@ -644,6 +645,7 @@ describe('XJS $template parser', () => {
                     else {
                         #textNode " Done! "
                     }
+                #textNode " end: else "
         ` , '2');
 
         assert.equal(await ast.$template`(a, b) => {

@@ -2,7 +2,7 @@ import { XjsTplFunction, XjsContentHost, XjsContentNode, XjsText, XjsFragment, X
 
 const U = undefined,
     RX_START_INDENT = /^[ \f\r\t\v]*\n(\s*)/,
-    RX_ELSE = /\s*else/,
+    RX_ELSE = /^\s*else/,
     RX_STATEMENTS_XJS = /^\$(if|for|exec|let|each|log|template)/,    // $template mode
     RX_STATEMENTS_XTR = /^\$(if|each|log)/,                          // $content mode
     RX_REF_PATH = /^[$_a-zA-Z][_a-zA-Z0-9]*(\.[$_a-zA-Z][_a-zA-Z0-9]*)*$/,
@@ -1638,7 +1638,7 @@ function serializeContentHost(nd: XjsContentHost, buf: string[], indent: string)
             buf.push(`) {`);
         }
     } else if (k === "#jsBlock") {
-        const name = (nd as XjsJsBlock).name, prefix = (name === "$else" || name === "$elsif") ? " " : lnIndent + "$";
+        const name = (nd as XjsJsBlock).name, prefix = (name === "$else" || name === "$elseif") ? " " : lnIndent + "$";
         buf.push(`${prefix}${(nd as XjsJsBlock).startCode}`);
         if (!hasContent) {
             buf.push(`${(nd as XjsJsBlock).endCode}`);
