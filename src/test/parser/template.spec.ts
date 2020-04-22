@@ -181,17 +181,17 @@ describe('XJS $template parser', () => {
 
     it("should parse elements in element nodes", async function () {
         assert.equal(await ast.$template`() => {
-            <div>
+            <ab-cd>
                 <section>
                     <div/>
                     Some text
                 </>
                 <span/>
-            </div>
+            </ab-cd>
             <span  />
         }`, `
             #tplFunction()
-                #element <div>
+                #element <ab-cd>
                     #element <section>
                         #element <div/>
                         #textNode " Some text "

@@ -590,7 +590,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
             // parse end of element
             eatWord("</");
             let endPos = pos;
-            let p1 = prefix, p2 = eatPrefix(), name2 = xjsIdentifier(false);
+            let p1 = prefix, p2 = eatPrefix(), name2 = xjsIdentifier(false, prefix === 0, desc + " identifier");
             if (name2 === "" && p2 === 0 && CHAR_BANG === cc as any) {
                 eat(CHAR_BANG); // end of fragment !
             } else if (name2 !== "" || p2 !== 0) {
@@ -1638,7 +1638,7 @@ function serializeContentHost(nd: XjsContentHost, buf: string[], indent: string)
             buf.push(`) {`);
         }
     } else if (k === "#jsBlock") {
-        const name = (nd as XjsJsBlock).name, prefix = (name === "$else" || name === "$elsif") ? " " : lnIndent+"$";
+        const name = (nd as XjsJsBlock).name, prefix = (name === "$else" || name === "$elsif") ? " " : lnIndent + "$";
         buf.push(`${prefix}${(nd as XjsJsBlock).startCode}`);
         if (!hasContent) {
             buf.push(`${(nd as XjsJsBlock).endCode}`);
