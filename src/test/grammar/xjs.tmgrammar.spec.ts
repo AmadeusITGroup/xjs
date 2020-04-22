@@ -1,16 +1,12 @@
 import * as vsTM from 'vscode-textmate';
 import { IToken } from 'vscode-textmate';
-import * as path from 'path';
-import * as fs from 'fs';
 import { SCOPES } from './scopes';
 import * as assert from 'assert';
-
-const XJS_GRAMMAR_PATH = "../../../syntaxes/xjs.tmLanguage.json";
+import xjsTmGrammar from '../../tm-grammar/xjs.tmLanguage.json';
 
 const XJS_REGISTRY = new vsTM.Registry({
     loadGrammar: async function () {
-        const g = await fs.promises.readFile(path.join(__dirname, XJS_GRAMMAR_PATH), { encoding: 'utf8' });
-        return vsTM.parseRawGrammar(g, 'xjs.tmLanguage.json');
+        return xjsTmGrammar as any;
     }
 });
 
