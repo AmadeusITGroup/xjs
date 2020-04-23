@@ -564,5 +564,18 @@ describe('Parsing errors', () => {
                 File: file.ts - Line 3 / Col 26
                 Extract: >> $each(a.b(x), (item) => { <<
             `, "5");
+
+        assert.equal(
+            await err.$content`
+                abc
+                $each(a.b, (item, foo.idx) => {
+                    ...
+                });
+                def
+            `, `
+                Invalid $each argument: Invalid function argument 'foo.idx'
+                File: file.ts - Line 3 / Col 35
+                Extract: >> $each(a.b, (item, foo.idx) => { <<
+            `, "6");
     });
 });

@@ -113,7 +113,12 @@ function jsStatement(n: XjsJsStatement, lines: string[], prefix: string) {
 }
 
 function jsBlock(n: XjsJsBlock, lines: string[], prefix: string) {
-    lines.push(`${prefix}#jsBlock`);
+    let args = "";
+    if (n.args) {
+        args = " [" + n.args.join(", ") + "]";
+    }
+    lines.push(`${prefix}#jsBlock${args}`);
+
     jsCode(n.startCode, lines, prefix + ast.indent);
     if (n.content) {
         for (let c of n.content) {

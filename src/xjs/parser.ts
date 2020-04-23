@@ -1112,43 +1112,41 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 if (isContentMode) {
                     e1 = xjsIdentifier(true, false);
                     xjsSpaces();
-                    addArg(e1, eb);
                 } else {
                     e1 = jsExpression(false);
                 }
+                addArg(e1, eb);
 
                 // , (item, index, isLast) part
                 eat(CHAR_COMMA); // ,
                 xjsSpaces();
                 let e2: string;
-                if (isContentMode) {
-                    eat(CHAR_PARS); // (
-                    e2 = "(";
-                    while (true) {
-                        xjsSpaces();
-                        let v = xjsIdentifier(true, false);
-                        addArg(v, eb);
-                        e2 += v;
-                        xjsSpaces();
-                        if (cc === CHAR_COLON) {
-                            // type part
-                            moveNext(); // :
-                            xjsSpaces();
-                            jsExpression(false, U, U, true); // ignore it
-                            xjsSpaces();
-                        }
-                        if (cc === CHAR_COMMA) {
-                            moveNext();
-                            e2 += ",";
-                        } else {
-                            break;
-                        }
+                eat(CHAR_PARS); // (
+                e2 = "(";
+                while (true) {
+                    xjsSpaces();
+                    const pv = pos, v = xjsIdentifier(true, false);
+                    if (!addArg(v, eb, true)) {
+                        error("Invalid function argument '" + v + "'", pv);
                     }
-                    eat(CHAR_PARE); // )
-                    e2 += ")";
-                } else {
-                    e2 = jsExpression(false, CHAR_PARS, CHAR_PARE);
+                    e2 += v;
+                    xjsSpaces();
+                    if (cc === CHAR_COLON) {
+                        // type part
+                        moveNext(); // :
+                        xjsSpaces();
+                        jsExpression(false, U, U, true); // ignore it
+                        xjsSpaces();
+                    }
+                    if (cc === CHAR_COMMA) {
+                        moveNext();
+                        e2 += ",";
+                    } else {
+                        break;
+                    }
                 }
+                eat(CHAR_PARE); // )
+                e2 += ")";
                 ec.pop();
                 eb.startCode = "each(" + e1 + "," + e2 + " => {";
                 eb.endCode = "});";
@@ -1433,16 +1431,23 @@ function addArgument(tf: XjsTplFunction, name: string, pos: number = -1): XjsTpl
     return arg;
 }
 
-function addArg(arg: string, jss: XjsJsStatement | XjsJsBlock) {
+function addArg(arg: string, jss: XjsJsStatement | XjsJsBlock, singleWord = false): boolean {
     // add parsed argument (should be used in $content mode only)
     if (!jss.args) {
         jss.args = [];
     }
     if (arg.match(RX_REF_PATH)) {
-        jss.args.push(arg.split("."));
+        const arr = arg.split(".");
+        if (singleWord) {
+            if (arr.length !== 1) return false;
+            jss.args.push(arg);
+        } else {
+            jss.args.push(arr);
+        }
     } else {
-        jss.args.push(arg);
+        jss.args.push(singleWord ? arg : [arg]);
     }
+    return true;
 }
 
 export function createFragment(pos: number = -1): XjsFragment {

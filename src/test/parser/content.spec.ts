@@ -152,7 +152,7 @@ describe('XJS $content parser', () => {
         `, `
             #fragment <!>
                 #textNode " abc"
-                #jsBlock
+                #jsBlock [a]
                     if (a) {
                         #element <div>
                             #textNode " hello "
@@ -170,11 +170,11 @@ describe('XJS $content parser', () => {
             }
         `, `
             #fragment <!>
-                #jsBlock
+                #jsBlock [a,b,c]
                     if (a.b.c) {
                         #element <div/>
                     }
-                #jsBlock
+                #jsBlock [b,d]
                     else if (b.d) {
                         #element <span/>
                     }
@@ -192,7 +192,7 @@ describe('XJS $content parser', () => {
             }
         `, `
             #fragment <!>
-                #jsBlock
+                #jsBlock [xx,yy]
                     if (xx.yy) {
                         #textNode " case A "
                     }
@@ -241,7 +241,7 @@ describe('XJS $content parser', () => {
         `, `
             #fragment <!>
                 #textNode " abc"
-                #jsBlock
+                #jsBlock [items, item, index, isLast]
                     each(items,(item,index,isLast) => {
                         #element <div class={#index}>
                             #textNode " hello "
@@ -258,7 +258,7 @@ describe('XJS $content parser', () => {
             !$each (end)
         `, `
             #fragment <!>
-                #jsBlock
+                #jsBlock [items, item, index, isLast]
                     each(items,(item,index,isLast) => {
                         #element <div>
                             #textNode

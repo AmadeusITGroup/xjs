@@ -732,8 +732,8 @@ describe('XJS $template parser', () => {
         }`, `
             #tplFunction(a)
                 #textNode " abc"
-                #jsBlock
-                    each(items,(item, index, isLast) => {
+                #jsBlock [items, item, index, isLast]
+                    each(items,(item,index,isLast) => {
                         #element <div class={"x"+index}>
                             #textNode " hello "
                     });
@@ -741,7 +741,7 @@ describe('XJS $template parser', () => {
         ` , '1');
 
         assert.equal(await ast.$template`(a, b) => {
-            $each ( a.getItems()  , ( item , index , isLast ) => {
+            $each ( a.getItems()  , ( item , index: number , isLast :boolean ) => {
                 <div>
                     Item #{i+1}
                 </>
@@ -749,8 +749,8 @@ describe('XJS $template parser', () => {
             !$each (end)
         }`, `
             #tplFunction(a, b)
-                #jsBlock
-                    each(a.getItems(),( item , index , isLast ) => {
+                #jsBlock [a.getItems(), item, index, isLast]
+                    each(a.getItems(),(item,index,isLast) => {
                         #element <div>
                             #textNode
                                 " Item #"
