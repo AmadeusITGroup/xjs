@@ -1,11 +1,11 @@
 
-function $content(strings: TemplateStringsArray, ...keys: any[]): object {
+function $fragment(strings: TemplateStringsArray, ...keys: any[]): object {
     return {};
 }
 
 const data = "data";
 
-const str = $content`
+const str = $fragment`
     // comment
     <*a.cpt a="b" // comment
         bbb=123 /*

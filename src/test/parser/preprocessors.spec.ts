@@ -1,13 +1,13 @@
 import * as assert from 'assert';
 import { XjsParamHost, XjsPreProcessorCtxt, XjsParam, XjsParamDictionary, XjsElement, XjsTplFunction } from "../../xjs/types";
 import { addParam, createParam, createText, parse, XjsParserContext } from '../../xjs/parser';
-import { $content, $template } from '../../xjs/xjs';
+import { $fragment, $template } from '../../xjs/xjs';
 import { stringify } from './utils';
 
 describe('Xjs pre-processors', () => {
 
     beforeEach(() => {
-        context.templateType = "$content";
+        context.templateType = "$fragment";
     });
 
     // simple pre-processor to add a new param
@@ -115,7 +115,7 @@ describe('Xjs pre-processors', () => {
             "@@addRef": addRef,
             "@@trace": trace
         },
-        templateType: "$content"
+        templateType: "$fragment"
     }
 
     const padding = '            ';
@@ -129,8 +129,8 @@ describe('Xjs pre-processors', () => {
         return "NO ERROR";
     }
 
-    it("should work on fragments, elements, components, param nodes and decorators in $content", async function () {
-        assert.equal(stringify(await parse($content`
+    it("should work on fragments, elements, components, param nodes and decorators in $fragment", async function () {
+        assert.equal(stringify(await parse($fragment`
             Hello
             <! @@newParam(name="x" value="y")>
                 World
@@ -142,7 +142,7 @@ describe('Xjs pre-processors', () => {
                     #textNode " World "
         `, "1");
 
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             Hello
             <div @@newParam(name="x" value="y")> World </div>
         `, context)), `
@@ -152,7 +152,7 @@ describe('Xjs pre-processors', () => {
                     #textNode " World "
         `, "2");
 
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             Hello
             <*cpt a="b" @@newParam(name="x" value=123) c=42> World </>
         `, context)), `
@@ -162,7 +162,7 @@ describe('Xjs pre-processors', () => {
                     #textNode " World "
         `, "3");
 
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <*cpt bar="baz">
                 <.foo @@newParam(name="x" value=false)> World </>
             </>
@@ -175,7 +175,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should work on cdata (+ pp with multiple params)", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             Hello
             <!cdata @@newParam(name="x" value=false)>
                 World..
@@ -191,7 +191,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should be able to replace a node with other nodes (+ pp with no params)", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             Hello
             <div @@surround foo="bar"> World </div>
         `, context)), `
@@ -205,7 +205,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should be applied in sequence in reverse order (+ pp with default value)", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <div @@siblings="!!" @@surround foo="bar"> Hello </div>
         `, context)), `
             #fragment <!>
@@ -215,7 +215,7 @@ describe('Xjs pre-processors', () => {
                 #textNode "AFTER"
         `, "1");
 
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <div foo="bar" @@surround @@siblings> Hello </div>
         `, context)), `
             #fragment <!>
@@ -228,7 +228,7 @@ describe('Xjs pre-processors', () => {
 
     it("should be able to add new pre-processor references", async function () {
         // @@addRef will add a reference to @@newSurround (=@@surround)
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <div @@newSurround @@addRef> Hello </div>
         `, context)), `
             #fragment <!>
@@ -240,7 +240,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should have access to parser context", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <div @@ctxt> Hello </div>
         `, context)), `
             #fragment <!>
@@ -251,7 +251,7 @@ describe('Xjs pre-processors', () => {
 
     it("should support setup() and process()", async function () {
         TRACE_LOG = [];
-        await parse($content`
+        await parse($fragment`
             <div @@trace="a" id="div1"> 
                 <div @@trace="b" id="div2"> 
                     Hello
@@ -284,19 +284,19 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should raise errors for invalid params", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <*cpt @@newParam(foo='bar')/>
         `), `
-            XJS: Invalid $content: @@newParam: name is mandatory
+            XJS: Invalid $fragment: @@newParam: name is mandatory
             Line 2 / Col 19
             File: src/test/parser/preprocessors.spec.ts
             Extract: >> <*cpt @@newParam(foo='bar')/> <<
             `, "1");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <*cpt @@newParam(name='bar')/>
             `), `
-            XJS: Invalid $content: Error in @@newParam.process(): value is mandatory
+            XJS: Invalid $fragment: Error in @@newParam.process(): value is mandatory
             Line 2 / Col 19
             File: src/test/parser/preprocessors.spec.ts
             Extract: >> <*cpt @@newParam(name='bar')/> <<
@@ -304,7 +304,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should raise errors for undefined pre-processor", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <! @@foo/>
         `), `
             XJS: Invalid fragment: Undefined pre-processor '@@foo'
@@ -315,7 +315,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should raise errors if labels are used on pre-processors", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <*cpt @@newParam(name='foo' value="bar" #blah)/>
         `), `
             XJS: Invalid label: Labels cannot be used on pre-processors
@@ -326,7 +326,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should raise errors if pre-processors are used on pre-processors & decorators", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <.title @@newParam(name='foo' @@surround value="bar")/>
         `), `
             XJS: Invalid param: @@surround cannot be used in this context
@@ -335,7 +335,7 @@ describe('Xjs pre-processors', () => {
             Extract: >> <.title @@newParam(name='foo' @@surround value="bar")/> <<
             `, "1");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <.title @deco(name='foo' @@surround value="bar")/>
         `), `
             XJS: Invalid param: @@surround cannot be used in this context
@@ -344,7 +344,7 @@ describe('Xjs pre-processors', () => {
             Extract: >> <.title @deco(name='foo' @@surround value="bar")/> <<
             `, "2");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div>
                 <@deco name='foo' @@surround/>
             </>
@@ -357,7 +357,7 @@ describe('Xjs pre-processors', () => {
     });
 
     it("should raise runtime errors during pre-processor execution", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@newParam(name='foo' value='$$error1')/>
         `), `
             XJS: Invalid element: Error in @@newParam.setup(): Cannot read property 'bar' of undefined
@@ -366,10 +366,10 @@ describe('Xjs pre-processors', () => {
             Extract: >> <div @@newParam(name='foo' value='$$error1')/> <<
             `, "1");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@newParam(name='foo' value='$$error2')/>
         `), `
-            XJS: Invalid $content: Error in @@newParam.process(): Cannot read property 'bar' of undefined
+            XJS: Invalid $fragment: Error in @@newParam.process(): Cannot read property 'bar' of undefined
             Line 2 / Col 18
             File: src/test/parser/preprocessors.spec.ts
             Extract: >> <div @@newParam(name='foo' value='$$error2')/> <<

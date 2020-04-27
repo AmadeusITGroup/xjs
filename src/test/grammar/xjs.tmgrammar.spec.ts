@@ -32,7 +32,7 @@ describe('XJS TextMate grammar', async () => {
     }
 
     async function tokenizeContent(src: string): Promise<vsTM.IToken[][]> {
-        return tokenize('$content`\n' + src + '\n');
+        return tokenize('$fragment`\n' + src + '\n');
     }
 
     function lineInfo(tokens: IToken[]) {
@@ -309,7 +309,7 @@ describe('XJS TextMate grammar', async () => {
         assert.equal(lineInfo(r[1]), "0:2/ESC  2:15/", "3");
     });
 
-    it("should support nodes and text in $content", async function () {
+    it("should support nodes and text in $fragment", async function () {
         let r: IToken[][];
         r = await tokenizeContent('Hello <b class="a"> World </>...');
         assert.equal(lineInfo(r[1]), "0:6/C  6:7/C/TAG/T_START  7:8/C/TAG/T_NAME  8:9/C/TAG/ATT  9:14/C/TAG/ATT/A_NAME  14:15/C/TAG/ATT/EQ  15:16/C/TAG/ATT/STR_D/S_START  16:17/C/TAG/ATT/STR_D  17:18/C/TAG/ATT/STR_D/S_END  18:19/C/TAG/T_END  19:26/C  26:27/C/TAG/T_START  27:28/C/TAG/T_CLOSE  28:29/C/TAG/T_END  29:33/C", "1");
@@ -336,7 +336,7 @@ describe('XJS TextMate grammar', async () => {
         assert.equal(lineInfo(r[8]), "0:7/C/TAG/CDC/CDC  7:8/C/TAG/CDC/CDC  8:10/C/TAG/T_START  10:16/C/TAG/T_NAME  16:17/C/TAG/T_END  17:21/C", "3.8");
     });
 
-    it("should support $if, $each and $log in $content", async function () {
+    it("should support $if, $each and $log in $fragment", async function () {
         let r: IToken[][];
         r = await tokenizeContent('$if (a.b.c) {abc}');
         assert.equal(lineInfo(r[1]), "0:3/C/$IF/$if  3:4/C/$IF  4:5/C/$IF/BRACE_R  5:6/C/$IF/V_RW  6:7/C/$IF/V_ACC  7:8/C/$IF/V_RW  8:9/C/$IF/V_ACC  9:10/C/$IF/V_RW  10:11/C/$IF/BRACE_R  11:12/C/$IF  12:13/C/$IF/BLOCK/B  13:16/C/$IF/BLOCK  16:17/C/$IF/BLOCK/B", "1");
@@ -350,7 +350,7 @@ describe('XJS TextMate grammar', async () => {
         assert.equal(lineInfo(r[3]), "0:1/C/$C/BLOCK/B  1:2/C/$C/BRACE_R  2:3/C/$C/TERM", "3.3");
     });
 
-    it("should ignore $for, $exec, $let and $template in $content", async function () {
+    it("should ignore $for, $exec, $let and $template in $fragment", async function () {
         let r: IToken[][];
         r = await tokenizeContent('$for (let i=0;10>i;i++)');
         assert.equal(lineInfo(r[1]), "0:24/C", "1");
@@ -365,7 +365,7 @@ describe('XJS TextMate grammar', async () => {
         assert.equal(lineInfo(r[1]), "0:27/C", "4");
     });
 
-    it("should support pre-processors in $content", async function () {
+    it("should support pre-processors in $fragment", async function () {
         let r: IToken[][];
         r = await tokenizeContent('<div @@extract="foo/bar#blah"/>');
         assert.equal(lineInfo(r[1]), "0:1/C/TAG/T_START  1:4/C/TAG/T_NAME  4:5/C/TAG/DECO  5:7/C/TAG/DECO/D_DEF  7:14/C/TAG/DECO/A_NAME  14:15/C/TAG/DECO/EQ  15:16/C/TAG/DECO/STR_D/S_START  16:28/C/TAG/DECO/STR_D  28:29/C/TAG/DECO/STR_D/S_END  29:30/C/TAG/T_CLOSE  30:31/C/TAG/T_END", "1");

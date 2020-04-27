@@ -68,7 +68,7 @@ function includeTemplateDef(g: any, prefix: "xjs" | "xtc") {
     } else {
         g.repository.template.patterns.splice(0, 0, {
             "name": prefix + ".template.ts",
-            "begin": "(([a-zA-Z]+\\.)?\\$content)\\s*(`)",
+            "begin": "(([a-zA-Z]+\\.)?\\$fragment)\\s*(`)",
             "beginCaptures": {
                 "1": { "name": "entity.name.function.ts" },
                 "2": { "name": "punctuation.definition.template.begin.xjs" }

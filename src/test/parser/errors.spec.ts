@@ -48,8 +48,8 @@ describe('Parsing errors', () => {
             return 'ok';
         },
         $template2: async function (s: TemplateStringsArray) { return '' },
-        $content: async function (s: TemplateStringsArray) {
-            this.templateType = "$content";
+        $fragment: async function (s: TemplateStringsArray) {
+            this.templateType = "$fragment";
             const r = this.$template(s);
             this.templateType = "$template";
             return r
@@ -441,10 +441,10 @@ describe('Parsing errors', () => {
             }`, "ok", "2");
     });
 
-    it("should be raised for forbidden tags in $content", async function () {
+    it("should be raised for forbidden tags in $fragment", async function () {
         err.filePath = "file.ts";
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 <div foo=12>
                     <script language="JavaScript"> 
                         // script
@@ -457,7 +457,7 @@ describe('Parsing errors', () => {
             `, "1");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 <div foo=12>
                     <iframe src="https://google.com"> 
                         ...
@@ -470,7 +470,7 @@ describe('Parsing errors', () => {
             `, "2");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 <div foo=12>
                     <frameset> 
                         ...
@@ -483,7 +483,7 @@ describe('Parsing errors', () => {
             `, "3");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 <div foo=12>
                     <frame> 
                         ...
@@ -496,42 +496,42 @@ describe('Parsing errors', () => {
             `, "4");
     });
 
-    it("should be raised for wrong expressions in $content", async function () {
+    it("should be raised for wrong expressions in $fragment", async function () {
         err.filePath = "file.ts";
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 <div foo=12 bar={a()*2}/>
             `, `
-                Invalid expression: Invalid $content reference 'a()*2'
+                Invalid expression: Invalid $fragment reference 'a()*2'
                 File: file.ts - Line 2 / Col 34
                 Extract: >> <div foo=12 bar={a()*2}/> <<
             `, "1");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 <div foo=12>
                     Hello {x.y/z}
                 </>
             `, `
-                Invalid expression: Invalid $content reference 'x.y/z'
+                Invalid expression: Invalid $fragment reference 'x.y/z'
                 File: file.ts - Line 3 / Col 28
                 Extract: >> Hello {x.y/z} <<
             `, "2");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 <div @foo(bar={x*123})>
                     Hello {x.y}
                 </>
             `, `
-                Invalid expression: Invalid $content reference 'x*123'
+                Invalid expression: Invalid $fragment reference 'x*123'
                 File: file.ts - Line 2 / Col 32
                 Extract: >> <div @foo(bar={x*123})> <<
             `, "3");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 $if (func+x(a,b)) {
                     ...
                 }
@@ -542,7 +542,7 @@ describe('Parsing errors', () => {
             `, "4");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 abc
                 $log(a, "some text", x*2);
                 def
@@ -553,7 +553,7 @@ describe('Parsing errors', () => {
             `, "5");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 abc
                 $each(a.b(x), (item) => {
                     ...
@@ -566,7 +566,7 @@ describe('Parsing errors', () => {
             `, "5");
 
         assert.equal(
-            await err.$content`
+            await err.$fragment`
                 abc
                 $each(a.b, (item, foo.idx) => {
                     ...

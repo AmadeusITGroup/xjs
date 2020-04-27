@@ -1,6 +1,6 @@
 
-// tagged template function for xjs $content strings
-export function $content(strings: TemplateStringsArray, ...keys: any[]) {
+// tagged template function for xjs $fragment strings
+export function $fragment(strings: TemplateStringsArray, ...keys: any[]) {
     if (keys.length === 0) {
         return strings[0];
     }

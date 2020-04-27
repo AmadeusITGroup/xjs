@@ -1,17 +1,17 @@
 import * as assert from 'assert';
 import { XjsTplFunction, XjsFragment } from '../../xjs/types';
 import { parse, toString } from '../../xjs/parser';
-import { $content, $template } from '../../xjs/xjs';
+import { $fragment, $template } from '../../xjs/xjs';
 
 describe('toString', () => {
-    const ctxt: any = { templateType: "$content" };
+    const ctxt: any = { templateType: "$fragment" };
 
     function str(root: XjsTplFunction | XjsFragment, indent = "            ") {
         return toString(root, indent);
     }
 
     it("should serialize fragments, elements and text nodes", async function () {
-        const r = await parse($content`
+        const r = await parse($fragment`
             abc
             <div> def <span> xx </></>
             <!> ghi </>
@@ -35,7 +35,7 @@ describe('toString', () => {
     });
 
     it("should serialize params", async function () {
-        const r = await parse($content`
+        const r = await parse($fragment`
             <div foo bar='baz'   blah=123   xyz={expr} 
                 [prop]={a.b.c}/>
             <*cpt disabled=false #xyz ##abc ##def="DEF"/>
@@ -59,7 +59,7 @@ describe('toString', () => {
                 <!cdata foo={bar.baz}> Hello there </!cdata>
             </>`, "1");
 
-        const r2 = await parse($content`
+        const r2 = await parse($fragment`
             <div @deco @content={a.b.c}   />
             <*cpt @ddd(p1=1 p2="a'b'c" p3   p4={a.b.c})/>
         `, ctxt);
@@ -72,7 +72,7 @@ describe('toString', () => {
     });
 
     it("should serialize js statements and blocks", async function () {
-        const r = await parse($content`
+        const r = await parse($fragment`
             <div>
                 $if (a.b.c )   {
                     <span  />
@@ -152,7 +152,7 @@ describe('toString', () => {
     });
 
     it("should serialize strings with no indent", async function () {
-        const r = await parse($content`
+        const r = await parse($fragment`
             <div>
                 $if (a.b.c )   {
                     <span  />

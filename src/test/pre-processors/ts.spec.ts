@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { tokenize, appendLineHighlightElts, ts } from '../../pre-processors/ts';
 import { createFragment, createElement, parse, XjsParserContext } from '../../xjs/parser';
-import { $content } from '../../xjs/xjs';
+import { $fragment } from '../../xjs/xjs';
 import { stringify } from '../parser/utils';
 
 describe('@@ts', () => {
@@ -12,7 +12,7 @@ describe('@@ts', () => {
         preProcessors: {
             "@@ts": ts
         },
-        templateType: "$content"
+        templateType: "$fragment"
     }
 
     const padding = '            ';
@@ -72,7 +72,7 @@ describe('@@ts', () => {
     });
 
     it("should work on cdata sections", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             abc<!cdata @@ts>
                 const x=123;
 
@@ -121,7 +121,7 @@ describe('@@ts', () => {
     });
 
     it("should support a trim parameter", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <!cdata @@ts(trim=false)>
 
                 const x=123;
@@ -163,7 +163,7 @@ describe('@@ts', () => {
                         #textNode "            "
         `, "1");
 
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <!cdata @@ts(trim=true)>
 
                 const x=123;
@@ -199,7 +199,7 @@ describe('@@ts', () => {
     });
 
     it("should raise errors when not used on <!cdata> sections", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@ts(trim=false)>
 
                 const x=123;
@@ -208,7 +208,7 @@ describe('@@ts', () => {
 
             </div>
         `), `
-            XJS: Invalid $content: @@ts: pre-processor can only be used on <!cdata> sections
+            XJS: Invalid $fragment: @@ts: pre-processor can only be used on <!cdata> sections
             Line 2 / Col 18
             File: src/test/pre-processors/ts.spec.ts
             Extract: >> <div @@ts(trim=false)> <<
@@ -216,7 +216,7 @@ describe('@@ts', () => {
     });
 
     it("should work on one-line backtick strings", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <!cdata @@ts>\` Some content \\\`here\\\` \`;</!cdata>
         `, context)), `
             #fragment <!>
@@ -234,7 +234,7 @@ describe('@@ts', () => {
     });
 
     it("should support the class param", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <!cdata @@ts="dark">some.func("blah");</!cdata>
         `, context)), `
             #fragment <!>

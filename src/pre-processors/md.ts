@@ -45,7 +45,7 @@ export function md() {
                 // parse the generated HTML
                 let fragment = await parse(mdHTML, {
                     fileId: "[@@md inline HTML]",
-                    templateType: "$content"
+                    templateType: "$fragment"
                 });
 
                 // move generated fragment content to the target element

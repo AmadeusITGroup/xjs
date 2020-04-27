@@ -1,17 +1,17 @@
 import * as assert from 'assert';
 import { ast } from './utils';
 
-describe('XJS $content parser', () => {
+describe('XJS $fragment parser', () => {
 
     it("should support special characters in text nodes", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             !< and !> and !{ and !} and !s and !n and !! and !$ and !/ and !_
         `, `
             #fragment <!>
                 #textNode " < and > and { and } and   and \n and ! and $ and / and   "
         `, "1")
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             !z no spaces before and here -!> !z !<- and 
 
             here 
@@ -22,7 +22,7 @@ describe('XJS $content parser', () => {
                 #textNode "no spaces before and here -><- and here"
         `, "2")
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             {exp1}   {exp2} !z {exp3}{exp4}
 
             !z {exp5}
@@ -42,7 +42,7 @@ describe('XJS $content parser', () => {
                     " "
         `, "3")
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             $foo() and $bar abc;
         `, `
             #fragment <!>
@@ -51,7 +51,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should support ${expressions}", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             (start) ${" abc <div/> "} (end)
         `, `
             #fragment <!>
@@ -62,7 +62,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should ignore () => {} at start", async function () {
-        assert.equal(await ast.$content`(a:string) => !{
+        assert.equal(await ast.$fragment`(a:string) => !{
             next line
         `, `
             #fragment <!>
@@ -71,7 +71,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should ignore unauthorized js statements", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             $for (let i=0;10>i;i++)
             <!/>
             $template foo (arg1, arg2:string) 
@@ -92,7 +92,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should support ref expressions", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             abc {a.b.c} def
             <div class="x" title={d.e.f} {prop}/>
         `, `
@@ -106,7 +106,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should support refs for components and decorators", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             <*lib.cptA arg="abc">
                 Some content
             </>
@@ -116,7 +116,7 @@ describe('XJS $content parser', () => {
                     #textNode " Some content "
         `, "1")
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             <div @x.deco @y.foo="bar">
                 Some content
             </>
@@ -126,7 +126,7 @@ describe('XJS $content parser', () => {
                     #textNode " Some content "
         `, "2")
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             <div>
                 <@x.y.deco foo="bar"> 
                     Deco content
@@ -143,7 +143,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should parse $if js blocks", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             abc$if (a) {
                 <div>
                     hello
@@ -160,7 +160,7 @@ describe('XJS $content parser', () => {
                 #textNode "def "
         ` , '1');
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             $if (a.b.c) {
                 <div/>
             } else if (b.d) {
@@ -184,7 +184,7 @@ describe('XJS $content parser', () => {
                     }
         ` , '2');
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             $if (xx.yy) {
                 case A
             } else {
@@ -204,7 +204,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should parse $log js statements", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             abc$log (tx, y.z, "...");def
         `, `
             #fragment <!>
@@ -214,7 +214,7 @@ describe('XJS $content parser', () => {
                 #textNode "def "
         ` , '1');
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             $log("abc");
             // comment
             Some text
@@ -232,7 +232,7 @@ describe('XJS $content parser', () => {
     });
 
     it("should parse $each js blocks", async function () {
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             abc$each (items, (item, index, isLast) => {
                 <div class={index}>
                     hello
@@ -249,7 +249,7 @@ describe('XJS $content parser', () => {
                 #textNode "def "
         ` , '1');
 
-        assert.equal(await ast.$content`
+        assert.equal(await ast.$fragment`
             $each ( items  , ( item /* comment */ , index :number , isLast: boolean  ) => {
                 <div>
                     Item #{i}

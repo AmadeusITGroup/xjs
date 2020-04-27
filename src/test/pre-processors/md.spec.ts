@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { parse, XjsParserContext } from '../../xjs/parser';
-import { $content } from '../../xjs/xjs';
+import { $fragment } from '../../xjs/xjs';
 import { stringify } from '../parser/utils';
 import { md } from '../../pre-processors/md';
 
@@ -12,7 +12,7 @@ describe('@@ts', () => {
         preProcessors: {
             "@@md": md
         },
-        templateType: "$content"
+        templateType: "$fragment"
     }
 
     const padding = '            ';
@@ -27,7 +27,7 @@ describe('@@ts', () => {
     }
 
     it("should work on basic md content", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             abc<!cdata @@md>
                 Hello World
             </!cdata>def
@@ -43,7 +43,7 @@ describe('@@ts', () => {
     });
 
     it("should support the class param (explicit + default)", async function () {
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             <!cdata @@md="hello">
 # Main title
 ## Second title
@@ -62,7 +62,7 @@ Some text
         `, "1");
 
 
-        assert.equal(stringify(await parse($content`
+        assert.equal(stringify(await parse($fragment`
             Some code <!cdata @@md(class="code")>    foo="bar" </!cdata> !<-- here
         `, context)), `
             #fragment <!>
@@ -76,16 +76,16 @@ Some text
     });
 
     it("should raise errors when not used on <!cdata> sections", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@md> abc </div>
         `), `
-            XJS: Invalid $content: @@md: Pre-processor can only run on <!cdata> elements
+            XJS: Invalid $fragment: @@md: Pre-processor can only run on <!cdata> elements
             Line 2 / Col 18
             File: src/test/pre-processors/md.spec.ts
             Extract: >> <div @@md> abc </div> <<
             `, "1");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <!cdata @@md>
 text...
 <div class="foo"> // invalid XHTML

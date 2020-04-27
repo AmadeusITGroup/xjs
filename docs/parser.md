@@ -15,7 +15,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
 ```
 
 The parser accepts 2 arguments:
-- **xjs**: the template string (can be a *$template* string or a *$content* string)
+- **xjs**: the template string (can be a *$template* string or a *$fragment* string)
 - **context**: an optional context object that contains extra parsing options. These options fall in 3 categories
     - information for better error handling: cf. *fileId*, *line1* and *col1* options below
     - information about the template nature: cf. *templateType*
@@ -27,7 +27,7 @@ export interface XjsParserContext {
     fileId?: string;     // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
     line1?: number;      // line number of the first template line - used to calculate offset for error messages - default: 1
     col1?: number;       // column number of the first template character - used to calculate offset for error messages - default: 1
-    templateType?: "$template" | "$content";    // default value = "$template"
+    templateType?: "$template" | "$fragment";    // default value = "$template"
     preProcessors?: { [name: string]: () => XjsPreProcessor };
 }
 ```
@@ -42,7 +42,7 @@ Examples can be found in [template.spec][] and [errors.spec][] test files.
 XJS Abstract Syntax Tree is described through a series of interfaces that can be found in the [*types.ts*][types] file. 
 As per the *parse()* API, the root of the AST should be
 - either an *XjsTplFunction* for *$template* templates
-- or a *XjsFragment* for *$content* templates
+- or a *XjsFragment* for *$fragment* templates
 
 The [parser][] file exports the following helper functions to manipulate the AST:
 - **createFragment** to create an *XjsFragment* - e.g. \<!>...</!>
@@ -79,7 +79,7 @@ function toString(root: XjsFragment | XjsTplFunction, baseIndent = "    ")
 
 ## XJS Pre-processors
 
-XJS supports pre-processors that can be called at build time (for *$template* strings or static *$content* strings) or runtime (for dynamic *$content* strings).
+XJS supports pre-processors that can be called at build time (for *$template* strings or static *$fragment* strings) or runtime (for dynamic *$fragment* strings).
 
 Pre-processors are objects that can modify the parser AST during the parsing operation. The pre-processor interface is the following:
 

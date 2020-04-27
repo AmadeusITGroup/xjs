@@ -36,7 +36,7 @@ let xjsGrammar: vsTM.IGrammar | null | undefined;
 
 /**
  * @@ts preprocessor
- * e.g. $content`<!cdata @@ts> const x=123; </!cdata>`
+ * e.g. $fragment`<!cdata @@ts> const x=123; </!cdata>`
  * @param class:string (default param) a css class to attach to the container element
  * @param trim:boolean [optional] tell if the start & end empty lines should be removed (default: true)
  */

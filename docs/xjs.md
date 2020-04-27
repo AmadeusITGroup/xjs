@@ -4,10 +4,10 @@
 <!-- Generated through https://ecotrust-canada.github.io/markdown-toc/ -->
   * [General philosophy](#general-philosophy)
   * [Template definition](#template-definition)
-    + [$template vs. $content strings](#template-vs-content-strings)
+    + [$template vs. $fragment strings](#template-vs-content-strings)
     + [$template function arguments](#template-function-arguments)
     + [using $template strings](#using-template-strings)
-    + [using $content strings](#using-content-strings)
+    + [using $fragment strings](#using-content-strings)
   * [XML Element nodes](#xml-element-nodes)
     + [Component nodes](#component-nodes)
     + [Param nodes](#param-nodes)
@@ -49,7 +49,7 @@
 
 ## General philosophy
 
-As mentioned in the introduction, the general idea of XJS is to define new XML statements that can be used within specific *$template* or *$content* functions.
+As mentioned in the introduction, the general idea of XJS is to define new XML statements that can be used within specific *$template* or *$fragment* functions.
 
 Like for [JSX][], these statements should be seen as shortcuts to a more complex code generation that would be painful to write by hand. For instance:
 
@@ -102,11 +102,11 @@ Notes:
 
 ## Template definition
 
-XJS templates are template strings (aka. backtick strings) tagged with a *$template* or *$content* function. 
+XJS templates are template strings (aka. backtick strings) tagged with a *$template* or *$fragment* function. 
 
 **$template** strings are designed to define parametric templates and components. They have to be transformed into JavaScript at build time (like JSX), usually through a packager plugin (e.g. a webpack or rollup plugin). Note: this code generation has to be done by the template engine that uses XJS in order to let the engine tune the code according to its needs (cf. [ivy][] for a working example).
 
-**$content** strings, on the other hand, are designed for content views that will be loaded (and potentially retrieved) dynamically. They will be parsed and interpreted dynamically at runtime. As a consequence, *$content* strings are meant to be **safe** and **sanitized** (so that they cannot be used to inject malicious code) and their syntax is more restrictive than for *$template* strings (cf. below).
+**$fragment** strings, on the other hand, are designed for content views that will be loaded (and potentially retrieved) dynamically. They will be parsed and interpreted dynamically at runtime. As a consequence, *$fragment* strings are meant to be **safe** and **sanitized** (so that they cannot be used to inject malicious code) and their syntax is more restrictive than for *$template* strings (cf. below).
 
 As they are dynamic, *$template* strings start with an arrow function that corresponds to the template render function. The arguments of the arrow function correspond to the template arguments:
 
@@ -118,14 +118,14 @@ const myTemplate = $template`(arg1, arg2:string) => {
 }`;
 ```
 
-### $template vs. $content strings
+### $template vs. $fragment strings
 
-Syntactically, *$template* and *$content* strings are almost identical, with theses only differences:
-- *$template* strings must start with an arrow function definition (cf. next), whereas *$content* strings directly start with content (i.e. HTML/XML text or elements)
-- *$template* strings are **static** and will be transformed into JS statements at build time, whereas *$content* strings are **dynamic** and will be kept as JS strings after the build completion. They will be parsed and interpreted dynamically at runtime (as such they can also be dynamically created). Because of their dynamic nature, *$content* strings must produce **sanitized** XML/HTML, and as such:
-    - *$template* strings can use any JS expressions, whereas *$content* strings can only use *reference paths* (i.e. in the for of *object.prop.subProperty*)
-    - *$template* strings can use any of the XJS JS statements, whereas *$content* strings can only use *$if*, *$each* and *$log* (with *reference paths* expressions)
-    - *$content* strings can contain JS expression placeholders (i.e. *${someExpr()*} -> with the $ sign) whereas there are not supported in *$template* strings.
+Syntactically, *$template* and *$fragment* strings are almost identical, with theses only differences:
+- *$template* strings must start with an arrow function definition (cf. next), whereas *$fragment* strings directly start with content (i.e. HTML/XML text or elements)
+- *$template* strings are **static** and will be transformed into JS statements at build time, whereas *$fragment* strings are **dynamic** and will be kept as JS strings after the build completion. They will be parsed and interpreted dynamically at runtime (as such they can also be dynamically created). Because of their dynamic nature, *$fragment* strings must produce **sanitized** XML/HTML, and as such:
+    - *$template* strings can use any JS expressions, whereas *$fragment* strings can only use *reference paths* (i.e. in the for of *object.prop.subProperty*)
+    - *$template* strings can use any of the XJS JS statements, whereas *$fragment* strings can only use *$if*, *$each* and *$log* (with *reference paths* expressions)
+    - *$fragment* strings can contain JS expression placeholders (i.e. *${someExpr()*} -> with the $ sign) whereas there are not supported in *$template* strings.
 
 
 ### $template function arguments
@@ -161,27 +161,26 @@ const t2 = hello().attach(document.body).render({name:"Sunshine"});
 
 [method chaining]: https://en.wikipedia.org/wiki/Method_chaining
 
-### using $content strings
+### using $fragment strings
 
-As previously explained, *$content* strings should be dynamically parsed and interpreted. As such, the *$content* function will do nothing but return the actual string. In fact the only purpose of the *$content* keyword is to clearly identify *$content* templates and trigger the proper syntax highlighting.
+As previously explained, *$fragment* strings should be dynamically parsed and interpreted. As such, the *$fragment* function will do nothing but return the actual string. In fact the only purpose of the *$fragment* keyword is to clearly identify *$fragment* templates and trigger the proper syntax highlighting.
 
-So how should they be used? XJS recommendation is that template engines should expose an *@content* built-in decorator to inject the HTML generated by the *$content* template into a fragment or an element:
+So how should they be used? XJS recommendation is that template engines should expose an *@content* built-in decorator to inject the HTML generated by the *$fragment* template into a fragment or an element:
 
 ```typescript
 import {cpt} from 'mylib';
 
-const desc = $content`
+const desc = $fragment`
     Some HTML <b> description </b>...
     <*someSpecialCpt value="abc"/>
 `;
 
 const main = $template`(mainParagraph:string) => {
-    <div class="main" @content(value={mainParagraph} resolver={mainResolver}) />
+    <div class="main" @content(value={mainParagraph} context={contentContext}) />
 }`;
 
-async function mainResolver(ref: string): Promise<any> {
-    if (ref === "someSpecialCpt") return cpt;
-    return null;
+const contentContext = {
+    "someSpecialCpt": cpt;
 }
 
 // instantiation
@@ -189,8 +188,8 @@ main().attach(document.body).render({mainParagraph: desc});
 ```
 
 As you can see, the *@content* decorator will take 2 arguments:
-- **value** to pass the *$content* string
-- **resolver** to pass a function that will be called anytime an external reference is encountered (this is to make sure only authorized references are used). Of course, the resolver argument can be omitted if not external references are used
+- **value** to pass the *$fragment* string
+- **context** to pass an dictionary containing all external references that may be encountered in the fragment (this is to make sure only authorized references are used). Of course, the context argument can be omitted if not external references are used
 
 Note: the *@content* decorator should also be used for content projection. Please check the [decorator](#decorators) or [content projection](#content-projection) sections below to get more information.
 
@@ -284,7 +283,7 @@ Fragments are mainly used in combination with [decorators](#decorators).
     World 
 </>
 // or
-<! @content={data.$content}/>
+<! @content={data.$fragment}/>
 ```
 
 Note: fragments use the '!' prefix to avoid collision with decorator nodes when attribute decorators are used.
@@ -294,7 +293,7 @@ Note: fragments use the '!' prefix to avoid collision with decorator nodes when 
 Sometimes it comes in handy to be able to provide complex content without having to escape every single characters when they should not be interpreted as XML/HTML element (or components/fragments). This is where ```<!cdata>...</!cdata>``` sections come into play: they allow to group any XML content into a single text node.
 
 ```typescript
-const content = $content`
+const content = $fragment`
     <div>
         <span> AAA </span>
         <!cdata>cdata #1</!cdata>
@@ -370,10 +369,10 @@ of course, params can also be passed [JS expressions](#binding-expressions):
 
 ## Text nodes
 
-Like in XML, HTML or JSX, XJS will automatically detect text nodes between tag elements (or at $content template root):
+Like in XML, HTML or JSX, XJS will automatically detect text nodes between tag elements (or at $fragment template root):
 
 ```typescript
-const c1 = $content`
+const c1 = $fragment`
     Hello world
 `;
 ```
@@ -381,7 +380,7 @@ const c1 = $content`
 Of course, text nodes also support incorporating dynamic parts through JS expressions:
 
 ```typescript
-const c1 = $content`
+const c1 = $fragment`
     Hello {name}
 `;
 ```
@@ -457,10 +456,10 @@ const tpl = $template`() => {
 }`;
 ```
 
-In **$content strings** however, expressions must be limited to simple references (i.e. 'dotted path' such as 'a.b.c') to keep $content template safe and avoid malicious code invocation:
+In **$fragment strings** however, expressions must be limited to simple references (i.e. 'dotted path' such as 'a.b.c') to keep $fragment template safe and avoid malicious code invocation:
 
 ```typescript
-const c3 = $content`
+const c3 = $fragment`
     <div title={ctxt.mainTitle} />
     {firstName} / {lastName}
     Sum: {ctxt.theSum}
@@ -477,7 +476,7 @@ In some cases (e.g. for values that should be translated), we may not want the t
 // in $template strings:
 <div title={::calculateExpensiveTitle(arg1)}> {::l10n.welcomeMessage} </div>
 
-// in $content strings:
+// in $fragment strings:
 <div title={::theTitle}> {::l10n.welcomeMessage} </div>
 ```
 
@@ -647,7 +646,7 @@ Of course the forward label argument can be bound to a dynamic expression:
 
 ## JS statements
 
-As explained in the introduction, XJS philosophy is to consider the $template and $content strings as a series of JS statements - for instance:
+As explained in the introduction, XJS philosophy is to consider the $template and $fragment strings as a series of JS statements - for instance:
 - ```<div class="hello">``` is equivalent to $context.startElement("div", {class:"hello"});
 - ``` Hello {name}! ``` is equivalent to $context.addText(" Hello ", name, "! ");
 - ```</div>``` or ```</>``` are equivalent to $context.endElement();
@@ -670,11 +669,11 @@ $ctxt.closeElt(1);
 ```
 Note: actual code generation might differ depending on the template engine, but the general philosophy should remain.
 
-As there is no special delimiter to identify text nodes, XJS uses the $ sign to identify JS statements. In practice, only a small subset of statements are supported for the time being as the XJS parser needs to parse them accurately without integrating the whole JS/TS grammar. Last but not least, some statements are only supported in $template strings as $content is meant to produce sanitized output, which is not compatible with complete JS evaluation capabilities.
+As there is no special delimiter to identify text nodes, XJS uses the $ sign to identify JS statements. In practice, only a small subset of statements are supported for the time being as the XJS parser needs to parse them accurately without integrating the whole JS/TS grammar. Last but not least, some statements are only supported in $template strings as $fragment is meant to produce sanitized output, which is not compatible with complete JS evaluation capabilities.
 
 ### $if
 
-**$if / else if / else** allows to express standard conditional rendering. It follows the same syntax as JS *if statement*. In *$template* strings, the *if* condition can be any JS expression, but in *$content* strings the condition can only be a reference path (i.e. something like a.b.c).
+**$if / else if / else** allows to express standard conditional rendering. It follows the same syntax as JS *if statement*. In *$template* strings, the *if* condition can be any JS expression, but in *$fragment* strings the condition can only be a reference path (i.e. something like a.b.c).
 
 ```html
 $if (a) {
@@ -720,7 +719,7 @@ $each (names, (name, index, isLast) => {
 }
 ```
 
-Note: in *$content* strings, the *collection* argument (i.e. *names* in the previous example) can only be a reference path (i.e. something like a.b.c).
+Note: in *$fragment* strings, the *collection* argument (i.e. *names* in the previous example) can only be a reference path (i.e. something like a.b.c).
 
 Warning: *$let* must end with a semi-colon (*;*)
 
@@ -754,7 +753,7 @@ Note: *$exec* must end with a semi-colon (*;*)
 
 ### $log
 
-**$log** is simply a shortcut to ```$exec console.log(...)```. However, on the contrary to *$exec*, *$log* can be used in *$content* strings.
+**$log** is simply a shortcut to ```$exec console.log(...)```. However, on the contrary to *$exec*, *$log* can be used in *$fragment* strings.
 
 ```html
 $log("something", value1, value2, obj.prop.subProp);
@@ -791,7 +790,7 @@ A very common pattern in UI development is to pass some *content nodes* as param
 </>
 ```
 
-XJS recommendation is to consider content as a true parameter that should be explicitly mentioned in the template signature with a *$content* argument name:
+XJS recommendation is to consider content as a true parameter that should be explicitly mentioned in the template signature with a *$fragment* argument name:
 
 ```typescript
 const tpl = $template`(title, $content) => {
@@ -799,7 +798,7 @@ const tpl = $template`(title, $content) => {
 }`;
 ```
 
-Of course, the template will need to re-inject (or re-project) the $content nodes into an element or a fragment. XJS recommendation in this case is to use an *@content* built-in decorator (the same as for [*$content* strings injection](#using--content-strings)):
+Of course, the template will need to re-inject (or re-project) the $content nodes into an element or a fragment. XJS recommendation in this case is to use an *@content* built-in decorator (the same as for [*$fragment* strings injection](#using--content-strings)):
 
 ```typescript
 const tpl = $template`(title, $content) => {
@@ -861,7 +860,7 @@ const table = $template`(trList: Row[]) => {
 
 ## Pre-processors
 
-Last but not least, as *$template* and static *$content* strings are parsed at compilation time, the XJS parser offers the possibility to use pre-processors.
+Last but not least, as *$template* and static *$fragment* strings are parsed at compilation time, the XJS parser offers the possibility to use pre-processors.
 
 Pre-processors are asynchronous transformation functions that are called by the XJS parser and that can modify the generated AST (cf. [XJS pre-processors][])
 
@@ -872,7 +871,7 @@ const content = xtr`
     <*cpt @@extract="./resources/sample1.ts#sectionC" />
 `;
 ```
-Note: $content strings that use dynamic placeholders (i.e. ${xxx} expressions ) cannot be parsed at build time, and as such cannot use build-time pre-processors. However those $content strings can still use run-time pre-processors.
+Note: $fragment strings that use dynamic placeholders (i.e. ${xxx} expressions ) cannot be parsed at build time, and as such cannot use build-time pre-processors. However those $fragment strings can still use run-time pre-processors.
 
 
 [XJS pre-processors]: ./pre-processors.md

@@ -4,7 +4,7 @@ const U = undefined,
     RX_START_INDENT = /^[ \f\r\t\v]*\n(\s*)/,
     RX_ELSE = /^\s*else/,
     RX_STATEMENTS_XJS = /^\$(if|for|exec|let|each|log|template)/,    // $template mode
-    RX_STATEMENTS_XTR = /^\$(if|each|log)/,                          // $content mode
+    RX_STATEMENTS_XTR = /^\$(if|each|log)/,                          // $fragment mode
     RX_REF_PATH = /^[$_a-zA-Z][_a-zA-Z0-9]*(\.[$_a-zA-Z][_a-zA-Z0-9]*)*$/,
     RX_JS_IDENTIFIER = /^[$_a-zA-Z][_a-zA-Z0-9]*$/,
     RX_FORBIDDEN_TAGS_TPL = /^(script)$/,
@@ -69,7 +69,7 @@ export interface XjsParserContext {
     fileId?: string;                // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
     line1?: number;                 // line number of the first template line - used to calculate offset for error messages - default: 1
     col1?: number;                  // column number of the first template character - used to calculate offset for error messages - default: 1
-    templateType?: "$template" | "$content";
+    templateType?: "$template" | "$fragment";
     preProcessors?: { [name: string]: () => XjsPreProcessor };
 }
 
@@ -78,7 +78,7 @@ export interface XjsParserContext {
  * @param tpl the template string
  */
 export async function parse(xjs: string, context?: XjsParserContext): Promise<XjsTplFunction | XjsFragment> {
-    const isContentMode = (context && context.templateType === "$content");
+    const isContentMode = (context && context.templateType === "$fragment");
     let root: XjsFragment,
         posEOS = xjs.length,
         pos = 0,    // current position
@@ -244,7 +244,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
     }
 
     function error(msg?: string, errorPos?: number) {
-        let c = (isContentMode) ? "$content" : "$template";
+        let c = (isContentMode) ? "$fragment" : "$template";
         if (ec.length) {
             c = ec[ec.length - 1];
         }
@@ -304,8 +304,8 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         root = createFragment(pos);
 
         if (isContentMode) {
-            // $content template
-            xjsContent(root, "$content");
+            // $fragment template
+            xjsContent(root, "$fragment");
         } else {
             // $template template
             const p = pos;
@@ -998,7 +998,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (isContentMode) {
             let rp = getRefPath(e.code);
             if (rp === U) {
-                error("Invalid $content reference '" + e.code + "'", e.pos);
+                error("Invalid $fragment reference '" + e.code + "'", e.pos);
             } else {
                 e.refPath = rp;
             }
@@ -1432,7 +1432,7 @@ function addArgument(tf: XjsTplFunction, name: string, pos: number = -1): XjsTpl
 }
 
 function addArg(arg: string, jss: XjsJsStatement | XjsJsBlock, singleWord = false): boolean {
-    // add parsed argument (should be used in $content mode only)
+    // add parsed argument (should be used in $fragment mode only)
     if (!jss.args) {
         jss.args = [];
     }

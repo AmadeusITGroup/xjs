@@ -82,7 +82,7 @@ export interface XjsJsStatement extends XjsNode {
     kind: "#jsStatement";
     name: string;  // e.g. "$exec"
     code: string;  // the js code (e.g. "let x = someExpr(); ... ")
-    args?: any[];      // list of parsed args - used in $content mode only
+    args?: any[];      // list of parsed args - used in $fragment mode only
 }
 
 /**
@@ -94,7 +94,7 @@ export interface XjsJsBlock extends XjsNode {
     startCode: string;  // the js/ts code at the beginning of the block - e.g. "if (expr()) {" or " else {"
     endCode: string;    // end block code. Should match /\n?\s*\}$/ - e.g. "\n      }"
     content?: XjsContentNode[]; // content is undefined if isStart===false
-    args?: any[];      // list of parsed args - used in $content mode only
+    args?: any[];      // list of parsed args - used in $fragment mode only
 }
 
 /**
@@ -186,7 +186,7 @@ export interface XjsExpression extends XjsNode {
     oneTime: boolean;    // true if "::" is used in the expression
     isBinding: boolean;  // true if "=" is used as expression modifier - e.g. foo={=a.b}
     code: string;        // e.g. "getSomeValue()*3"
-    refPath?: string[];  // set in $content mode - e.g. ["a", "b"] for code = a.b
+    refPath?: string[];  // set in $fragment mode - e.g. ["a", "b"] for code = a.b
 }
 
 /**

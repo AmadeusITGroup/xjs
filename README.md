@@ -21,14 +21,14 @@ Key features:
 - XJS is designed to play well with **typescript**
 - XJS supports 2 kinds of templates:
     - $template strings to define parametric templates and components. $template strings have to be transformed into JavaScript at build time (like JSX) - note: this is the responsibility of the template engine that uses JSX (not provided in this repository)
-    - $content strings to define content views that will be loaded dynamically. $content strings will be parsed and interpreted dynamically at runtime and can thus be built dynamically (e.g. from dynamic content retrieved from the server-side).
+    - $fragment strings to define content views that will be loaded dynamically. $fragment strings will be parsed and interpreted dynamically at runtime and can thus be built dynamically (e.g. from dynamic content retrieved from the server-side).
 - In a general manner, the design of XJS is based on the [principle of least astonishment][POLA] and tries to leverage as much as possible existing JavaScript concepts to keep the learning curve as flat as possible.
 
 Note: XJS is only **a syntax, a grammar and a parser**. It must be complemented with a code generator and and template engine runtime (like [ivy][]) to be used in actual web applications.
 
 The current repository contains the following items:
 - the [XJS][xjs-doc] syntax documentations
-- [$template][] and [$content][] examples
+- [$template][] and [$fragment][] examples
 - the [XJS parser][parser] documentation
 - the @@extract, @@md and @@ts [pre-processors][] documentation
 - the visual studio code extension to support code highlighting
@@ -41,7 +41,7 @@ Full documentation [here][toc]
 [POLA]: https://en.wikipedia.org/wiki/Principle_of_least_astonishment
 [xjs-doc]: ./docs/xjs.md
 [$template]: ./src/examples/template-sample.ts
-[$content]: ./src/examples/content-sample.ts
+[$fragment]: ./src/examples/fragment-sample.ts
 [parser]: ./docs/parser.md
 [pre-processors]: ./docs/pre-processors.md
 [toc]: ./docs

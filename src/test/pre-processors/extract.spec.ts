@@ -2,13 +2,13 @@ import * as assert from 'assert';
 import { extract } from '../../pre-processors/extract';
 import { join } from 'path';
 import { parse, XjsParserContext } from '../../xjs/parser';
-import { $content, $template } from '../../xjs/xjs';
+import { $fragment, $template } from '../../xjs/xjs';
 import { stringify } from '../parser/utils';
 
 describe('@@extract', () => {
 
     beforeEach(() => {
-        context.templateType = "$content";
+        context.templateType = "$fragment";
     });
 
     const context: XjsParserContext = {
@@ -17,7 +17,7 @@ describe('@@extract', () => {
         preProcessors: {
             "@@extract": extract
         },
-        templateType: "$content"
+        templateType: "$fragment"
     }
 
     const padding = '            ';
@@ -34,7 +34,7 @@ describe('@@extract', () => {
     }
 
     it("should extract sections in the middle of a file", async function () {
-        assert.deepEqual(stringify(await parse($content`
+        assert.deepEqual(stringify(await parse($fragment`
             AA
             <! @@extract="resources/sample1.ts#sectionA" />
             BB
@@ -69,7 +69,7 @@ describe('@@extract', () => {
     });
 
     it("should extract sections at the end or a file", async function () {
-        assert.deepEqual(stringify(await parse($content`
+        assert.deepEqual(stringify(await parse($fragment`
             <span> BEGINNING </span>
             <*cpt @@extract="./resources/sample1.ts#sectionC" />
             <div> abc </>
@@ -115,7 +115,7 @@ describe('@@extract', () => {
 
     it("should support the trim attribute", async function () {
         // trim's default is true
-        assert.deepEqual(stringify(await parse($content`
+        assert.deepEqual(stringify(await parse($fragment`
             <div @@extract(section="./resources/sample1.ts#sectionA" trim=false) />
         `, context)), `
             #fragment <!>
@@ -181,7 +181,7 @@ describe('@@extract', () => {
     });
 
     it("should support template highlighting", async function () {
-        assert.deepEqual(stringify(await parse($content`
+        assert.deepEqual(stringify(await parse($fragment`
             <div @@extract="./resources/sample3.ts#template-section" />
         `, context)), `
             #fragment <!>
@@ -267,84 +267,84 @@ describe('@@extract', () => {
     });
 
     it("should properly manage errors", async function () {
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract/>
         `), `
-            XJS: Invalid $content: @@extract: Missing file path
+            XJS: Invalid $fragment: @@extract: Missing file path
             Line 2 / Col 18
             File: ...
             Extract: >> <div @@extract/> <<
             `, "1");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract="./resources/sample1.ts"/>
         `), `
-            XJS: Invalid $content: @@extract: Missing section name in file path
+            XJS: Invalid $fragment: @@extract: Missing section name in file path
             Line 2 / Col 18
             File: ...
             Extract: >> <div @@extract="./resources/sample1.ts"/> <<
             `, "2");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract="/resources/sample1.ts#sectionA"/>
         `), `
-            XJS: Invalid $content: @@extract: File path must be relative
+            XJS: Invalid $fragment: @@extract: File path must be relative
             Line 2 / Col 18
             File: ...
             Extract: >> <div @@extract="/resources/sample1.ts#sectionA"/> <<
             `, "3");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract="resources/sample2.ts#sectionE"/>
         `), `
-            XJS: Invalid $content: @@extract: Invalid file content: 'sectionD' is defined twice
+            XJS: Invalid $fragment: @@extract: Invalid file content: 'sectionD' is defined twice
             Line 2 / Col 18
             File: ...
             Extract: >> <div @@extract="resources/sample2.ts#sectionE"/> <<
             `, "4");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract="resources/invalid.ts#sectionE"/>
         `), `
-            XJS: Invalid $content: @@extract: File not found: ...
+            XJS: Invalid $fragment: @@extract: File not found: ...
             Line 2 / Col 18
             File: ...
             Extract: >> <div @@extract="resources/invalid.ts#sectionE"/> <<
             `, "5");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract="resources/sample1.ts#sectionE"/>
         `), `
-            XJS: Invalid $content: @@extract: Section not found 'sectionE'
+            XJS: Invalid $fragment: @@extract: Section not found 'sectionE'
             Line 2 / Col 18
             File: ...
             Extract: >> <div @@extract="resources/sample1.ts#sectionE"/> <<
             `, "6");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <!cdata @@extract="resources/sample1.ts#sectionA"></!cdata>
         `), `
-            XJS: Invalid $content: @@extract: Only elements, fragments, components or param nodes can be used as host
+            XJS: Invalid $fragment: @@extract: Only elements, fragments, components or param nodes can be used as host
             Line 2 / Col 20
             File: ...
             Extract: >> <!cdata @@extract="resources/sample1.ts#sectionA"></!cdata> <<
             `, "7");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract="resources/sample1.ts#sectionA">
                 Hello world
             </div>
         `), `
-            XJS: Invalid $content: @@extract: Host cannot contain child elements
+            XJS: Invalid $fragment: @@extract: Host cannot contain child elements
             Line 2 / Col 17
             File: ...
             Extract: >> <div @@extract="resources/sample1.ts#sectionA"> <<
             `, "8");
 
-        assert.equal(await error($content`
+        assert.equal(await error($fragment`
             <div @@extract="resources/sample1.ts#section@#$"/>
         `), `
-            XJS: Invalid $content: @@extract: Invalid section name 'section@#$'
+            XJS: Invalid $fragment: @@extract: Invalid section name 'section@#$'
             Line 2 / Col 18
             File: ...
             Extract: >> <div @@extract="resources/sample1.ts#section@#$"/> <<

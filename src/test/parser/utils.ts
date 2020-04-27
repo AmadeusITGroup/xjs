@@ -14,7 +14,7 @@ export let ast = {
         return stringify(root, log);
     },
 
-    async $content(strings: TemplateStringsArray, ...values: any[]) {
+    async $fragment(strings: TemplateStringsArray, ...values: any[]) {
         let tpl = "";
         if (values.length === 0) {
             tpl = strings[0];
@@ -29,7 +29,7 @@ export let ast = {
             tpl = buf.join("");
         }
 
-        let root = await parse(tpl, { templateType: "$content" });
+        let root = await parse(tpl, { templateType: "$fragment" });
         return stringify(root);
     },
 
