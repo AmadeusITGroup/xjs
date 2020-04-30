@@ -283,6 +283,33 @@ describe('Xjs pre-processors', () => {
         `, "1");
     });
 
+    it("should be ignored if ignoreUndefinedPreProcessors is set to true ", async function () {
+        // @@addRef will add a reference to @@newSurround (=@@surround)
+        const context2: XjsParserContext = {
+            fileId: "src/test/parser/preprocessors.spec.ts",
+            col1: 42,
+            preProcessors: {
+                "@@newParam": newParam,
+                "@@surround": surround,
+                "@@siblings": siblings,
+                "@@ctxt": ctxt,
+                "@@addRef": addRef,
+                "@@trace": trace
+            },
+            templateType: "$fragment",
+            ignoreUndefinedPreProcessors: true
+        }
+
+        assert.equal(stringify(await parse($fragment`
+            <div @@newSurround @@newParam(name="a" value="b")> Hello </div>
+        `, context2)), `
+            #fragment <!>
+                #element <div a="b">
+                    #textNode " Hello "
+        `, "1");
+        assert.equal(context2.undefinedPreProcessorsFound, true, "2");
+    });
+
     it("should raise errors for invalid params", async function () {
         assert.equal(await error($fragment`
             <*cpt @@newParam(foo='bar')/>

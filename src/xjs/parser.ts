@@ -66,11 +66,13 @@ const U = undefined,
 
 export interface XjsParserContext {
     //preProcessors?: XtrPreProcessorDictionary;
-    fileId?: string;                // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
-    line1?: number;                 // line number of the first template line - used to calculate offset for error messages - default: 1
-    col1?: number;                  // column number of the first template character - used to calculate offset for error messages - default: 1
+    fileId?: string;                           // e.g. /Users/blaporte/Dev/iv/src/doc/samples.ts
+    line1?: number;                            // line number of the first template line - used to calculate offset for error messages - default: 1
+    col1?: number;                             // column number of the first template character - used to calculate offset for error messages - default: 1
     templateType?: "$template" | "$fragment";
     preProcessors?: { [name: string]: () => XjsPreProcessor };
+    ignoreUndefinedPreProcessors?: boolean;    // if true, undefined pre-processors will be ignored and no error will be raised (default: false)
+    undefinedPreProcessorsFound?: boolean;     // will be set to true if undefined pre-processors have been found
 }
 
 /**
@@ -88,6 +90,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         ppFactories = context ? context.preProcessors || {} : {},
         preProcessorNodes: XjsPreProcessorNode[] | undefined, // list of pre-processor instance
         ppContext: XjsPreProcessorCtxt | undefined,
+        ignoreUndefinedPreProcessors = (context && context.ignoreUndefinedPreProcessors === true),
         currentPpName = "",  // used for error handing
         currentPpPos = 0;    // used for error handling
 
@@ -1318,8 +1321,14 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 const nm = ppn.ref.code;
                 // create the pp instance
                 if (ppFactories === U || ppFactories[nm] === U) {
-                    error("Undefined pre-processor '" + nm + "'", ppn.pos);
-                    return;
+                    if (!ignoreUndefinedPreProcessors) {
+                        error("Undefined pre-processor '" + nm + "'", ppn.pos);
+                        return;
+                    } else if (context !== U) {
+                        ppList.splice(i, 1);
+                        context.undefinedPreProcessorsFound = true;
+                        continue;
+                    }
                 }
                 pp = ppn.instance = ppFactories[nm]() as any;
             } else {
