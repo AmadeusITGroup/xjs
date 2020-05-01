@@ -7,7 +7,7 @@
     + [$template vs. $fragment strings](#template-vs-content-strings)
     + [$template function arguments](#template-function-arguments)
     + [using $template strings](#using-template-strings)
-    + [using $fragment strings](#using-content-strings)
+    + [using $fragment strings](#using-fragment-strings)
   * [XML Element nodes](#xml-element-nodes)
     + [Component nodes](#component-nodes)
     + [Param nodes](#param-nodes)
@@ -790,7 +790,7 @@ A very common pattern in UI development is to pass some *content nodes* as param
 </>
 ```
 
-XJS recommendation is to consider content as a true parameter that should be explicitly mentioned in the template signature with a *$fragment* argument name:
+XJS recommendation is to consider content as a true parameter that should be explicitly mentioned in the template signature with a *$content* argument name:
 
 ```typescript
 const tpl = $template`(title, $content) => {
@@ -798,7 +798,7 @@ const tpl = $template`(title, $content) => {
 }`;
 ```
 
-Of course, the template will need to re-inject (or re-project) the $content nodes into an element or a fragment. XJS recommendation in this case is to use an *@content* built-in decorator (the same as for [*$fragment* strings injection](#using--content-strings)):
+Of course, the template will need to re-inject (or re-project) the $content nodes into an element or a fragment. XJS recommendation in this case is to use an *@content* built-in decorator (the same as for [*$fragment* strings injection](#using-fragment-strings)):
 
 ```typescript
 const tpl = $template`(title, $content) => {
@@ -826,11 +826,11 @@ const section = $template`(header, $content) => {
 }`;
 ```
 
-Some more advanced cases can also be supported by considering param nodes as JS objects passed as argument. For instance, HTML table semantics can be easily supported like this:
+Some more advanced cases can also be supported by considering param nodes as JS objects passed as argument. For instance, the HTML *\<table\>* semantics that extensively uses *table-specific* sub-nodes can be easily supported like this:
 
 ```typescript
 
-// table usage
+// custom table usage
 const tpl = $template`() => {
     <*table>
         <.tr className="row1">
