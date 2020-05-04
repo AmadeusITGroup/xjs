@@ -1011,7 +1011,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         if (isContentMode) {
             let rp = getRefPath(e.code);
             if (rp === U) {
-                error("Invalid $fragment reference '" + e.code + "'", e.pos);
+                error("Invalid reference path '" + e.code + "'", e.pos);
             } else {
                 e.refPath = rp;
             }

@@ -503,7 +503,7 @@ describe('Parsing errors', () => {
             await err.$fragment`
                 <div foo=12 bar={a()*2}/>
             `, `
-                Invalid expression: Invalid $fragment reference 'a()*2'
+                Invalid expression: Invalid reference path 'a()*2'
                 File: file.ts - Line 2 / Col 34
                 Extract: >> <div foo=12 bar={a()*2}/> <<
             `, "1");
@@ -514,7 +514,7 @@ describe('Parsing errors', () => {
                     Hello {x.y/z}
                 </>
             `, `
-                Invalid expression: Invalid $fragment reference 'x.y/z'
+                Invalid expression: Invalid reference path 'x.y/z'
                 File: file.ts - Line 3 / Col 28
                 Extract: >> Hello {x.y/z} <<
             `, "2");
@@ -525,7 +525,7 @@ describe('Parsing errors', () => {
                     Hello {x.y}
                 </>
             `, `
-                Invalid expression: Invalid $fragment reference 'x*123'
+                Invalid expression: Invalid reference path 'x*123'
                 File: file.ts - Line 2 / Col 32
                 Extract: >> <div @foo(bar={x*123})> <<
             `, "3");
