@@ -4,7 +4,7 @@ import { parse, toString } from '../../xjs/parser';
 import { $fragment, $template } from '../../xjs/xjs';
 
 describe('toString', () => {
-    const ctxt: any = { templateType: "$fragment" };
+    const ctxt: any = { templateType: "$fragment", fragmentValidationMode: true };
 
     function str(root: XjsTplFunction | XjsFragment, indent = "            ") {
         return toString(root, indent);
@@ -149,6 +149,37 @@ describe('toString', () => {
                     <span class={arg1}/>
                 }
             }`, "1");
+    });
+
+    it("should serialize $fragment special chars", async function () {
+        const r = await parse($fragment`
+            <div> abc !< and !> and !{ and !} and !s and !n and !! and !$ and !/ and !_ def </>
+        `, ctxt);
+
+        assert.equal(str(r), `
+            <!>
+                <div>
+                     abc !< and !> and !{ and !} and !s and !n and !! and !$ and !/ and !_ def 
+                </>
+            </>`, "1");
+
+    });
+
+    it("should serialize $fragment cdata", async function () {
+        const r = await parse($fragment`
+            <div> abc 
+                <!cdata> hello !</!cdata> world </!cdata>
+            def </>
+        `, ctxt);
+
+        assert.equal(str(r), `
+            <!>
+                <div>
+                     abc 
+                    <!cdata> hello !</!cdata> world </!cdata>
+                     def 
+                </>
+            </>`, "1");
     });
 
     it("should serialize strings with no indent", async function () {

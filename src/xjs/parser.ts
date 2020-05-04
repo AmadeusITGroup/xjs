@@ -71,7 +71,7 @@ export interface XjsParserContext {
     col1?: number;                             // column number of the first template character - used to calculate offset for error messages - default: 1
     templateType?: "$template" | "$fragment";
     preProcessors?: { [name: string]: () => XjsPreProcessor };
-    ignoreUndefinedPreProcessors?: boolean;    // if true, undefined pre-processors will be ignored and no error will be raised (default: false)
+    fragmentValidationMode?: boolean;    // if true, undefined pre-processors will be ignored and no error will be raised (default: false)
     undefinedPreProcessorsFound?: boolean;     // will be set to true if undefined pre-processors have been found
 }
 
@@ -90,7 +90,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
         ppFactories = context ? context.preProcessors || {} : {},
         preProcessorNodes: XjsPreProcessorNode[] | undefined, // list of pre-processor instance
         ppContext: XjsPreProcessorCtxt | undefined,
-        ignoreUndefinedPreProcessors = (context && context.ignoreUndefinedPreProcessors === true),
+        fragmentValidationMode = (context && context.fragmentValidationMode === true),
         currentPpName = "",  // used for error handing
         currentPpPos = 0;    // used for error handling
 
@@ -464,20 +464,27 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     cc = eat(CHAR_BANG); // !
                     const escValue = ESCAPED_CHARS["" + cc];
                     if (escValue !== U) {
-                        if (cc === CHAR_z) {
-                            // !z case: we remove all previous and next spaces
-                            if (lastIsSpace && charCodes.length > 0) {
-                                charCodes.pop(); // remove last element
-                            }
-                            lastIsSpace = true;
-                            pcc = newPcc;
-                            moveNext();
-                        } else {
+                        if (fragmentValidationMode) {
+                            charCodes.push(CHAR_BANG); // keep the !
+                            charCodes.push(cc);
                             lastIsSpace = false;
                             moveNext();
-                            charCodes.push(escValue);
-                            pcc = escValue;
-                            specialCharFound = true;
+                        } else {
+                            if (cc === CHAR_z) {
+                                // !z case: we remove all previous and next spaces
+                                if (lastIsSpace && charCodes.length > 0) {
+                                    charCodes.pop(); // remove last element
+                                }
+                                lastIsSpace = true;
+                                pcc = newPcc;
+                                moveNext();
+                            } else {
+                                lastIsSpace = false;
+                                moveNext();
+                                charCodes.push(escValue);
+                                pcc = escValue;
+                                specialCharFound = true;
+                            }
                         }
                     } else {
                         charCodes.push(CHAR_BANG);
@@ -922,6 +929,9 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                     moveNext();
                     if (CDATA_END === nextChars(CDATA_END_LENGTH)) {
                         // we escape end of cdata
+                        if (fragmentValidationMode) {
+                            charCodes.push(CHAR_BANG); // keep the !
+                        }
                         charCodes.push(cc);
                         moveNext();
                     } else {
@@ -1321,7 +1331,7 @@ export async function parse(xjs: string, context?: XjsParserContext): Promise<Xj
                 const nm = ppn.ref.code;
                 // create the pp instance
                 if (ppFactories === U || ppFactories[nm] === U) {
-                    if (!ignoreUndefinedPreProcessors) {
+                    if (!fragmentValidationMode) {
                         error("Undefined pre-processor '" + nm + "'", ppn.pos);
                         return;
                     } else if (context !== U) {

@@ -283,7 +283,7 @@ describe('Xjs pre-processors', () => {
         `, "1");
     });
 
-    it("should be ignored if ignoreUndefinedPreProcessors is set to true ", async function () {
+    it("should be ignored if fragmentValidationMode is set to true ", async function () {
         // @@addRef will add a reference to @@newSurround (=@@surround)
         const context2: XjsParserContext = {
             fileId: "src/test/parser/preprocessors.spec.ts",
@@ -297,7 +297,7 @@ describe('Xjs pre-processors', () => {
                 "@@trace": trace
             },
             templateType: "$fragment",
-            ignoreUndefinedPreProcessors: true
+            fragmentValidationMode: true
         }
 
         assert.equal(stringify(await parse($fragment`
