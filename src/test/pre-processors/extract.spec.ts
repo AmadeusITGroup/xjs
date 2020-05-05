@@ -148,6 +148,46 @@ describe('@@extract', () => {
         `, '1');
     });
 
+    it("should be able to merge multiple adjacent sections", async function () {
+        // trim's default is true
+        assert.deepEqual(stringify(await parse($fragment`
+            <div @@extract(section="./resources/sample1.ts#a>>d" trim=false) />
+        `, context)), `
+            #fragment <!>
+                #element <div class="extract ts_code">
+                    #element <div>
+                        #element <span class="hr">
+                            #textNode "const"
+                        #textNode " "
+                        #element <span class="hv">
+                            #textNode "a"
+                        #textNode " "
+                        #element <span class="hk">
+                            #textNode "="
+                        #textNode " "
+                        #element <span class="hs">
+                            #textNode ""b""
+                        #textNode ";"
+                    #element <div>
+                        #element <span class="hk">
+                            #textNode "if"
+                        #textNode " ("
+                        #element <span class="hv">
+                            #textNode "a"
+                        #textNode ") {"
+                    #element <div>
+                        #textNode "    "
+                        #element <span class="hf">
+                            #textNode "foo"
+                        #textNode "();"
+                    #element <div>
+                        #textNode "}"
+                    #element <div>
+                        #element <span class="hc">
+                            #textNode "// last"
+        `, '1');
+    });
+
     it("should work on $template templates", async function () {
         context.templateType = "$template";
 

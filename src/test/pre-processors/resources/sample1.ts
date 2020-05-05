@@ -21,3 +21,15 @@ class TheClass {
         return 123;
     }
 }
+
+// @@extract: a
+const a = "b";
+// @@extract: b
+if (a) {
+// @@extract: c
+    foo();
+}
+// @@extract: d
+// last
+// @@extract: e
+// end
