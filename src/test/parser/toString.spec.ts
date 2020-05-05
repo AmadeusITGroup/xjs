@@ -162,7 +162,6 @@ describe('toString', () => {
                      abc !< and !> and !{ and !} and !s and !n and !! and !$ and !/ and !_ def 
                 </>
             </>`, "1");
-
     });
 
     it("should serialize $fragment cdata", async function () {

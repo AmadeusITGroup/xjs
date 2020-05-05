@@ -35,19 +35,18 @@ describe('@@ts', () => {
             #fragment <!>
                 #textNode " abc"
                 #element <div class="md">
-                    #element <pre>
-                        #element <code>
-                            #textNode " Hello World"
+                    #element <p>
+                        #textNode "Hello World"
                 #textNode "def "
         `, "1");
     });
 
-    it("should support the class param (explicit + default)", async function () {
+    it("should support the class param (explicit + default) & remove start spaces", async function () {
         assert.equal(stringify(await parse($fragment`
             <!cdata @@md="hello">
-# Main title
-## Second title
-Some text
+                # Main title
+                ## Second title
+                Some text
             </!cdata>def
         `, context)), `
             #fragment <!>
@@ -70,9 +69,22 @@ Some text
                 #element <div class="md code">
                     #element <pre>
                         #element <code>
-                            #textNode "foo=&quot;bar&quot; "
+                            #textNode "foo=\"bar\" "
                 #textNode " <-- here "
         `, "2");
+    });
+
+    it("should properly encode special chars", async function () {
+        assert.equal(stringify(await parse($fragment`
+            <!cdata @@md>
+text ! and $ and / and < and > and ' and " and { and } and &nbsp;
+            </!cdata>
+        `, context)), `
+            #fragment <!>
+                #element <div class="md">
+                    #element <p>
+                        #textNode "text ! and $ and / and < and > and ' and " and { and } and  "
+        `, "1");
     });
 
     it("should raise errors when not used on <!cdata> sections", async function () {
