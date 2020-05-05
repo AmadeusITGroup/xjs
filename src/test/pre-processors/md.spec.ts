@@ -77,13 +77,13 @@ describe('@@ts', () => {
     it("should properly encode special chars", async function () {
         assert.equal(stringify(await parse($fragment`
             <!cdata @@md>
-text ! and $ and / and < and > and ' and " and { and } and &nbsp;
+text ! and $each and / and < and > and ' and " and { and } and &nbsp;
             </!cdata>
         `, context)), `
             #fragment <!>
                 #element <div class="md">
                     #element <p>
-                        #textNode "text ! and $ and / and < and > and ' and " and { and } and  "
+                        #textNode "text ! and $each and / and < and > and ' and " and { and } and  "
         `, "1");
     });
 

@@ -12,6 +12,7 @@ const RX_S_QUOTE = /\&\#39;/g,
     RX_CB_OPEN = /\{/g,
     RX_CB_CLOSE = /\}/g,
     RX_NBSP = /\&nbsp;/g,
+    RX_DOLLAR = /\$/g,
     RX_CR = /\n/,
     RX_START_SPACES = /^(\s+)/;
 
@@ -60,7 +61,8 @@ export function md() {
                     .replace(RX_QUOT, "\"")
                     .replace(RX_CB_OPEN, "!{")
                     .replace(RX_CB_CLOSE, "!}")
-                    .replace(RX_NBSP, "!s");
+                    .replace(RX_NBSP, "!s")
+                    .replace(RX_DOLLAR, "!$");
 
                 // parse the generated HTML
                 let fragment = await parse(mdHTML, {
