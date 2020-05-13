@@ -116,10 +116,10 @@ export function extract() {
                     }
                 }
 
-                if (fileExtension === "ts") {
+                if (fileExtension === "ts" || fileExtension === "js") {
                     sectionDict.tokens = await tokenize(fileContent);
                 } else {
-                    ctxt.error("File extension must be .ts", sectionParam.pos);
+                    ctxt.error("File extension must be .ts or .js", sectionParam.pos);
                 }
             }
 
