@@ -167,7 +167,7 @@ describe('toString', () => {
     it("should serialize $fragment cdata", async function () {
         const r = await parse($fragment`
             <div> abc 
-                <!cdata> hello !</!cdata> world </!cdata>
+                <!cdata> \`hello\` !</!cdata> world </!cdata>
             def </>
         `, ctxt);
 
@@ -175,7 +175,7 @@ describe('toString', () => {
             <!>
                 <div>
                      abc 
-                    <!cdata> hello !</!cdata> world </!cdata>
+                    <!cdata> \`hello\` !</!cdata> world </!cdata>
                      def 
                 </>
             </>`, "1");

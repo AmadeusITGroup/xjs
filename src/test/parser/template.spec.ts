@@ -481,7 +481,7 @@ describe('XJS $template parser', () => {
     //             #element <div {...[ expr(123)   ]}/>
     //     ` , '2');
     // });
-    
+
     // it("should parse elements with name expressions", async function () {
     //     assert.equal(await ast.$template`() => {
     //         <{expr()} a="valueA"/>
@@ -1040,7 +1040,22 @@ describe('XJS $template parser', () => {
 
                 text \\n \\s xyz
             
-        `, "1")
+        `, "1");
+
+        assert.equal(await ast.$template`() => {
+            <div>
+                <!cdata>
+                    string: \`hello\` 
+                </!cdata>
+            </>
+        }`, `
+            #tplFunction()
+                #element <div>
+                    #cdata <!cdata>
+
+                    string: \`hello\` 
+                
+        `, "2")
 
     });
 
