@@ -5,6 +5,8 @@ import { createElement, createParam, addParam, XjsParserContext, parse } from '.
 const U = undefined;
 
 const RX_S_QUOTE = /\&\#39;/g,
+    RX_BANG = /\!/g,
+    RX_SLASH = /\\\//g, // forward slashes must be encoded like \/ in markdown content
     RX_LT = /\&lt;/g,
     RX_GT = /\&gt;/g,
     RX_AMP = /\&amp;/g,
@@ -55,10 +57,12 @@ export function md() {
                 });
                 const mdHTML = marked(mdText)
                     .replace(RX_S_QUOTE, "'")
+                    .replace(RX_BANG, "!!")
                     .replace(RX_LT, "!<")
                     .replace(RX_GT, "!>")
                     .replace(RX_AMP, "&")
                     .replace(RX_QUOT, "\"")
+                    .replace(RX_SLASH, "!/")
                     .replace(RX_CB_OPEN, "!{")
                     .replace(RX_CB_CLOSE, "!}")
                     .replace(RX_NBSP, "!s")
