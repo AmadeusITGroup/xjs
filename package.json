@@ -52,7 +52,7 @@
         "tslib": "^1.10.0"
     },
     "dependencies": {
-        "marked": "^0.8.2"
+        "marked": "^4.0.10"
     },
     "nyc": {
         "extension": [
